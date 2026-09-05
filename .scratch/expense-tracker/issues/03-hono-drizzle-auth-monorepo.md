@@ -23,3 +23,7 @@ Blocked by: —
 - **RPC تایپ‌سیف:** `export type AppType = typeof app` از apps/api (با zValidator روی هر route) و مصرف با `hc<AppType>("/api", { credentials: "include" })` در apps/web. Gotchaها: tsconfig strict در هر دو سمت، نسخه hono یکسان در مونوریپو، `c.notFound()` استفاده نکنید (تایپ از بین می‌رود)، param/query همیشه string.
 - **better-auth + Hono:** بدون آداپتور HTTP — `app.all("/api/auth/*", (c) => auth.handler(c.req.raw))`؛ دیتابیس با آداپتور `@better-auth/drizzle-adapter` (پکیج جدید از خط 1.5+) با `provider: "sqlite"`؛ session با `auth.api.getSession({ headers })` در یک `createMiddleware` از `hono/factory`؛ `trustedOrigins` + CORS با `credentials: true` و origin صریح.
 - **سینک:** endpoint دسته‌ای `POST /api/sync` (push+pull در یک رفت‌وبرگشت)، cursor سمت‌سرور مونوتونیک، LWW با `updatedAt` سمت‌سرور + upsert شرطی (`WHERE excluded.updated_at > updated_at`)، tombstone (`deleted_at`)، op id سمت کلاینت (UUIDv7) برای idempotency، صفحه‌بندی pull. برای تیکت «مدل داده و قرارداد سینک»: ستون‌های استاندارد syncable از الان در Drizzle schema تعریف شود (`id/user_id/updated_at/deleted_at/created_at`)، مبلغ int (ریال)، `occurredAt` جدا از متادیتای سینک.
+
+## Comments
+
+- 2026-09-06 — چرخش استک: Hono، مونوریپو pnpm و better-sqlite3 حذف شدند؛ Next.js تمام‌استک جایگزین شد (تحقیق: تیکت ۱۰، تثبیت: تیکت ۱۲). آنچه زنده ماند: انتخاب Node، ایدهٔ آداپتور/لایهٔ DB ایزوله (اکنون لایهٔ Drizzle روی سرویس هاست)، نسخه‌های zod و better-auth به‌عنوان کاندید، و ایدهٔ opId/idempotency از طرح سینک که ممکن است در API موبایل به‌کار بیاید.
