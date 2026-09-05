@@ -1,0 +1,56 @@
+# Root .gitignore — applies to the Node.js (pnpm) frontend and backend projects.
+# Patterns are not anchored, so they match in frontend/, backend/, and any subfolder.
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Dev server / bundler caches
+.vite/
+.parcel-cache/
+.turbo/
+.next/
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Environment variables / secrets
+.env
+.env.*
+!.env.example
+
+# Tool caches
+.cache/
+.eslintcache
+.stylelintcache
+
+# Local databases (dev)
+*.sqlite
+*.sqlite3
+*.db
+
+# Temp / uploads
+tmp/
+temp/
+
+# Editors & OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.DS_Store
+Thumbs.db
