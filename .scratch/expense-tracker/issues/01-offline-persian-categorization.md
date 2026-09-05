@@ -1,7 +1,7 @@
 # 01 — روش‌های دسته‌بندی خودکار فارسی، کاملاً آفلاین در مرورگر
 
 Type: research
-Status: open
+Status: resolved
 Blocked by: —
 
 ## Question
@@ -11,3 +11,7 @@ Blocked by: —
 - گزینه‌های قابل بررسی: تطبیق کلیدواژه/ترای + دیکشنریِ یادگرفته از کاربر؛ نرمال‌سازی متن فارسی (یکسان‌سازی ي/ی و ك/ک، نیم‌فاصله، اعراب، ارقام فارسی/عربی، فاصله‌ها)؛ در صورت لزوم مدل سبک روی دستگاه (naive Bayes / TF-IDF)؛ tradeoff دقت/سرعت/پیچیدگی و قابلیت یادگیری از اصلاح‌های کاربر.
 - خروجی: توصیهٔ مشخص با rationale، طرح دادهٔ واژه‌نامه/مدل، الگوریتم امتیازدهی (سیستمی vs یادگرفته)، و ریسک‌های خاص متن فارسی.
 - مقصد یافته‌ها: `.scratch/expense-tracker/research/offline-persian-categorization.md`
+
+## Answer
+
+توصیه: موتور «واژه‌نامهٔ نرمال‌شده + شمارش یادگرفته» با TypeScript خالص و بدون وابستگی ML — یک نرمال‌ساز ~۲۰ خطی فارسی (unify ي/ی و ك/ک، NFKC برای فرم‌های نمایشی، حذف اعراب/تنوین/کشیده/علائم RTL، یکسان‌سازی ارقام، ZWNJ و فاصله هم‌ارز جداکننده) + دو `Map` درون‌حافظه‌ای (عبارت/توکن → دسته) + نردبان اولویت شش‌پله‌ای (learned phrase → learned token → lexicon phrase → lexicon token → prefix → fuzzy Levenshtein؛ وگرنه `null`) که در آن یادگرفته همیشه بر سیستمی می‌چربد و اطمینان از «purity × support» شمارش‌ها درمی‌آید. یادگیری از انتساب دستی فقط increment/decay همین شمارش‌هاست و در جدول Dexie `learnedKeys` (با `[key+category]` و سینک outbox/LWW) ذخیره می‌شود. کتابخانه‌های آماده رد شدند: `bayes` (ناهمگام/بدون score)، `wink-*` (مدل انگلیسی)، `transformers.js` (~46MB — نقض آفلاین‌فرست)؛ کل مسیر در هر کی‌استروک چند میکروثانیه است. جزئیات، کد، طرح داده و چک‌لیست تست فارسی: [../research/offline-persian-categorization.md](../research/offline-persian-categorization.md)
