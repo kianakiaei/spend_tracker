@@ -10,7 +10,7 @@ Labels: wayfinder:map
 
 - تصمیم‌های ترسیم (گریلینگ، 2026-09-06): خروجی = اپ کارا (نه فقط اسپک)؛ better-auth از روز اول؛ سینک کامل در MVP.
 - استک (خواستهٔ صریح کاربر): pnpm workspaces — apps/api (Hono + SQLite + Drizzle + drizzle-kit + @hono/zod-validator + typed RPC با hc)، apps/web (React + Vite + Tailwind + shadcn/ui + vite-plugin-pwa + TanStack Query)، packages/shared (Zod، اشتراک اسکیما بین کلاینت/سرور). TypeScript سخت‌گیرانه، بدون any. پوشش تست: Vitest بک‌اند-محور، RTL+jsdom برای جریان‌های حیاتی، Playwright برای E2E.
-- Runtime بک‌اند هنوز باز است (Bun با bun:sqlite یا Node + better-sqlite3) — تیکت «اسکفولد مونوریپو و انتخاب runtime بک‌اند» با تحقیق روشنش می‌کند (کاربر روی ویندوز است).
+- Runtime بک‌اند حل شد: Node 24 LTS + better-sqlite3 (نه Bun روی ویندوز)؛ آداپتور DB در یک فایل ایزوله بماند تا مهاجرت بعدی به Bun یا node:sqlite ارزان باشد — جزئیات در تیکت «اسکفولد مونوریپو».
 - لایهٔ محلی: Dexie روی IndexedDB؛ الگوی outbox (UUID محلی، updatedAt، پرچم synced)؛ تعارض‌ها با last-write-wins.
 - محلی‌سازی: UI فارسی RTL مینیمال، فونت Vazirmatn؛ مبالغ تومان با `Intl.NumberFormat('fa-IR')`؛ تاریخ‌ها به میلادی ذخیره و فقط در نمایش جلالی می‌شوند (date-fns-jalali + react-multi-date-picker).
 - مهارت‌های الزامی هر سشن: frontend-design برای هر کار UI (الزام صریح کاربر)؛ domain-modeling هنگام تثبیت اصطلاح‌ها (اولین جا: تیکت «مدل داده و قرارداد سینک» CONTEXT.md را می‌سازد)؛ research برای تیکت‌های research.
@@ -19,7 +19,7 @@ Labels: wayfinder:map
 
 ## Decisions so far
 
-(هنوز خالی — تیکت‌ها تازه ترسیم شده‌اند)
+- [اسکفولد مونوریپو: Hono + Drizzle + better-auth (+ انتخاب runtime)](issues/03-hono-drizzle-auth-monorepo.md): Node 24 LTS + better-sqlite3 13 (prebuilt ویندوز؛ Bun حذف شد)؛ نسخه‌های فعلی (hono 4.13.7، drizzle-orm 0.45.2، better-auth 1.7.2، zod 4.5.4) و جریان migration ثبت شد؛ الگوی RPC تایپ‌سیف با `AppType`/`hc` و طرح سینک دسته‌ای (`POST /api/sync`، LWW سمت سرور، tombstone، op id برای idempotency) به‌عنوان ورودی تیکت «مدل داده و قرارداد سینک» تعیین شد.
 
 ## Not yet specified
 
