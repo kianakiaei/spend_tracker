@@ -318,24 +318,33 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
     expect(await generatedExpenses(userId, CURRENT)).toHaveLength(0);
   });
 
-  it("an injected generation failure never breaks the read path", async () => {
+  it("an injected generation failure never breaks the read path (insert or select)", async () => {
     const userId = await fx.signUp();
     await createTemplate(userId);
 
-    const brokenDb = new Proxy(fx.db, {
-      get(target, prop, receiver) {
-        if (prop === "insert") throw new Error("injected failure");
-        return Reflect.get(target, prop, receiver);
-      },
-    });
+    const brokenDb = (breaking: string) =>
+      new Proxy(fx.db, {
+        get(target, prop, receiver) {
+          if (prop === breaking) throw new Error("injected failure");
+          return Reflect.get(target, prop, receiver);
+        },
+      });
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
+    // the insert phase fails: templates were found, expense write is lost
     await expect(
-      ensureRecurringExpensesGenerated(brokenDb, userId, CURRENT),
+      ensureRecurringExpensesGenerated(brokenDb("insert"), userId, CURRENT),
     ).resolves.toEqual({ generated: 0 });
+    // the select phase fails: nothing was read, nothing generated
+    await expect(
+      ensureRecurringExpensesGenerated(brokenDb("select"), userId, CURRENT),
+    ).resolves.toEqual({ generated: 0 });
+    expect(errorSpy).toHaveBeenCalledTimes(2);
 
-    expect(errorSpy).toHaveBeenCalledOnce();
     errorSpy.mockRestore();
+    // the shield heals: the same (unbroken) db retries for free
+    const healed = await ensureRecurringExpensesGenerated(fx.db, userId, CURRENT);
+    expect(healed.generated).toBe(1);
   });
 });
 

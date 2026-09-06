@@ -1,4 +1,4 @@
-import { endOfJalaliMonth, fromJalaliMonthKey, jalaliDaysInMonth, startOfJalaliMonth, toISODate } from "@/lib/jalali";
+import { endOfJalaliMonth, fromISODate, fromJalaliMonthKey, jalaliDaysInMonth, startOfJalaliMonth, toISODate } from "@/lib/jalali";
 
 // Pure recurring-template logic (ticket 23) — the shared core of ensure
 // (lazy generation, decision 14) and preview (forecast rows, decision 15).
@@ -78,12 +78,10 @@ export function clampedDayOfMonth(dayOfMonth: number, monthKey: string): number 
 /** Gregorian date-only string of the template's occurrence in a month —
  * the generated expense's `occurredAt` (and the preview `day`'s date). */
 export function occurrenceISO(monthKey: string, dayOfMonth: number): string {
-  const { startISO } = jalaliMonthBounds(monthKey);
+  const first = fromISODate(jalaliMonthBounds(monthKey).startISO);
   const day = clampedDayOfMonth(dayOfMonth, monthKey);
   // Day arithmetic within one month is calendar-agnostic: the Jalali month's
   // day n is n-1 Gregorian days past its first day.
-  const [y, m, d] = startISO.split("-").map(Number);
-  const first = new Date(y!, m! - 1, d!);
   first.setDate(first.getDate() + day - 1);
   return toISODate(first);
 }
