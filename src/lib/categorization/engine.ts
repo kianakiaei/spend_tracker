@@ -1,4 +1,4 @@
-import { STOPWORDS, extractKeys, phraseKeys } from "./keys";
+import { extractKeys, phraseKeys, significantTokens } from "./keys";
 import { canonical } from "./normalize";
 import type { SeedCategory } from "./seed-lexicon";
 
@@ -162,92 +162,67 @@ export function createCategorizer(input: CategorizerInput): Categorizer {
     return { categoryId, source: "system", matchedKey: key, confidence: null };
   }
 
-  // Rung 5 — prefix. Three match shapes against every key, learned keys
-  // first (longest wins within a source): the title extends a key
-  // («قسطی» → «قسط»), a key completes the whole title, or a key completes
-  // the trailing significant token («خرید نانوا» → «نانوایی»).
-  function prefixMatches(
-    keys: Iterable<string>,
+  // Rung 5 — prefix. Three match shapes against every key: the title
+  // extends a key («قسطی» → «قسط»), a key completes the whole title
+  // («نانوا» → «نانوایی»), or a key completes the trailing significant
+  // token («خرید نانوا» → «نانوایی»). Longest key wins within a source.
+  function longestPrefix<V>(
+    entries: Map<string, V>,
     canonicalTitle: string,
     tail: string | null,
-  ): { key: string; extra: number }[] {
-    const matches: { key: string; extra: number }[] = [];
-    const consider = (key: string) => {
-      if (canonicalTitle.startsWith(key) && canonicalTitle.length > key.length) {
-        matches.push({ key, extra: canonicalTitle.length - key.length });
-      } else if (key.startsWith(canonicalTitle) && key.length > canonicalTitle.length) {
-        matches.push({ key, extra: key.length - canonicalTitle.length });
-      } else if (
-        tail &&
-        tail.length >= 2 &&
-        key.startsWith(tail) &&
-        key.length > tail.length
-      ) {
-        matches.push({ key, extra: key.length - tail.length });
+  ): { key: string; value: V } | null {
+    let best: { key: string; value: V } | null = null;
+    for (const [key, value] of entries) {
+      const matches =
+        (canonicalTitle.startsWith(key) && canonicalTitle.length > key.length) ||
+        (key.startsWith(canonicalTitle) && key.length > canonicalTitle.length) ||
+        (tail !== null && tail.length >= 2 && key.startsWith(tail) && key.length > tail.length);
+      if (matches && (best === null || key.length > best.key.length)) {
+        best = { key, value };
       }
-    };
-    for (const key of keys) consider(key);
-    return matches;
-  }
-
-  function longestKey(matches: { key: string; extra: number }[]): string | null {
-    let best: string | null = null;
-    for (const { key } of matches) {
-      if (best === null || key.length > best.length) best = key;
     }
     return best;
+  }
+
+  // First exact hit of the candidates in a map — the shape of rungs 1-4.
+  function firstHit<V>(
+    candidates: string[],
+    map: Map<string, V>,
+  ): { key: string; value: V } | null {
+    for (const key of candidates) {
+      const value = map.get(key);
+      if (value !== undefined) return { key, value };
+    }
+    return null;
   }
 
   function classify(title: string): Suggestion | null {
     const canonicalTitle = canonical(title);
     if (canonicalTitle === "") return null;
-    const significant = canonicalTitle
-      .split(" ")
-      .filter((token) => !STOPWORDS.has(token));
+    const significant = significantTokens(canonicalTitle);
     const phrases = phraseKeys(canonicalTitle);
     const tokens = [...new Set(significant)];
 
-    // Rungs 1-2: learned phrase, then learned token.
-    for (const key of phrases) {
-      const perCategory = learnedPhrases.get(key);
-      if (perCategory) return learnedSuggestion(key, perCategory);
-    }
-    for (const key of tokens) {
-      const perCategory = learnedTokens.get(key);
-      if (perCategory) return learnedSuggestion(key, perCategory);
-    }
+    // Rungs 1-2: learned phrase, then learned token — any learned hit wins.
+    const learned =
+      firstHit(phrases, learnedPhrases) ?? firstHit(tokens, learnedTokens);
+    if (learned) return learnedSuggestion(learned.key, learned.value);
     // Rungs 3-4: lexicon phrase, then lexicon token — «اسنپ فود» must beat
     // the token «اسنپ», so phrase-before-token is load-bearing.
-    for (const key of phrases) {
-      const categoryId = lexiconPhrases.get(key);
-      if (categoryId) return systemSuggestion(key, categoryId);
-    }
-    for (const key of tokens) {
-      const categoryId = lexiconTokens.get(key);
-      if (categoryId) return systemSuggestion(key, categoryId);
-    }
+    const system =
+      firstHit(phrases, lexiconPhrases) ?? firstHit(tokens, lexiconTokens);
+    if (system) return systemSuggestion(system.key, system.value);
     // Rung 5: prefix — research 01 gates it on a ≥3-char title.
     if (canonicalTitle.length >= 3) {
       const tail = significant.at(-1) ?? null;
-      const learnedPrefix = [
-        ...prefixMatches(learnedPhrases.keys(), canonicalTitle, tail),
-        ...prefixMatches(learnedTokens.keys(), canonicalTitle, tail),
-      ];
-      const learnedKey = longestKey(learnedPrefix);
-      if (learnedKey) {
-        return learnedSuggestion(learnedKey, counters.get(learnedKey)!);
-      }
-      const lexiconPrefix = [
-        ...prefixMatches(lexiconPhrases.keys(), canonicalTitle, tail),
-        ...prefixMatches(lexiconTokens.keys(), canonicalTitle, tail),
-      ];
-      const lexiconKey = longestKey(lexiconPrefix);
-      if (lexiconKey) {
-        return systemSuggestion(
-          lexiconKey,
-          lexiconPhrases.get(lexiconKey) ?? lexiconTokens.get(lexiconKey)!,
-        );
-      }
+      const learnedHit =
+        longestPrefix(learnedPhrases, canonicalTitle, tail) ??
+        longestPrefix(learnedTokens, canonicalTitle, tail);
+      if (learnedHit) return learnedSuggestion(learnedHit.key, learnedHit.value);
+      const systemHit =
+        longestPrefix(lexiconPhrases, canonicalTitle, tail) ??
+        longestPrefix(lexiconTokens, canonicalTitle, tail);
+      if (systemHit) return systemSuggestion(systemHit.key, systemHit.value);
     }
     // Rung 6: fuzzy Δ1 on tokens ≥ 4 chars — learned keys first (a typo
     // against the user's own vocabulary outranks the seed).

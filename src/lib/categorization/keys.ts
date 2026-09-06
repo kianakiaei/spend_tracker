@@ -18,8 +18,9 @@ function tokenize(canonicalTitle: string): string[] {
   return canonicalTitle.split(" ");
 }
 
-/** Tokens that survive the stopword filter, in title order. */
-function significantTokens(canonicalTitle: string): string[] {
+/** Tokens that survive the stopword filter, in title order — the engine's
+ * token candidates. Takes an already-canonical title. */
+export function significantTokens(canonicalTitle: string): string[] {
   return tokenize(canonicalTitle).filter((t) => !STOPWORDS.has(t));
 }
 
