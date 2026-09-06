@@ -5,6 +5,10 @@ on: [pull_request, push]
 jobs:
   ci:
     runs-on: ubuntu-latest
+    env:
+      # better-auth requires a secret in production mode (e2e runs next start);
+      # this is a CI-only dev value, not a real credential
+      BETTER_AUTH_SECRET: ci-only-dev-secret-not-a-real-credential
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
