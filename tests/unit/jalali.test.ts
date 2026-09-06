@@ -8,6 +8,7 @@ import {
   fromISODate,
   fromJalaliMonthKey,
   jalaliDayLabel,
+  jalaliDayOfMonth,
   jalaliDaysInMonth,
   jalaliIntlDate,
   jalaliMonthKey,
@@ -217,5 +218,12 @@ describe("shiftJalaliMonthKey (month navigation, ticket 26)", () => {
   it("rejects keys that are not jalali month keys", () => {
     expect(() => shiftJalaliMonthKey("1405-13", 1)).toThrow(RangeError);
     expect(() => shiftJalaliMonthKey("junk", 1)).toThrow(RangeError);
+  });
+});
+
+describe("jalaliDayOfMonth (ledger interleaving, ticket 26)", () => {
+  it("gives the jalali day as a latin number", () => {
+    expect(jalaliDayOfMonth(fromISODate("2026-09-06"))).toBe(15);
+    expect(jalaliDayOfMonth(fromISODate("2026-03-21"))).toBe(1); // 1 فروردین ۱۴۰۵
   });
 });

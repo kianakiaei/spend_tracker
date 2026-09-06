@@ -136,6 +136,12 @@ export function jalaliDayLabel(d: Date): string {
   return toPersianDigits(format(d, "EEEE d MMMM"));
 }
 
+/** Jalali day-of-month of d as a plain number (1..31) — the ledger sorts
+ * recorded rows and forecast rows into one chronological list on it. */
+export function jalaliDayOfMonth(d: Date): number {
+  return Number(format(d, "d"));
+}
+
 const jalaliIntl = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
   dateStyle: "full",
 });
