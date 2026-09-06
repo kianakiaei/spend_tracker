@@ -5,8 +5,7 @@ import tsconfigPaths from "vite-tsconfig-paths";
 // Two projects (ticket 11): node for domain + integration, jsdom for components.
 // Per-glob coverage thresholds activate in step with each module (tickets
 // 19-24; final closeout in ticket 30). Ticket 19 landed the schema/id/service
-// baseline, ticket 20 the jalali glob; the categorization glob (>=90/85)
-// activates with ticket 21.
+// baseline, tickets 20-21 the jalali and categorization globs.
 export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   test: {
@@ -37,6 +36,7 @@ export default defineConfig({
         "src/lib/schemas/**": { lines: 90, branches: 85 },
         "src/lib/id.ts": { lines: 90, branches: 85 },
         "src/lib/jalali/**": { lines: 90, branches: 85 },
+        "src/lib/categorization/**": { lines: 90, branches: 85 },
         "src/lib/services/**": { lines: 80, branches: 80 },
       },
     },
