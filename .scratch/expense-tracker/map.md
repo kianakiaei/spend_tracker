@@ -11,7 +11,7 @@ Labels: wayfinder:map
 - **چرخش استک (خواستهٔ صریح کاربر، 2026-09-06):** Next.js تمام‌استک (App Router) برای فرانت + بک + REST API — بدون Hono؛ دیتابیس SQL هاست‌شده با اکانت رایگان (انتخاب سرویس: تیکت ۰۹)؛ بدون آفلاین/Dexie/PWA/outbox/سینک؛ REST API نسخه‌دار برای اپ موبایل آینده؛ «تست درست و با پوشش» اولویت صریح کاربر (طرح: تیکت ۱۱).
 - **انتخاب دیتابیس (کاربر، 2026-09-06):** **Turso (libSQL) + Drizzle ORM** روی پلن رایگان — سرویس مقایسه‌ای لازم نبود؛ جزئیات راه‌اندازی (درایور، migration، استوری تست لوکال، ریسک دسترسی از ایران) در تیکت ۰۹ تحقیق می‌شود.
 - پیامد ساختاری: مونوریپو pnpm منحل شد → یک اپ Next.js؛ Zod و اسکیماها داخل خود اپ؛ TypeScript سخت‌گیرانه بدون any.
-- زنده‌های چرخش: مدل دامنهٔ تیکت ۰۵ (مبلغ صحیح تومان، منع حذف دستهٔ پُر، الگوی تکرار + تولید idempotent با یونیک‌ایندکس (userId, sourceRecurringId, monthKey) — حالا در SQL، monthKey جلالی)، موتور دسته‌بندی تحقیق ۰۱ (ذخیره در جدول SQL به‌جای Dexie)، یافته‌های تاریخ جلالی تحقیق ۰۴.
+- زنده‌های چرخش: مدل دامنهٔ تیکت ۰۵ (مبلغ صحیح تومان، منع حذف دستهٔ پُر، الگوی تکرار + تولید idempotent با یونیک‌ایندکس (userId, sourceRecurringId, monthKey) — حالا در SQL، monthKey جلالی)، موتور دسته‌بندی تحقیق ۰۱ (ذخیره در جدول SQL به‌جای Dexie؛ رفتار دقیق: تیکت ۰۶)، یافته‌های تاریخ جلالی تحقیق ۰۴.
 - تصمیم‌های ترسیم (گریلینگ، 2026-09-06) که همچنان معتبرند: خروجی = اپ کارا (نه فقط اسپک).
 - محلی‌سازی: UI فارسی RTL مینیمال، فونت Vazirmatn؛ مبالغ تومان با `Intl.NumberFormat('fa-IR')`؛ تاریخ‌ها به میلادی ذخیره و فقط در نمایش جلالی می‌شوند.
 - مهارت‌های الزامی هر سشن: frontend-design برای هر کار UI (الزام صریح کاربر)؛ domain-modeling هنگام تثبیت اصطلاح‌ها؛ research برای تیکت‌های research.
@@ -20,6 +20,7 @@ Labels: wayfinder:map
 
 ## Decisions so far
 
+- [موتور دسته‌بندی و UX یادگیری](issues/06-categorization-learning-ux.md): «همیشه پیشنهاد» با بجِ قابل‌تغییر — حتی بی‌حدس (fallback: پربسامدترین دستهٔ خود کاربر)؛ پیشنهادِ زندهٔ سمت کلاینت با سرویس مشترک + یادگیری سمت سرور هنگام ذخیرهٔ خرج (کلیدهای نرمال‌شده، decay نرمِ ×۰٫۵ در تناقض؛ تولید الگو یادگیری نمی‌سازد)؛ واژه‌نامهٔ seed دست‌نویس در کد (لیست دقیق → تیکت ۱۳)؛ بج فقط در فرم — بدون نشانِ لیست و بدون مالتی‌سلکت مستقل.
 - [استک Next.js تمام‌استک و الگوی API برای موبایل](issues/10-nextjs-fullstack-api.md): next **16.3.4** (App Router تنها روتر، Turbopack پیش‌فرض، `proxy.ts` جای middleware، params/cookies ناهمگام) + React 19.2.8 + TypeScript 7.0.2 (fallback 5.9.3) + zod 4.5.4 + Tailwind 4.3.3؛ قاعدهٔ مرز API: **همهٔ CRUD دامنه Route Handler زیر `app/api/v1/...`**، Server Action فقط شکرِ فرم وب که همان سرویس دامنه را صدا می‌زند، RSC هرگز Route Handler خود را fetch نمی‌کند؛ اعتبارسنجی با helper نازک `parseJson`/`parseQuery` روی Zod 4؛ خطا با **problem+json (RFC 9457)**؛ کلاینت تایپ‌سیف = fetch wrapper + اشتراک Zod schema (OpenAPI از همان اسکیماها وقتی موبایل نزدیک شد)؛ **auth = better-auth 1.7.3** (آداپتور رسمی Drizzle با sqlite، پلاگین `bearer()` برای موبایل آینده؛ Auth.js v5 هنوز beta و پروژه رسماً در Better Auth ادغام شده)؛ عدم‌قطعیت ثبت‌شده: ترکیب better-auth+Turso/libSQL باید اوایل پیاده‌سازی smoke-test شود.
 - [استراتژی تست با پوشش واقعی](issues/11-testing-strategy.md): چهار لایه — unit دامنه (node)، component حیاتی (jsdom+RTL)، integration دامنه+DB و contract handlerها روی **فایل libSQL موقت + migrator** (بدون شبکه/Docker؛ `:memory:` هم رسمی)، E2E با Playwright 1.63 (پنج جریان، سشن reuse با storageState)؛ قید رسمی: **async RSC با Vitest تست نمی‌شود** → سرویس‌ها باید از handlerها تفکیک شوند؛ پوشش per-glob: دامنه ≥90/85، services ≥80، UI بدون آستانه؛ CI با GitHub Actions بدون service container؛ vitest 5.0.0 تازه است (عقب‌نشینی به 4.x ثبت‌شده).
 - [راه‌اندازی Turso (libSQL) + Drizzle در Next.js](issues/09-hosted-sql-provider.md): یک درایور همه‌جا — `drizzle-orm/libsql` 0.45.2 + `@libsql/client` 0.18.0 (نسخهٔ node)؛ dev = فایل لوکال `file:./local.db` بدون توکن، test = فایل temp + migrator بدون شبکه، prod = URL ریموت + database token (embedded replica روی Vercel منتفی)؛ migration = `drizzle-kit generate/migrate` با `dialect: 'turso'`؛ پلن رایگان برای تک‌کاربر کافی (تله‌ها: BLOCKED بدون overage، آرشیو بعد از ۱۰ روز بی‌فعالیتی)؛ FK پیش‌فرض خاموش → منع حذف دستهٔ پُر باید در لایهٔ اپ باشد؛ ریسک دسترسی از ایران صریحاً عدم‌قطعیت است و باید عملاً تست شود — خروج یک‌دستوری با `turso db export`.
@@ -32,7 +33,6 @@ Labels: wayfinder:map
 
 ## Not yet specified
 
-- سیدِدینگ محتوایی: واژه‌نامهٔ اولیهٔ فارسی برای ۶ دستهٔ پایه (نان، اسنپ، قبض برق، …) — پس از روشن شدن موتور دسته‌بندی (تیکت ۰۶)، احتمالاً به تیکت task جدا بالغ می‌شود.
 - پلن تست دقیق هر ماژول — با خروجی تحقیق ۱۱ و شروع پیاده‌سازی شکل می‌گیرد.
 - مقصد دیپلوی (Vercel یا جایگزین)، ریجن Turso و مدیریت سکرت‌های `.env` — به معماری (تیکت ۱۲) وابسته است؛ نزدیک انتها.
 - تولید خودکار خرجِ الگوها سمت سرور (اولین درخواستِ هر ماه، idempotent) — جای دقیقش (lazy-on-request در برابر cron) با معماری Next روشن می‌شود.
