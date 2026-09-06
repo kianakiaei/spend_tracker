@@ -1,26 +1,30 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Ticket 07 v2 — the approved visual direction, as tokens: light paper,
+   dark ink, ONE jade accent, one rule color. Color otherwise reaches the
+   screen only through each category's own color (dot + washed tint).
+   Vazirmatn is self-hosted (woff2 committed in src/app/fonts — ticket 26:
+   fetching fonts at build time from Iran is a risk); --font-vazirmatn is
+   the next/font/local variable set on <html>. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-paper: #fafaf7;
+  --color-panel: #ffffff;
+  --color-ink: #20241f;
+  --color-ink-muted: #82887e;
+  --color-rule: #e7e5dd;
+  --color-accent: #1a7a5c;
+  --color-accent-soft: #e7f1eb;
+  --font-sans: var(--font-vazirmatn), Vazirmatn, Tahoma, "Segoe UI", sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
 }
