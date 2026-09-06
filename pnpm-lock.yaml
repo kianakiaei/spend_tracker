@@ -130,6 +130,9 @@ importers:
       react:
         specifier: 19.2.8
         version: 19.2.8
+      react-date-object:
+        specifier: 2.1.9
+        version: 2.1.9
       react-dom:
         specifier: 19.2.8
         version: 19.2.8(react@19.2.8)
