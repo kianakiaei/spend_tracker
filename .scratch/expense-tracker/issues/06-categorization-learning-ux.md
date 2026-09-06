@@ -1,7 +1,7 @@
 # 06 — موتور دسته‌بندی و UX یادگیری
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 01
 
 ## Question
