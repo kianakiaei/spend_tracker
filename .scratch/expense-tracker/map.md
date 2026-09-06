@@ -20,6 +20,8 @@ Labels: wayfinder:map
 
 ## Decisions so far
 
+- [راه‌اندازی Turso (libSQL) + Drizzle در Next.js](issues/09-hosted-sql-provider.md): یک درایور همه‌جا — `drizzle-orm/libsql` 0.45.2 + `@libsql/client` 0.18.0 (نسخهٔ node)؛ dev = فایل لوکال `file:./local.db` بدون توکن، test = فایل temp + migrator بدون شبکه، prod = URL ریموت + database token (embedded replica روی Vercel منتفی)؛ migration = `drizzle-kit generate/migrate` با `dialect: 'turso'`؛ پلن رایگان برای تک‌کاربر کافی (تله‌ها: BLOCKED بدون overage، آرشیو بعد از ۱۰ روز بی‌فعالیتی)؛ FK پیش‌فرض خاموش → منع حذف دستهٔ پُر باید در لایهٔ اپ باشد؛ ریسک دسترسی از ایران صریحاً عدم‌قطعیت است و باید عملاً تست شود — خروج یک‌دستوری با `turso db export`.
+
 - [اسکفولد مونوریپو: Hono + Drizzle + better-auth (+ انتخاب runtime)](issues/03-hono-drizzle-auth-monorepo.md): Node 24 + better-sqlite3، نسخه‌های فعلی و جریان migration، RPC تایپ‌سیف با `hc`، طرح `POST /api/sync`. — **باطل‌شده با چرخش استک**؛ زنده‌ها: Node، ایدهٔ لایهٔ DB ایزوله، zod/better-auth (کامنت تیکت؛ جانشین: تیکت ۱۰).
 - [روش‌های دسته‌بندی خودکار فارسی، کاملاً آفلاین در مرورگر](issues/01-offline-persian-categorization.md): موتور «واژه‌نامهٔ نرمال‌شده + شمارنده‌های یادگرفته» در TypeScript خالص، بدون ML؛ نرمال‌ساز فارسی + نردبان اولویت شش‌مرحله‌ای؛ حدس ضعیف هرگز خودکار وصل نمی‌شود. — **پس از چرخش استک زنده است؛ فقط بستر ذخیره از Dexie به جدول SQL رفت** (کامنت تیکت).
 - [الگوهای Dexie + PWA + outbox](issues/02-dexie-pwa-outbox.md): Dexie منبع حقیقت، حلقهٔ سینک دستی، generateSW با registerType: 'prompt'. — **باطل‌شده با چرخش استک**؛ آفلاین/PWA/outbox حذف شدند (کامنت تیکت).
