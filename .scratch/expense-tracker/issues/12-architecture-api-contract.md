@@ -1,8 +1,9 @@
 # 12 — تثبیت معماری نهایی و قرارداد API موبایل
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 09, 10
+Assignee: IDEHAL (agent session, 2026-09-06)
 
 ## Question
 
