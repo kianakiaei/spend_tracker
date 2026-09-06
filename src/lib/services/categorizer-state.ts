@@ -4,14 +4,13 @@ import {
   createCategorizer,
   SEED_LEXICON,
   type Categorizer,
-  type Suggestion,
 } from "@/lib/categorization";
 import type { DomainDb } from "./types";
 
 // The SQL→engine bridge (ticket 22): loads the user's categories and learned
 // counters and builds the pure ticket-21 engine over them. Lexicon slug →
 // category-UUID resolution happens inside the engine from the passed list —
-// SQL stays out of it. classify() reads and learning (expense saves) both go
+// SQL stays out of it. classify() and learning (expense saves) both go
 // through here.
 
 export interface CategorizerState {
@@ -53,16 +52,4 @@ export async function loadCategorizerState(
   });
 
   return { categorizer, categories: categoryRows, learnedRows: rows };
-}
-
-/** The engine's own rung-ladder answer for a title — no fallback. Returns
- * null when the ladder has no guess (the caller decides: classify() falls
- * back to the most-frequent category, learnOnSave just counts the new one). */
-export async function engineSuggestion(
-  db: DomainDb,
-  userId: string,
-  title: string,
-): Promise<Suggestion | null> {
-  const { categorizer } = await loadCategorizerState(db, userId);
-  return categorizer.classify(title);
 }
