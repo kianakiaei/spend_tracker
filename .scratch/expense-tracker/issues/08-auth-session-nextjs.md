@@ -1,8 +1,9 @@
 # 08 — Auth و سشن در Next.js
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: 12
+Assignee: IDEHAL (agent session, 2026-09-06)
 
 ## Question
 
