@@ -1,9 +1,12 @@
 import { and, asc, count, eq, sum } from "drizzle-orm";
-import { categories, expenses, recurringTemplates } from "@/db/schema";
+import { categories, expenses } from "@/db/schema";
 import { currentJalaliMonthKey } from "@/lib/jalali";
-import { isTemplateDueInMonth, monthPosition } from "@/lib/recurring";
+import { monthPosition } from "@/lib/recurring";
 import { jalaliMonthKeySchema } from "@/lib/schemas";
-import { ensureRecurringExpensesGenerated } from "./recurring-service";
+import {
+  ensureRecurringExpensesGenerated,
+  listActiveDueTemplates,
+} from "./recurring-service";
 import { parseOrThrow } from "./parse";
 import type { DomainDb } from "./types";
 
@@ -75,16 +78,7 @@ export function createSummaryService(db: DomainDb): SummaryService {
 
       let forecastToman: number | undefined;
       if (position === "future") {
-        const active = await db
-          .select()
-          .from(recurringTemplates)
-          .where(
-            and(
-              eq(recurringTemplates.userId, userId),
-              eq(recurringTemplates.active, true),
-            ),
-          );
-        const due = active.filter((t) => isTemplateDueInMonth(t, monthKey));
+        const due = await listActiveDueTemplates(db, userId, monthKey);
         forecastToman = due.reduce((total, t) => total + t.amountToman, 0);
         // each forecast row lands on its own template's category (decision 15)
         for (const template of due) {

@@ -1,12 +1,4 @@
 import { afterAll, describe, expect, it } from "vitest";
-import { and, eq, isNotNull } from "drizzle-orm";
-import { expenses } from "@/db/schema";
-import {
-  addJalaliMonths,
-  currentJalaliMonthKey,
-  fromJalaliMonthKey,
-  jalaliMonthKey,
-} from "@/lib/jalali";
 import { jalaliMonthBounds } from "@/lib/recurring";
 import { createCategoryService } from "@/lib/services/category-service";
 import {
@@ -18,6 +10,11 @@ import type { CreateRecurringTemplateInput } from "@/lib/services/recurring-serv
 import { createSummaryService } from "@/lib/services/summary-service";
 import { ValidationError } from "@/lib/services/errors";
 import type { DomainDb } from "@/lib/services/types";
+import {
+  generatedExpenses,
+  relativeMonthKeys,
+  systemCategoryBySlug,
+} from "../helpers/fixtures";
 import { setupIntegrationDb } from "../helpers/integration";
 
 // Summary service rules on a real temp libSQL file (ticket 24): the ticket-12
@@ -36,22 +33,9 @@ afterAll(async () => {
   await fx.close();
 });
 
-async function systemCategory(userId: string, slug: string): Promise<string> {
-  const category = (await categories.list(userId)).find((c) => c.slug === slug);
-  if (!category) throw new Error(`system category ${slug} missing`);
-  return category.id;
-}
-
-const categoryName = async (userId: string, id: string) =>
-  (await categories.list(userId)).find((c) => c.id === id)!.name;
-
 // The gates are relative to the real Tehran "now" — the service owns the
 // clock; the tests only derive past/current/future month keys from it.
-const CURRENT = currentJalaliMonthKey();
-const monthShift = (key: string, n: number) =>
-  jalaliMonthKey(addJalaliMonths(fromJalaliMonthKey(key), n));
-const PREV = monthShift(CURRENT, -1);
-const NEXT = monthShift(CURRENT, 1);
+const { CURRENT, PREV, NEXT, monthShift } = relativeMonthKeys();
 
 async function createExpense(
   userId: string,
@@ -63,7 +47,7 @@ async function createExpense(
     {
       amountToman: 250_000,
       title: "خرید هفتگی",
-      categoryId: await systemCategory(userId, "groceries"),
+      categoryId: (await systemCategoryBySlug(fx.db, userId, "groceries")).id,
       // dated inside the entry month; undated via the `over` escape hatch
       occurredAt: jalaliMonthBounds(entryMonthKey).startISO,
       ...over,
@@ -79,7 +63,7 @@ async function createTemplate(
   return recurring.create(userId, {
     amountToman: 1_500_000,
     title: "قسط وام",
-    categoryId: await systemCategory(userId, "installment"),
+    categoryId: (await systemCategoryBySlug(fx.db, userId, "installment")).id,
     dayOfMonth: 10,
     startDate: "2025-01-01",
     endDate: null,
@@ -87,21 +71,10 @@ async function createTemplate(
   });
 }
 
-const generatedExpenses = (userId: string, monthKey: string) =>
-  fx.db
-    .select()
-    .from(expenses)
-    .where(
-      and(
-        eq(expenses.userId, userId),
-        eq(expenses.monthKey, monthKey),
-        isNotNull(expenses.sourceRecurringId),
-      ),
-    );
-
 /** Proxy spy (ticket 23's injected-failure trick, counting instead of
- * breaking): how many INSERT statements went through the db — the observable
- * of "ensure ran before the read" vs "never ran". */
+ * breaking): counts `insert` builder accesses — in these services exactly
+ * one per INSERT statement issued. The observable of "ensure ran before the
+ * read" vs "never ran". */
 function insertCountingDb(base: DomainDb): { db: DomainDb; count(): number } {
   let inserts = 0;
   const counting = new Proxy(base, {
@@ -116,24 +89,28 @@ function insertCountingDb(base: DomainDb): { db: DomainDb; count(): number } {
 describe("summaryService.getSummary — current month: ensure before read (decision 14)", () => {
   it("generates due templates BEFORE reading — the summary includes them, with no forecast field", async () => {
     const userId = await fx.signUp();
-    const installmentId = await systemCategory(userId, "installment");
+    const installment = await systemCategoryBySlug(fx.db, userId, "installment");
     await createTemplate(userId); // due this month — nothing generated yet
     const spy = insertCountingDb(fx.db);
     const spySummaries = createSummaryService(spy.db);
 
     const summary = await spySummaries.getSummary(userId, CURRENT);
-    const name = await categoryName(userId, installmentId);
 
     // the insert happened before the read, and exactly once — a second read
     // finds nothing missing (zero writes, decision 14's steady state)
     expect(spy.count()).toBe(1);
-    expect(await generatedExpenses(userId, CURRENT)).toHaveLength(1);
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toHaveLength(1);
 
     expect(summary.monthKey).toBe(CURRENT);
     expect("forecastToman" in summary).toBe(false);
     expect(summary.totalToman).toBe(1_500_000);
     expect(summary.byCategory).toEqual([
-      { categoryId: installmentId, name, totalToman: 1_500_000, count: 1 },
+      {
+        categoryId: installment.id,
+        name: installment.name,
+        totalToman: 1_500_000,
+        count: 1,
+      },
     ]);
 
     const steadyState = insertCountingDb(fx.db);
@@ -146,22 +123,26 @@ describe("summaryService.getSummary — current month: ensure before read (decis
 describe("summaryService.getSummary — past month: recorded only", () => {
   it("never ensures, never forecasts — a missed month stays empty", async () => {
     const userId = await fx.signUp();
-    const groceriesId = await systemCategory(userId, "groceries");
+    const groceries = await systemCategoryBySlug(fx.db, userId, "groceries");
     await createExpense(userId, {}, PREV); // recorded in PREV
     await createTemplate(userId, { dayOfMonth: 5 }); // due in PREV too
     const spy = insertCountingDb(fx.db);
     const spySummaries = createSummaryService(spy.db);
 
     const summary = await spySummaries.getSummary(userId, PREV);
-    const name = await categoryName(userId, groceriesId);
 
     expect(spy.count()).toBe(0); // ensure never even ran
-    expect(await generatedExpenses(userId, PREV)).toHaveLength(0);
+    expect(await generatedExpenses(fx.db, userId, PREV)).toHaveLength(0);
     expect("forecastToman" in summary).toBe(false);
     expect(summary.monthKey).toBe(PREV);
     expect(summary.totalToman).toBe(250_000);
     expect(summary.byCategory).toEqual([
-      { categoryId: groceriesId, name, totalToman: 250_000, count: 1 },
+      {
+        categoryId: groceries.id,
+        name: groceries.name,
+        totalToman: 250_000,
+        count: 1,
+      },
     ]);
   });
 });
@@ -169,8 +150,8 @@ describe("summaryService.getSummary — past month: recorded only", () => {
 describe("summaryService.getSummary — future month: composite (decision 15)", () => {
   it("adds the active due templates on top of the recorded expenses, additively", async () => {
     const userId = await fx.signUp();
-    const groceriesId = await systemCategory(userId, "groceries");
-    const billsId = await systemCategory(userId, "bills-internet");
+    const groceries = await systemCategoryBySlug(fx.db, userId, "groceries");
+    const bills = await systemCategoryBySlug(fx.db, userId, "bills-internet");
     await createExpense(userId, { amountToman: 200_000 }, NEXT);
     const custom = await categories.create(userId, { name: "هدیه" });
     await createExpense(
@@ -183,13 +164,13 @@ describe("summaryService.getSummary — future month: composite (decision 15)", 
     await createTemplate(userId, {
       title: "سبد ماهانه",
       amountToman: 1_000_000,
-      categoryId: groceriesId,
+      categoryId: groceries.id,
       dayOfMonth: 3,
     });
     await createTemplate(userId, {
       title: "قبض اینترنت",
       amountToman: 450_000,
-      categoryId: billsId,
+      categoryId: bills.id,
       dayOfMonth: 17,
     });
     // excluded from the forecast by the shared ticket-23 predicate:
@@ -215,14 +196,14 @@ describe("summaryService.getSummary — future month: composite (decision 15)", 
     // row's count stays the RECORDED count — forecasts are not expenses
     expect(summary.byCategory).toEqual([
       {
-        categoryId: groceriesId,
-        name: await categoryName(userId, groceriesId),
+        categoryId: groceries.id,
+        name: groceries.name,
         totalToman: 1_200_000,
         count: 1,
       },
       {
-        categoryId: billsId,
-        name: await categoryName(userId, billsId),
+        categoryId: bills.id,
+        name: bills.name,
         totalToman: 450_000,
         count: 0,
       },
@@ -248,7 +229,7 @@ describe("summaryService.getSummary — future month: composite (decision 15)", 
 
   it("an undated expense is a member of its entry month (decision 15)", async () => {
     const userId = await fx.signUp();
-    const groceriesId = await systemCategory(userId, "groceries");
+    const groceriesId = (await systemCategoryBySlug(fx.db, userId, "groceries")).id;
     await expensesService.create(
       userId,
       {
@@ -298,7 +279,7 @@ describe("expenseService.listByMonth — the second ensure call-site (decision 1
     await ledger.listByMonth(userId, PREV);
     await ledger.listByMonth(userId, NEXT);
     expect(spy.count()).toBe(0);
-    expect(await generatedExpenses(userId, CURRENT)).toHaveLength(0);
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toHaveLength(0);
 
     // current: generates before reading — the ledger already has the row
     const rows = await ledger.listByMonth(userId, CURRENT);
@@ -313,6 +294,6 @@ describe("expenseService.listByMonth — the second ensure call-site (decision 1
 
     await createExpense(userId); // a write — must not generate
 
-    expect(await generatedExpenses(userId, CURRENT)).toHaveLength(0);
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toHaveLength(0);
   });
 });

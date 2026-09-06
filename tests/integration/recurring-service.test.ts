@@ -1,18 +1,11 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
-import { and, eq, isNotNull } from "drizzle-orm";
-import { expenses, learnedKeys } from "@/db/schema";
-import {
-  addJalaliMonths,
-  currentJalaliMonthKey,
-  fromJalaliMonthKey,
-  jalaliMonthKey,
-} from "@/lib/jalali";
+import { eq } from "drizzle-orm";
+import { learnedKeys } from "@/db/schema";
 import {
   clampedDayOfMonth,
   jalaliMonthBounds,
   occurrenceISO,
 } from "@/lib/recurring";
-import { createCategoryService } from "@/lib/services/category-service";
 import { createExpenseService } from "@/lib/services/expense-service";
 import {
   createRecurringService,
@@ -20,6 +13,11 @@ import {
   type CreateRecurringTemplateInput,
 } from "@/lib/services/recurring-service";
 import { NotFoundError, ValidationError } from "@/lib/services/errors";
+import {
+  generatedExpenses,
+  relativeMonthKeys,
+  systemCategoryBySlug,
+} from "../helpers/fixtures";
 import { setupIntegrationDb } from "../helpers/integration";
 
 // Recurring service rules on a real temp libSQL file (ticket 23): lazy
@@ -29,7 +27,6 @@ import { setupIntegrationDb } from "../helpers/integration";
 // generation.
 
 const fx = await setupIntegrationDb("recurring-service");
-const categories = createCategoryService(fx.db);
 const recurring = createRecurringService(fx.db);
 const expensesService = createExpenseService(fx.db);
 
@@ -37,19 +34,9 @@ afterAll(async () => {
   await fx.close();
 });
 
-async function systemCategory(userId: string, slug: string): Promise<string> {
-  const category = (await categories.list(userId)).find((c) => c.slug === slug);
-  if (!category) throw new Error(`system category ${slug} missing`);
-  return category.id;
-}
-
 // The gates are relative to the real Tehran "now" — the service owns the
 // clock; the tests only derive past/current/future month keys from it.
-const CURRENT = currentJalaliMonthKey();
-const monthShift = (key: string, n: number) =>
-  jalaliMonthKey(addJalaliMonths(fromJalaliMonthKey(key), n));
-const PREV = monthShift(CURRENT, -1);
-const NEXT = monthShift(CURRENT, 1);
+const { CURRENT, PREV, NEXT } = relativeMonthKeys();
 
 async function createTemplate(
   userId: string,
@@ -58,25 +45,13 @@ async function createTemplate(
   return recurring.create(userId, {
     amountToman: 1_500_000,
     title: "قسط وام",
-    categoryId: await systemCategory(userId, "installment"),
+    categoryId: (await systemCategoryBySlug(fx.db, userId, "installment")).id,
     dayOfMonth: 10,
     startDate: "2025-01-01",
     endDate: null,
     ...over,
   });
 }
-
-const generatedExpenses = (userId: string, monthKey: string) =>
-  fx.db
-    .select()
-    .from(expenses)
-    .where(
-      and(
-        eq(expenses.userId, userId),
-        eq(expenses.monthKey, monthKey),
-        isNotNull(expenses.sourceRecurringId),
-      ),
-    );
 
 const learnedRows = (userId: string) =>
   fx.db.select().from(learnedKeys).where(eq(learnedKeys.userId, userId));
@@ -96,7 +71,7 @@ describe("recurringService.create — a template save teaches (decision 06)", ()
 
   it("rejects invalid inputs with typed errors", async () => {
     const userId = await fx.signUp();
-    const categoryId = await systemCategory(userId, "installment");
+    const categoryId = (await systemCategoryBySlug(fx.db, userId, "installment")).id;
     const base = {
       amountToman: 1_500_000,
       title: "قسط وام",
@@ -137,7 +112,7 @@ describe("recurringService.create — a template save teaches (decision 06)", ()
     await expect(
       recurring.create(userId, {
         ...base,
-        categoryId: await systemCategory(await fx.signUp(), "installment"),
+        categoryId: (await systemCategoryBySlug(fx.db, await fx.signUp(), "installment")).id,
       }),
     ).rejects.toThrow(NotFoundError);
   });
@@ -198,7 +173,7 @@ describe("recurringService.update — final window validated, learning fires", (
       recurring.update(userId, "abc", { title: "x" }),
     ).rejects.toThrow(ValidationError);
     await expect(
-      recurring.update(userId, template.id, { categoryId: await systemCategory(await fx.signUp(), "groceries") }),
+      recurring.update(userId, template.id, { categoryId: (await systemCategoryBySlug(fx.db, await fx.signUp(), "groceries")).id }),
     ).rejects.toThrow(NotFoundError);
   });
 });
@@ -208,7 +183,7 @@ describe("recurringService.remove/get/list", () => {
     const userId = await fx.signUp();
     const template = await createTemplate(userId);
     await ensureRecurringExpensesGenerated(fx.db, userId, CURRENT);
-    expect(await generatedExpenses(userId, CURRENT)).toHaveLength(1);
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toHaveLength(1);
 
     await recurring.remove(userId, template.id);
 
@@ -239,10 +214,10 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
     const { generated } = await ensureRecurringExpensesGenerated(fx.db, userId, CURRENT);
     expect(generated).toBe(1);
 
-    const [expense] = await generatedExpenses(userId, CURRENT);
+    const [expense] = await generatedExpenses(fx.db, userId, CURRENT);
     expect(expense!.title).toBe("قسط وام");
     expect(expense!.amountToman).toBe(1_500_000);
-    expect(expense!.categoryId).toBe(await systemCategory(userId, "installment"));
+    expect(expense!.categoryId).toBe((await systemCategoryBySlug(fx.db, userId, "installment")).id);
     expect(expense!.monthKey).toBe(CURRENT);
     expect(expense!.occurredAt).toBe(occurrenceISO(CURRENT, 15));
     expect(expense!.note).toBeNull();
@@ -265,7 +240,7 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
       ensureRecurringExpensesGenerated(fx.db, userId, CURRENT),
       ensureRecurringExpensesGenerated(fx.db, userId, CURRENT),
     ]);
-    const rows = await generatedExpenses(userId, CURRENT);
+    const rows = await generatedExpenses(fx.db, userId, CURRENT);
     expect(rows).toHaveLength(2);
     expect(new Set(rows.map((r) => r.sourceRecurringId))).toHaveLength(2);
   });
@@ -280,7 +255,7 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
 
     await ensureRecurringExpensesGenerated(fx.db, userId, CURRENT);
 
-    const [expense] = await generatedExpenses(userId, CURRENT);
+    const [expense] = await generatedExpenses(fx.db, userId, CURRENT);
     expect(expense!.monthKey).toBe(CURRENT);
     expect(expense!.occurredAt).toBe(occurrenceISO(CURRENT, 3));
   });
@@ -293,8 +268,8 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
     const future = await ensureRecurringExpensesGenerated(fx.db, userId, NEXT);
     expect(past.generated).toBe(0);
     expect(future.generated).toBe(0);
-    expect(await generatedExpenses(userId, PREV)).toHaveLength(0);
-    expect(await generatedExpenses(userId, NEXT)).toHaveLength(0);
+    expect(await generatedExpenses(fx.db, userId, PREV)).toHaveLength(0);
+    expect(await generatedExpenses(fx.db, userId, NEXT)).toHaveLength(0);
   });
 
   it("skips templates the predicate excludes: paused, ended, not yet started", async () => {
@@ -315,7 +290,7 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
 
     const { generated } = await ensureRecurringExpensesGenerated(fx.db, userId, CURRENT);
     expect(generated).toBe(0);
-    expect(await generatedExpenses(userId, CURRENT)).toHaveLength(0);
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toHaveLength(0);
   });
 
   it("an injected generation failure never breaks the read path (insert or select)", async () => {
@@ -351,7 +326,7 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
 describe("recurringService.preview — forecast rows (decision 15)", () => {
   it("lists active due templates for a FUTURE month with clamped, sorted days", async () => {
     const userId = await fx.signUp();
-    const installment = await systemCategory(userId, "installment");
+    const installmentId = (await systemCategoryBySlug(fx.db, userId, "installment")).id;
     await createTemplate(userId, { dayOfMonth: 10 });
     await createTemplate(userId, { dayOfMonth: 31, title: "اجاره", amountToman: 8_000_000 });
     // excluded from the forecast:
@@ -371,7 +346,7 @@ describe("recurringService.preview — forecast rows (decision 15)", () => {
     expect(rows.map((r) => r.title)).toEqual(["قسط وام", "اجاره"]);
     expect(rows[0]!.day).toBe(10);
     expect(rows[1]!.day).toBe(clampedDayOfMonth(31, NEXT));
-    expect(rows.every((r) => r.categoryId === installment)).toBe(true);
+    expect(rows.every((r) => r.categoryId === installmentId)).toBe(true);
     expect(rows.every((r) => r.templateId && r.amountToman > 0)).toBe(true);
   });
 

@@ -228,22 +228,33 @@ export function createRecurringService(db: DomainDb): RecurringService {
         return [];
       }
 
-      const rows = await db
-        .select()
-        .from(recurringTemplates)
-        .where(
-          and(
-            eq(recurringTemplates.userId, userId),
-            eq(recurringTemplates.active, true),
-          ),
-        );
+      const due = await listActiveDueTemplates(db, userId, monthKey);
 
-      return rows
-        .filter((template) => isTemplateDueInMonth(template, monthKey))
+      return due
         .map((template) => toForecastRow(template, monthKey))
         .sort((a, b) => a.day - b.day);
     },
   };
+}
+
+/** Active templates due in `monthKey` — the SELECT + predicate half shared
+ * by ensure (decision 14), preview (decision 15) and the summary composite
+ * (ticket 24). */
+export async function listActiveDueTemplates(
+  db: DomainDb,
+  userId: string,
+  monthKey: string,
+): Promise<RecurringTemplate[]> {
+  const active = await db
+    .select()
+    .from(recurringTemplates)
+    .where(
+      and(
+        eq(recurringTemplates.userId, userId),
+        eq(recurringTemplates.active, true),
+      ),
+    );
+  return active.filter((t) => isTemplateDueInMonth(t, monthKey));
 }
 
 /** Lazy-on-request generation (decision 14): the first read that reaches the
@@ -263,16 +274,7 @@ export async function ensureRecurringExpensesGenerated(
 
   let generated = 0;
   try {
-    const activeTemplates = await db
-      .select()
-      .from(recurringTemplates)
-      .where(
-        and(
-          eq(recurringTemplates.userId, userId),
-          eq(recurringTemplates.active, true),
-        ),
-      );
-    const due = activeTemplates.filter((t) => isTemplateDueInMonth(t, monthKey));
+    const due = await listActiveDueTemplates(db, userId, monthKey);
 
     const existing = await db
       .select({ sourceRecurringId: expenses.sourceRecurringId })
