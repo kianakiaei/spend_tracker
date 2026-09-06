@@ -156,7 +156,11 @@ export const learnedKeys = sqliteTable(
     userId: text("userId").notNull(),
     updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull(),
   },
-  // (userId, key) is the row's identity — one counter per user and key — so
-  // the ticket-19 index requirement is carried by the composite PK itself.
-  (t) => [primaryKey({ columns: [t.userId, t.key] })],
+  // One counter per (user, key, category): the engine (ticket 21) keeps a
+  // counter per key AND category — purity (best/total over the categories a
+  // key was learned for) and contradiction decay (×0.5 of the suggested
+  // category only) both need sibling rows under one key. Ticket 22 widened
+  // the ticket-19 PK from (userId, key); the (userId, key) prefix still
+  // serves as the classify lookup index.
+  (t) => [primaryKey({ columns: [t.userId, t.key, t.categoryId] })],
 );

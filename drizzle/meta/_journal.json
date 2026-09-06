@@ -15,6 +15,13 @@
       "when": 1788709710537,
       "tag": "0001_redundant_hulk",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1788718272434,
+      "tag": "0002_robust_husk",
+      "breakpoints": true
     }
   ]
 }
