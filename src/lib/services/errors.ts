@@ -22,6 +22,9 @@ export class NotFoundError extends DomainError {
 }
 
 export class ValidationError extends DomainError {
+  /** Zod issues (path/code/message) — the raw material for problem+json's
+   * `errors` array at the handler (ticket 12/25); null for ad-hoc domain
+   * validation that has no schema behind it. */
   readonly issues: unknown;
 
   constructor(message: string, issues?: unknown) {

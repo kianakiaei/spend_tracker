@@ -13,6 +13,7 @@ import {
 import { getOwnedCategory } from "./category-service";
 import { NotFoundError, ValidationError } from "./errors";
 import { learnOnSave } from "./learning";
+import { parseOrThrow } from "./parse";
 import type { DomainDb, Expense, ExpenseWithCategory } from "./types";
 
 // Expense service (ticket 22): create/update/delete are free — NO date
@@ -37,17 +38,6 @@ const updateExpenseInputSchema = z.object({
   categoryId: uuidv7Schema.optional(),
   occurredAt: dateOnlySchema.nullish(),
 });
-
-const idSchema = uuidv7Schema;
-const monthKeySchema = jalaliMonthKeySchema;
-
-function parse<T>(schema: z.ZodType<T>, data: unknown, label: string): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new ValidationError(`invalid ${label}`, z.prettifyError(result.error));
-  }
-  return result.data;
-}
 
 /** Jalali month of a date-only string — real-calendar validity included
  * (2026-02-30 is rejected here, not just 2026-13-40). */
@@ -103,7 +93,7 @@ export interface ExpenseService {
 
 export function createExpenseService(db: DomainDb): ExpenseService {
   async function getOwned(userId: string, id: string): Promise<Expense> {
-    parse(idSchema, id, "expense id");
+    parseOrThrow(uuidv7Schema, id, "expense id");
     const [expense] = await db
       .select()
       .from(expenses)
@@ -115,8 +105,8 @@ export function createExpenseService(db: DomainDb): ExpenseService {
 
   return {
     async create(userId, input, entryMonthKey) {
-      const data = parse(createExpenseInputSchema, input, "expense input");
-      parse(monthKeySchema, entryMonthKey, "entry month");
+      const data = parseOrThrow(createExpenseInputSchema, input, "expense input");
+      parseOrThrow(jalaliMonthKeySchema, entryMonthKey, "entry month");
       await getOwnedCategory(db, userId, data.categoryId);
 
       const occurredAt = data.occurredAt ?? null;
@@ -144,7 +134,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
     },
 
     async update(userId, id, input) {
-      const data = parse(updateExpenseInputSchema, input, "expense input");
+      const data = parseOrThrow(updateExpenseInputSchema, input, "expense input");
       if (Object.keys(data).length === 0) {
         throw new ValidationError("empty expense update");
       }
@@ -189,7 +179,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
     },
 
     async listByMonth(userId, monthKey) {
-      parse(monthKeySchema, monthKey, "month key");
+      parseOrThrow(jalaliMonthKeySchema, monthKey, "month key");
 
       const rows = await db
         .select({ expense: expenses, category: categories })

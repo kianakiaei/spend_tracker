@@ -10,6 +10,7 @@ import {
   SystemCategoryProtectedError,
   ValidationError,
 } from "./errors";
+import { parseOrThrow } from "./parse";
 import type { Category, DomainDb } from "./types";
 
 // Category service (ticket 22). Domain rules live here because libSQL ships
@@ -31,14 +32,6 @@ const updateCategoryInputSchema = z.object({
 });
 
 const idSchema = uuidv7Schema;
-
-function parse<T>(schema: z.ZodType<T>, data: unknown, label: string): T {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    throw new ValidationError(`invalid ${label}`, z.prettifyError(result.error));
-  }
-  return result.data;
-}
 
 export interface CreateCategoryInput {
   name: string;
@@ -78,7 +71,7 @@ export async function getOwnedCategory(
   userId: string,
   id: string,
 ): Promise<Category> {
-  parse(idSchema, id, "category id");
+  parseOrThrow(idSchema, id, "category id");
   const [category] = await db
     .select()
     .from(categories)
@@ -120,7 +113,7 @@ export function createCategoryService(db: DomainDb): CategoryService {
     },
 
     async create(userId, input) {
-      const data = parse(createCategoryInputSchema, input, "category input");
+      const data = parseOrThrow(createCategoryInputSchema, input, "category input");
       await assertNameFree(userId, data.name);
 
       // Custom categories stack after everything the user already has
@@ -150,7 +143,7 @@ export function createCategoryService(db: DomainDb): CategoryService {
     },
 
     async update(userId, id, input) {
-      const data = parse(updateCategoryInputSchema, input, "category input");
+      const data = parseOrThrow(updateCategoryInputSchema, input, "category input");
       const existing = await getOwned(userId, id);
 
       const set: {

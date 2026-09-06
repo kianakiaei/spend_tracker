@@ -4,6 +4,7 @@ import {
   createCategorizer,
   SEED_LEXICON,
   type Categorizer,
+  type UserCategoryRef,
 } from "@/lib/categorization";
 import type { DomainDb } from "./types";
 
@@ -15,8 +16,9 @@ import type { DomainDb } from "./types";
 
 export interface CategorizerState {
   categorizer: Categorizer;
-  /** The user's categories in display order. */
-  categories: Array<{ id: string; name: string; slug: string | null; order: number }>;
+  /** The user's categories in display order — the engine's ref plus the
+   * order used for fallback/learned tie-breaks. */
+  categories: Array<UserCategoryRef & { order: number }>;
   /** Raw learnedKeys rows, kept for the learning upserts (learnOnSave). */
   learnedRows: Array<{ key: string; categoryId: string; count: number }>;
 }

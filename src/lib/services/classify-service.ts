@@ -1,8 +1,8 @@
 import { and, asc, count, eq } from "drizzle-orm";
 import { categories, expenses } from "@/db/schema";
 import { titleSchema } from "@/lib/schemas";
-import { ValidationError } from "./errors";
 import { loadCategorizerState } from "./categorizer-state";
+import { parseOrThrow } from "./parse";
 import type { Category, DomainDb } from "./types";
 
 // The shared classify service (ticket 22): the pure ticket-21 engine over the
@@ -31,16 +31,10 @@ export interface ClassifyService {
 export function createClassifyService(db: DomainDb): ClassifyService {
   return {
     async classify(userId, title) {
-      const parsed = titleSchema.safeParse(title);
-      if (!parsed.success) {
-        throw new ValidationError(
-          "invalid classify input",
-          parsed.error.issues,
-        );
-      }
+      const parsedTitle = parseOrThrow(titleSchema, title, "classify input");
 
       const { categorizer } = await loadCategorizerState(db, userId);
-      const suggestion = categorizer.classify(parsed.data);
+      const suggestion = categorizer.classify(parsedTitle);
       if (suggestion) {
         return {
           categoryId: suggestion.categoryId,
@@ -92,8 +86,12 @@ async function mostFrequentCategory(db: DomainDb, userId: string): Promise<Categ
     .where(and(eq(categories.userId, userId), eq(categories.kind, "system")))
     .orderBy(asc(categories.order))
     .limit(1);
+  // A user without any category row is a broken invariant — the seed hook
+  // guarantees the six system categories at registration. That is a server
+  // fault, not a 400: a non-DomainError stays unmapped at the handler (500,
+  // ticket 12).
   if (!firstSystem) {
-    throw new ValidationError("user has no categories to fall back to");
+    throw new Error(`user ${userId} has no categories to fall back to`);
   }
   return firstSystem;
 }
