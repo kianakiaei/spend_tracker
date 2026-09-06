@@ -1,4 +1,11 @@
-import { parseISO } from "date-fns-jalali";
+import {
+  addMonths,
+  endOfMonth,
+  format,
+  getDaysInMonth,
+  parseISO,
+  startOfMonth,
+} from "date-fns-jalali";
 import { dateOnlySchema } from "@/lib/schemas";
 
 // The one module in the app that knows about calendars (ticket 12). Dates
@@ -27,4 +34,46 @@ export function fromISODate(iso: string): Date {
     throw new RangeError(`not a real calendar date: ${JSON.stringify(iso)}`);
   }
   return d;
+}
+
+/** Jalali month key '1405-06' — the grouping unit for all monthly sums;
+ * zero-padded and lexically sortable. */
+export function jalaliMonthKey(d: Date): string {
+  return format(d, "yyyy-MM");
+}
+
+/** First moment of the Jalali month containing d. */
+export function startOfJalaliMonth(d: Date): Date {
+  return startOfMonth(d);
+}
+
+/** Last moment of the Jalali month containing d (23:59:59.999); prefer an
+ * exclusive upper bound — startOfJalaliMonth(addJalaliMonths(d, 1)) — for
+ * range queries. */
+export function endOfJalaliMonth(d: Date): Date {
+  return endOfMonth(d);
+}
+
+/** Days in the Jalali month containing d: 31 / 30 / 29-30 (leap Esfand). */
+export function jalaliDaysInMonth(d: Date): number {
+  return getDaysInMonth(d);
+}
+
+/** n months away in the Jalali calendar; a day beyond the target month's
+ * length clamps to that month's last day (30th of Esfand → 29th). */
+export function addJalaliMonths(d: Date, n: number): Date {
+  return addMonths(d, n);
+}
+
+const tehranISODate = new Intl.DateTimeFormat("en-CA", {
+  timeZone: "Asia/Tehran",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Current Jalali month key on the Tehran calendar day — the server runs on
+ * UTC, but the monthly boundary is Tehran midnight (ticket 14). */
+export function currentJalaliMonthKey(now: Date = new Date()): string {
+  return jalaliMonthKey(fromISODate(tehranISODate.format(now)));
 }
