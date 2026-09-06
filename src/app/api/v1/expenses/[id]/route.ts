@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { updateExpenseRequestSchema } from "@/lib/schemas";
-import { emptyResponse, jsonResponse, withRoute } from "@/lib/api/route";
+import { emptyResponse, jsonResponse, withRoute, type IdCtx } from "@/lib/api/route";
 import { parseJson } from "@/lib/api/parse";
 import { requireUserId } from "@/lib/api/session";
 import { createExpenseService } from "@/lib/services";
@@ -8,8 +8,6 @@ import { createExpenseService } from "@/lib/services";
 // /api/v1/expenses/[id] (ticket 12): read one expense with its category,
 // patch its fields, delete it. Unknown or foreign ids are the service's 404;
 // deleting is free.
-
-type IdCtx = { params: Promise<{ id: string }> };
 
 const expenseService = createExpenseService(db);
 

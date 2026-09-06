@@ -14,6 +14,10 @@ export function emptyResponse(): Response {
   return new Response(null, { status: 204 });
 }
 
+/** The context of every /api/v1/[id] route — Next 16 hands `params` as a
+ * promise. */
+export type IdCtx = { params: Promise<{ id: string }> };
+
 export function withRoute(
   handler: (request: Request) => Promise<Response>,
 ): (request: Request) => Promise<Response>;

@@ -1,5 +1,6 @@
 import type { ZodType } from "zod";
 import { z } from "zod";
+import type { ProblemBody, ProblemErrorEntry } from "./problem-body";
 import {
   categoryResponseSchema,
   classifyResponseSchema,
@@ -26,19 +27,7 @@ import {
 // a mobile build calls createV1Client with its base URL and a Bearer header
 // supplier (ticket 08) — OpenAPI is deliberately not built yet (ticket 10).
 
-export interface ProblemErrorEntry {
-  path: string;
-  code: string;
-  message: string;
-}
-
-export interface ProblemBody {
-  type: string;
-  title: string;
-  status: number;
-  detail?: string;
-  errors?: ProblemErrorEntry[];
-}
+export type { ProblemBody, ProblemErrorEntry } from "./problem-body";
 
 /** Thrown for every non-2xx response; `.problem` is the parsed problem+json
  * body, `.errors` the validation entries. Network faults surface as the
@@ -81,6 +70,12 @@ export interface V1ClientOptions {
   fetchFn?: typeof fetch;
 }
 
+/** What one call carries besides method+path. */
+interface CallInit {
+  body?: unknown;
+  query?: Record<string, string>;
+}
+
 export function createV1Client(options: V1ClientOptions = {}) {
   const baseUrl = options.baseUrl ?? "/api/v1";
   const doFetch = options.fetchFn ?? fetch;
@@ -88,7 +83,7 @@ export function createV1Client(options: V1ClientOptions = {}) {
   async function request(
     method: string,
     path: string,
-    init: { body?: unknown; query?: Record<string, string> },
+    init: CallInit,
   ): Promise<Response> {
     const extraHeaders =
       options.headers !== undefined ? await options.headers() : {};
@@ -124,11 +119,11 @@ export function createV1Client(options: V1ClientOptions = {}) {
   }
 
   /** 2xx whose body is validated with a shared response schema. */
-  async function data<Out>(
+  async function readValidated<Out>(
     method: string,
     path: string,
     out: ZodType<Out>,
-    init: { body?: unknown; query?: Record<string, string> } = {},
+    init: CallInit = {},
   ): Promise<Out> {
     const response = await request(method, path, init);
     if (!response.ok) throw await errorFrom(response);
@@ -136,10 +131,10 @@ export function createV1Client(options: V1ClientOptions = {}) {
   }
 
   /** 2xx with no body to read (204 deletes). */
-  async function send(
+  async function expectNoBody(
     method: string,
     path: string,
-    init: { body?: unknown } = {},
+    init: CallInit = {},
   ): Promise<void> {
     const response = await request(method, path, init);
     if (!response.ok) throw await errorFrom(response);
@@ -150,31 +145,31 @@ export function createV1Client(options: V1ClientOptions = {}) {
   return {
     expenses: {
       create: (input: CreateExpenseRequest) =>
-        data("POST", "/expenses", expenseResponseSchema, { body: input }),
+        readValidated("POST", "/expenses", expenseResponseSchema, { body: input }),
       listByMonth: (month: string) =>
-        data("GET", "/expenses", z.array(expenseResponseSchema), {
+        readValidated("GET", "/expenses", z.array(expenseResponseSchema), {
           query: { month },
         }),
       get: (id: string) =>
-        data("GET", `/expenses${idPath(id)}`, expenseResponseSchema),
+        readValidated("GET", `/expenses${idPath(id)}`, expenseResponseSchema),
       update: (id: string, patch: UpdateExpenseRequest) =>
-        data("PATCH", `/expenses${idPath(id)}`, expenseResponseSchema, {
+        readValidated("PATCH", `/expenses${idPath(id)}`, expenseResponseSchema, {
           body: patch,
         }),
-      remove: (id: string) => send("DELETE", `/expenses${idPath(id)}`),
+      remove: (id: string) => expectNoBody("DELETE", `/expenses${idPath(id)}`),
     },
     categories: {
       list: () =>
-        data("GET", "/categories", z.array(categoryResponseSchema)),
+        readValidated("GET", "/categories", z.array(categoryResponseSchema)),
       create: (input: CreateCategoryRequest) =>
-        data("POST", "/categories", categoryResponseSchema, { body: input }),
+        readValidated("POST", "/categories", categoryResponseSchema, { body: input }),
       update: (id: string, patch: UpdateCategoryRequest) =>
-        data("PATCH", `/categories${idPath(id)}`, categoryResponseSchema, {
+        readValidated("PATCH", `/categories${idPath(id)}`, categoryResponseSchema, {
           body: patch,
         }),
-      remove: (id: string) => send("DELETE", `/categories${idPath(id)}`),
+      remove: (id: string) => expectNoBody("DELETE", `/categories${idPath(id)}`),
       moveExpenses: (id: string, input: MoveExpensesRequest) =>
-        data(
+        readValidated(
           "POST",
           `/categories${idPath(id)}/move-expenses`,
           moveExpensesResponseSchema,
@@ -183,22 +178,22 @@ export function createV1Client(options: V1ClientOptions = {}) {
     },
     recurringTemplates: {
       list: () =>
-        data("GET", "/recurring-templates", z.array(recurringTemplateResponseSchema)),
+        readValidated("GET", "/recurring-templates", z.array(recurringTemplateResponseSchema)),
       create: (input: CreateTemplateRequest) =>
-        data("POST", "/recurring-templates", recurringTemplateResponseSchema, {
+        readValidated("POST", "/recurring-templates", recurringTemplateResponseSchema, {
           body: input,
         }),
       update: (id: string, patch: UpdateTemplateRequest) =>
-        data(
+        readValidated(
           "PATCH",
           `/recurring-templates${idPath(id)}`,
           recurringTemplateResponseSchema,
           { body: patch },
         ),
       remove: (id: string) =>
-        send("DELETE", `/recurring-templates${idPath(id)}`),
+        expectNoBody("DELETE", `/recurring-templates${idPath(id)}`),
       preview: (month: string) =>
-        data(
+        readValidated(
           "GET",
           "/recurring-templates/preview",
           z.array(forecastRowResponseSchema),
@@ -207,12 +202,12 @@ export function createV1Client(options: V1ClientOptions = {}) {
     },
     summaries: {
       getByMonth: (month: string) =>
-        data("GET", "/summaries", monthSummaryResponseSchema, {
+        readValidated("GET", "/summaries", monthSummaryResponseSchema, {
           query: { month },
         }),
     },
     classify: (input: ClassifyRequest) =>
-      data("POST", "/classify", classifyResponseSchema, { body: input }),
+      readValidated("POST", "/classify", classifyResponseSchema, { body: input }),
   };
 }
 

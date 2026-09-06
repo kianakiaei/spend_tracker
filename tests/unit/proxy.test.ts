@@ -48,6 +48,9 @@ describe("proxy matcher — the deliberate exceptions", () => {
       "/_next/static/chunk.js",
       "/_next/image?q=80",
       "/favicon.ico",
+      "/robots.txt",
+      "/sitemap.xml",
+      "/manifest.json",
       "/logo.svg",
       "/fonts/Vazirmatn.woff2",
     ];

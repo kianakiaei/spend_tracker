@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { updateCategoryRequestSchema } from "@/lib/schemas";
-import { emptyResponse, jsonResponse, withRoute } from "@/lib/api/route";
+import { emptyResponse, jsonResponse, withRoute, type IdCtx } from "@/lib/api/route";
 import { parseJson } from "@/lib/api/parse";
 import { requireUserId } from "@/lib/api/session";
 import { createCategoryService } from "@/lib/services";
@@ -9,8 +9,6 @@ import { createCategoryService } from "@/lib/services";
 // categories); DELETE refuses the three domain conflicts with 409 — a
 // system category, one that still has expenses, or one a recurring
 // template points at.
-
-type IdCtx = { params: Promise<{ id: string }> };
 
 const categoryService = createCategoryService(db);
 

@@ -1,24 +1,14 @@
 import { DomainError, ValidationError } from "@/lib/services/errors";
+import type { ProblemBody, ProblemErrorEntry } from "./problem-body";
 
 // problem+json (RFC 9457) — the ONE error shape of the v1 API (ticket 25).
 // `type` identifies the problem (a relative URI reference, one per code),
 // `title` is its stable human summary, `status` mirrors the HTTP status,
 // `detail` is a safe human explanation, and validation failures add the
 // `errors` extension member (path/code/message; ticket 12's contract).
+// The wire shape itself lives in ./problem-body (shared with the client).
 
-export interface ProblemErrorEntry {
-  path: string;
-  code: string;
-  message: string;
-}
-
-export interface ProblemBody {
-  type: string;
-  title: string;
-  status: number;
-  detail?: string;
-  errors?: ProblemErrorEntry[];
-}
+export type { ProblemBody, ProblemErrorEntry } from "./problem-body";
 
 /** The registry of the ticket-12 statuses: 400 invalid field, 401 no
  * session, 404 unknown id, 409 the three category conflicts, 500 without an
@@ -89,8 +79,8 @@ export function problemResponse(body: ProblemBody): Response {
 }
 
 /** Zod issues (or the service layer's unknown-shaped `issues`) → the
- * problem+json `errors` member. Issue paths join with `.`; an empty path is
- * the form-level entry. */
+ * problem+json `errors` member. Issue paths join with `.` (a string path is
+ * taken as-is); an empty path is the form-level entry. */
 export function problemErrorsFromIssues(
   issues: unknown,
 ): ProblemErrorEntry[] {
@@ -99,7 +89,9 @@ export function problemErrorsFromIssues(
     const record = issue as { path?: unknown; code?: unknown; message?: unknown };
     const path = Array.isArray(record.path)
       ? record.path.map(String).join(".")
-      : "";
+      : typeof record.path === "string"
+        ? record.path
+        : "";
     return {
       path,
       code: typeof record.code === "string" ? record.code : "invalid",

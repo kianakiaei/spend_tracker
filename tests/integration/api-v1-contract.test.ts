@@ -25,6 +25,14 @@ const categoryIdRoute = await import("@/app/api/v1/categories/[id]/route");
 const moveExpensesRoute = await import(
   "@/app/api/v1/categories/[id]/move-expenses/route"
 );
+const templatesRoute = await import("@/app/api/v1/recurring-templates/route");
+const templateIdRoute = await import(
+  "@/app/api/v1/recurring-templates/[id]/route"
+);
+const previewRoute = await import(
+  "@/app/api/v1/recurring-templates/preview/route"
+);
+const summariesRoute = await import("@/app/api/v1/summaries/route");
 const classifyRoute = await import("@/app/api/v1/classify/route");
 
 const { systemCategoryBySlug, relativeMonthKeys } = await import(
@@ -157,6 +165,23 @@ describe("the session gate — 401 problem+json without credentials", () => {
           v1Request("/categories/x/move-expenses", { method: "POST" }),
           idCtx("x"),
         ),
+      () =>
+        templatesRoute.GET(v1Request("/recurring-templates")),
+      () =>
+        templatesRoute.POST(v1Request("/recurring-templates", { method: "POST" })),
+      () =>
+        templateIdRoute.PATCH(
+          v1Request("/recurring-templates/x", { method: "PATCH" }),
+          idCtx("x"),
+        ),
+      () =>
+        templateIdRoute.DELETE(
+          v1Request("/recurring-templates/x", { method: "DELETE" }),
+          idCtx("x"),
+        ),
+      () =>
+        previewRoute.GET(v1Request("/recurring-templates/preview?month=1405-07")),
+      () => summariesRoute.GET(v1Request("/summaries?month=1405-06")),
       () => classifyRoute.POST(v1Request("/classify", { method: "POST" })),
     ];
 
