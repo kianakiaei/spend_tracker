@@ -1,0 +1,540 @@
+<!doctype html>
+<!--
+  پروتوتایپ UI نسخهٔ ۲ — تیکت ۰۷ (جهت‌گیری بصری) — دورانداختنی.
+  حاصل بازخورد کاربر روی نسخهٔ ۱: گونهٔ C حذف؛ تلفیق «کاشی‌های B» با «دفترِ A»؛
+  زمینهٔ بادمجانی/بنفش کنار گذاشته شد — روشن، مینیمال، یک اکسنت.
+  طرح: کاشی‌های متناسب با سهم هر دسته (تینتِ روشن) بالای صفحه، زیرشان لیست دفتریِ
+       خرج‌های ماه با خط‌کشی؛ دریل‌داون تمام‌صفحهٔ روشن با کلیک روی کاشی؛
+       فرم ثبت = شیت پایینی؛ مدیریت دسته‌ها و الگوها = صفحهٔ کامل.
+  داده‌ها نمونه‌اند (شهریور ۱۴۰۵)؛ ⟲ ریست و ⓘ وضعیت، گوشهٔ پایین.
+  پرش مستقیم به جریان‌ها: #open=add | tpl | cats | tpls
+-->
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پروتوتایپ UI نسخهٔ ۲ — دفتر هزینهٔ ماهانه (تیکت ۰۷)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet">
+<style>
+/* ---------- پایه ---------- */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Vazirmatn,Tahoma,'Segoe UI',sans-serif;background:#EDECE7;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid #1A7A5C;outline-offset:2px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums}
+#app{min-height:100dvh}
+.variant{min-height:100dvh;padding-bottom:130px;position:relative}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- برچسب و ابزارهای پروتوتایپ (جزو طرح نیستند) ---------- */
+#prototag{position:fixed;top:12px;inset-inline-start:12px;z-index:95;font-size:11px;color:#5B6157;background:rgba(255,255,255,.92);border:1px solid #DEDCD3;border-radius:999px;padding:3px 11px;pointer-events:none}
+#tools{position:fixed;bottom:14px;inset-inline-start:14px;z-index:90;display:flex;align-items:center;gap:4px;background:#1F2421;color:#F4F3EE;border-radius:999px;padding:6px 10px;box-shadow:0 10px 26px rgba(31,36,33,.3)}
+#tools button{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:15px;line-height:1}
+#tools button:hover{background:rgba(255,255,255,.14)}
+#dump{position:fixed;inset:0;z-index:96;background:rgba(24,27,25,.93);color:#D9E6DE;padding:26px;overflow:auto;direction:ltr;text-align:left}
+#dump pre{font-family:Consolas,monospace;font-size:12.5px;white-space:pre-wrap}
+#dump .dclose{position:fixed;top:14px;inset-inline-end:14px;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:6px 16px;font-size:13px}
+#toast{position:fixed;top:16px;inset-inline-start:50%;transform:translateX(50%);z-index:99;background:#1F2421;color:#fff;border-radius:999px;padding:9px 20px;font-size:13.5px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:86vw;text-align:center;box-shadow:0 8px 24px rgba(31,36,33,.35)}
+#toast.show{opacity:1}
+
+/* =========================================================
+   صفحه — کاغذ روشن، جوهر تیره، یک اکسنت سبزِ یشمی
+   ========================================================= */
+.variant{--paper:#FAFAF7;--panel:#FFFFFF;--ink:#20241F;--ink2:#82887E;--rule:#E7E5DD;--accent:#1A7A5C;--accent-soft:#E7F1EB;--danger:#B3402E;background:var(--paper);color:var(--ink)}
+.wrap{max-width:680px;margin-inline:auto;padding:48px 24px 40px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.monthnav{display:flex;align-items:center;gap:2px}
+.monthnav button{width:34px;height:34px;border-radius:50%}
+.monthnav button:hover{background:var(--accent-soft)}
+.mname{font-size:15px;font-weight:600;min-width:112px;text-align:center}
+.links{display:flex;gap:16px;font-size:13px;color:var(--ink2)}
+.links button:hover{color:var(--accent)}
+.total{font-weight:800;font-size:48px;line-height:1.45;margin-top:12px;letter-spacing:-.01em}
+.total small{font-size:14.5px;font-weight:500;color:var(--ink2);margin-inline-start:8px}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.empty{padding:64px 12px;text-align:center;color:var(--ink2);font-size:14.5px;line-height:2}
+
+/* ---------- کاشی‌های سهم (تینت روشن) ---------- */
+.mosaic{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;grid-auto-flow:dense;margin-top:22px}
+.tile{border-radius:16px;padding:14px 15px;text-align:start;display:flex;flex-direction:column;justify-content:space-between;gap:10px;min-height:88px;border:1px solid var(--rule)}
+.tile:hover{border-color:#D4D1C6}
+.tile .tn{font-weight:600;font-size:13px;color:var(--ink);display:flex;align-items:center;gap:7px}
+.tile .ta{font-size:16.5px;font-weight:700;color:var(--ink)}
+.tile .tp{font-size:11px;color:var(--ink2)}
+.s2{grid-column:span 2}.s3{grid-column:span 3}.s4{grid-column:span 4}
+.tall{grid-row:span 2;min-height:186px}
+.tall .ta{font-size:21px}
+
+/* ---------- دفترِ خرج‌های ماه ---------- */
+.ledger{border-top:2px solid var(--ink);margin-top:26px}
+.lrow{display:flex;align-items:center;gap:10px;width:100%;text-align:start;padding:11px 2px;border-bottom:1px solid var(--rule)}
+.lrow:hover{background:var(--accent-soft)}
+.lday{font-size:11.5px;color:var(--ink2);min-width:66px;flex:none}
+.ltitle{font-weight:600;font-size:13.5px;flex:1;min-width:0;display:flex;align-items:center;gap:8px}
+.ltag{font-size:10px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:1px 8px;flex:none}
+.lamt{font-size:13.5px;font-weight:700;white-space:nowrap}
+.lmore{font-size:12.5px;color:var(--ink2);padding:11px 2px;display:block;width:100%;text-align:start}
+.lmore:hover{color:var(--accent)}
+
+/* ---------- دکمه‌ها و فرم‌ها ---------- */
+.fab{position:fixed;bottom:24px;inset-inline-end:24px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;font-size:27px;font-weight:300;box-shadow:0 12px 26px rgba(26,122,92,.35);display:grid;place-items:center;z-index:30}
+.scrim{position:fixed;inset:0;background:rgba(32,36,31,.32);z-index:40}
+.sheet{position:fixed;bottom:0;inset-inline:0;z-index:41;background:var(--panel);border-radius:20px 20px 0 0;padding:20px 24px 28px;max-width:680px;margin-inline:auto;max-height:84dvh;overflow:auto;box-shadow:0 -14px 44px rgba(32,36,31,.2)}
+.otitle{font-size:17px;font-weight:700;margin-bottom:6px}
+.field{border-bottom:1px solid var(--rule);padding:13px 2px}
+.field label{display:block;font-size:12px;color:var(--ink2);margin-bottom:7px}
+.field input[type=text]{width:100%;border:0;background:none;font-size:16px}
+.field input[type=text]:focus{outline:none}
+.amt-hint{font-size:12px;color:var(--ink2);margin-top:5px}
+.datestep{display:flex;align-items:center;gap:10px;font-size:14.5px}
+.datestep button{width:30px;height:30px;border-radius:50%;border:1px solid var(--rule);display:grid;place-items:center}
+.datestep button:hover{border-color:var(--accent);color:var(--accent)}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--rule);border-radius:999px;padding:6px 13px;font-size:13.5px;background:var(--paper)}
+.chip .badge{font-size:10px;background:var(--accent-soft);color:var(--accent);padding:1.5px 8px;border-radius:999px}
+.chg{font-size:12.5px;color:var(--accent);margin-inline-start:10px}
+.chg:hover{text-decoration:underline}
+.catopts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.catopts .opt{border:1px solid var(--rule);border-radius:999px;padding:5.5px 12px;font-size:13px;display:inline-flex;gap:7px;align-items:center;background:var(--panel)}
+.catopts .opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.tplnote{font-size:12px;color:var(--ink2);background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin-top:12px;line-height:1.9}
+.formactions{display:flex;gap:10px;align-items:center;margin-top:20px}
+.btn{border-radius:999px;padding:9.5px 24px;font-size:14px;font-weight:600}
+.btn.pri{background:var(--accent);color:#fff}
+.btn.pri:hover{filter:brightness(1.08)}
+.btn.ghost{border:1px solid var(--rule);color:var(--ink2)}
+.btn.dang{color:var(--danger);border:1px solid currentColor;margin-inline-start:auto}
+
+/* ---------- دریل‌داون تمام‌صفحه ---------- */
+.full{position:fixed;inset:0;z-index:40;background:var(--paper);overflow:auto;padding:44px 24px 130px}
+.fwrap{max-width:680px;margin-inline:auto}
+.dhead{display:flex;align-items:center;gap:12px}
+.dback{width:38px;height:38px;border-radius:50%;border:1px solid var(--rule);background:var(--panel);display:grid;place-items:center;font-size:16px}
+.dback:hover{border-color:var(--accent);color:var(--accent)}
+.dtitle{font-size:18px;font-weight:700;display:flex;align-items:center;gap:9px}
+.dtotal{font-size:27px;font-weight:800;margin:18px 0 2px}
+.dsub{font-size:12.5px;color:var(--ink2)}
+.eadd{margin-top:16px;width:100%;border:1.5px dashed var(--rule);border-radius:14px;padding:13px;font-size:13.5px;color:var(--ink2);text-align:center}
+.eadd:hover{color:var(--accent);border-color:var(--accent)}
+
+/* ---------- مدیریت دسته‌ها و الگوها ---------- */
+.ptitle{font-size:19px;font-weight:700}
+.crow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 2px}
+.kindtag{font-size:10px;color:var(--ink2);border:1px solid var(--rule);border-radius:999px;padding:1px 8px}
+.cacts{display:flex;align-items:center;gap:10px}
+.cnt{font-size:12px;color:var(--ink2)}
+.mini{font-size:12.5px;border:1px solid var(--rule);border-radius:999px;padding:5px 12px;background:var(--panel)}
+.mini:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.mini:disabled{opacity:.42;cursor:not-allowed;text-decoration:line-through}
+.chint{font-size:11.5px;color:var(--ink2);padding:0 2px 12px;margin-top:-6px}
+.trrow{display:flex;gap:8px;align-items:center;padding:0 2px 14px;flex-wrap:wrap}
+.trrow select{border:1px solid var(--rule);border-radius:9px;padding:7px 10px;background:var(--panel);font-size:13px}
+.addcat{margin-top:26px;border:1px dashed var(--rule);border-radius:14px;padding:16px}
+.addcat h3{font-size:13.5px;font-weight:600;color:var(--ink2);margin-bottom:10px}
+.ncrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ncrow input[type=text]{border:1px solid var(--rule);border-radius:9px;padding:9px 12px;background:var(--panel);min-width:180px}
+.swatches{display:flex;gap:6px}
+.sw{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.sw input{appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid #fff;cursor:pointer}
+.sw input:checked{outline:2px solid rgba(255,255,255,.9);outline-offset:-4px}
+.trow{padding:14px 2px;border-bottom:1px solid var(--rule)}
+.trow .ttop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.trow .tt{font-weight:600;font-size:15px}
+.trow .tmeta{font-size:12.5px;color:var(--ink2);margin-top:3px}
+.tchip{font-size:10.5px;border-radius:999px;padding:2px 9px}
+.tchip.on{background:var(--accent-soft);color:var(--accent)}
+.tchip.off{background:#EFEDE6;color:var(--ink2)}
+.tacts{display:flex;gap:8px}
+.tgen{font-size:12.5px;color:var(--accent);margin-top:8px;display:inline-block}
+.tgen:hover{text-decoration:underline}
+.note{font-size:12px;color:var(--ink2);margin-top:14px;line-height:2}
+</style>
+</head>
+<body>
+<div id="prototag">پروتوتایپ دورانداختنی — تیکت ۰۷ (نسخهٔ ۲)</div>
+<div id="app"></div>
+<div id="dump" hidden><button class="dclose" data-dump-close>بستن</button><pre id="dump-pre"></pre></div>
+<div id="tools">
+  <button data-sw="reset" title="بازگرداندن داده‌های نمونه">⟲</button>
+  <button data-sw="dump" title="نمایش وضعیت داده">ⓘ</button>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- دادهٔ نمونه (شهریور ۱۴۰۵؛ امروز = ۱۵ شهریور) ---------- */
+var JMONTHS=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+var CURRENT='1405-06', TODAY_DAY=15;
+/* [id، نام، نوع، رنگ نقطه، تینتِ کاشی] */
+var CATS=[
+ ['khoraki','خوراکی','system','#4F7F4A','#E3EED9'],
+ ['cafe','کافه-رستوران','system','#B4693C','#F5E7D8'],
+ ['transport','حمل‌ونقل','system','#3F6EA8','#E0EAF4'],
+ ['beauty','زیبایی و درمان','system','#A85F86','#F6E3EC'],
+ ['qest','قسط','system','#6E6F5A','#EAE9DE'],
+ ['bill','قبض و اینترنت','system','#34857C','#DCEDEA'],
+ ['clothes','پوشاک','custom','#8F8040','#F1ECDA']
+];
+/* [عنوان، مبلغ، دسته، روز، الگوی مبدأ؟] */
+var EXP=[
+ ['خرید هفتگی سوپرمارکت',1240000,'khoraki',1],
+ ['اسنپ تا خانه',95000,'transport',1],
+ ['نان بربری',60000,'khoraki',2],
+ ['قهوه با دوستان',240000,'cafe',3],
+ ['میوه و سبزیجات',480000,'khoraki',4],
+ ['بنزین',450000,'transport',5],
+ ['قسط وام مسکن',2850000,'qest',5,'t1'],
+ ['قسط وام خودرو',1420000,'qest',5,'t2'],
+ ['نان و شیر',125000,'khoraki',7],
+ ['آرایشگاه',350000,'beauty',8],
+ ['اسنپ',80000,'transport',8],
+ ['قبض برق',312000,'bill',9],
+ ['سوپرمارکت محله',310000,'khoraki',9],
+ ['کافه لاته',180000,'cafe',10],
+ ['تاکسی',60000,'transport',11],
+ ['نان سنگک',75000,'khoraki',12],
+ ['داروخانه',218000,'beauty',12],
+ ['اینترنت خانه',450000,'bill',12,'t3'],
+ ['پیتزا سفارش آنلاین',640000,'cafe',13],
+ ['کفش',1450000,'clothes',13],
+ ['خواروبار هفتگی',980000,'khoraki',14],
+ ['مترو کارت',150000,'transport',15]
+];
+var TPL=[
+ ['t1','قسط وام مسکن',2850000,'qest',5,true],
+ ['t2','قسط وام خودرو',1420000,'qest',5,true],
+ ['t3','اینترنت خانه',450000,'bill',12,true],
+ ['t4','باشگاه بدنسازی',900000,'beauty',20,false]
+];
+/* نمونهٔ کوچکی از واژه‌نامهٔ سیستمی (لیست کامل: تیکت ۱۳) */
+var LEX_SEED={
+ 'نان':'khoraki','سوپرمارکت':'khoraki','میوه':'khoraki','شیر':'khoraki','خواروبار':'khoraki',
+ 'قهوه':'cafe','کافه':'cafe','ناهار':'cafe','رستوران':'cafe','پیتزا':'cafe','لاته':'cafe',
+ 'اسنپ':'transport','تاکسی':'transport','بنزین':'transport','مترو':'transport',
+ 'آرایشگاه':'beauty','داروخانه':'beauty','دارو':'beauty',
+ 'قسط':'qest','وام':'qest',
+ 'قبض':'bill','برق':'bill','اینترنت':'bill'
+};
+var STOP={'به':1,'از':1,'با':1,'و':1,'در':1,'تا':1,'برای':1,'روی':1,'که':1,'را':1,'این':1};
+var SWATCHES=['#4F7F4A','#B4693C','#3F6EA8','#A85F86','#6E6F5A','#34857C','#8F8040','#A34A5E'];
+
+function seedStore(){
+ return {
+  month:CURRENT, seq:100,
+  cats:CATS.map(function(c){return {id:c[0],name:c[1],kind:c[2],hue:c[3],tint:c[4]}}),
+  expenses:EXP.map(function(e,i){return {id:'e'+(i+1),title:e[0],amount:e[1],catId:e[2],day:e[3],tid:e[4]||null}}),
+  templates:TPL.map(function(t){return {id:t[0],title:t[1],amount:t[2],catId:t[3],day:t[4],active:t[5]}}),
+  lexicon:Object.assign({},LEX_SEED)
+ };
+}
+var store=seedStore();
+var ui={screen:'dash',drill:null,transferFor:null,catOptsOpen:false,overlay:null,form:null,tplForm:null};
+
+/* ---------- کمک‌ها ---------- */
+var FA=new Intl.NumberFormat('fa-IR');
+var FAY=new Intl.NumberFormat('fa-IR',{useGrouping:false});
+var FAP=new Intl.NumberFormat('fa-IR',{style:'percent',maximumFractionDigits:0});
+function fa(n){return FA.format(n)}
+function faY(n){return FAY.format(n)}
+function faP(x){return FAP.format(x)}
+function parseFa(s){
+ var d='۰۱۲۳۴۵۶۷۸۹',d2='٠١٢٣٤٥٦٧٨٩';
+ s=String(s).replace(/[۰-۹]/g,function(ch){return String(d.indexOf(ch))}).replace(/[٠-٩]/g,function(ch){return String(d2.indexOf(ch))});
+ s=s.replace(/[^\d]/g,'');
+ return s?parseInt(s,10):0;
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function norm(s){return String(s).replace(/\u200c/g,' ').replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/\s+/g,' ').trim()}
+function catById(id){return store.cats.find(function(c){return c.id===id})}
+function tplById(id){return store.templates.find(function(t){return t.id===id})}
+function monthExp(){return store.month===CURRENT?store.expenses:[]}
+function sumOf(list){return list.reduce(function(a,e){return a+e.amount},0)}
+function byCat(){var m={};store.cats.forEach(function(c){m[c.id]=[]});monthExp().forEach(function(e){if(m[e.catId])m[e.catId].push(e)});return m}
+function monthLabel(k){var p=k.split('-');return JMONTHS[parseInt(p[1],10)-1]+' '+faY(parseInt(p[0],10))}
+function monthShift(k,delta){var y=parseInt(k.split('-')[0],10),m=parseInt(k.split('-')[1],10);m+=delta;if(m<1){m=12;y--}if(m>12){m=1;y++}return y+'-'+(m<10?'0'+m:m)}
+/* موتور پیشنهادِ نمونه: بلندترین کلیدِ موجود در عنوان؛ بدون حدس → پربسامدترین دستهٔ کاربر (تصمیم ۰۶) */
+function suggest(title){
+ var t=norm(title),best=null,bl=0;
+ for(var k in store.lexicon){var nk=norm(k);if(nk&&t.indexOf(nk)>=0&&nk.length>bl){best=store.lexicon[k];bl=nk.length}}
+ if(best)return{catId:best,matched:true};
+ var counts={};monthExp().forEach(function(e){counts[e.catId]=(counts[e.catId]||0)+1});
+ var top=null,n=0;for(var c in counts){if(counts[c]>n){n=counts[c];top=c}}
+ return{catId:top||store.cats[0].id,matched:false};
+}
+function learnFrom(title,catId){
+ var t=norm(title).split(' ').filter(function(w){return w.length>=2&&!STOP[w]})[0];
+ if(t){store.lexicon[t]=catId;return t}
+ return null;
+}
+
+/* ---------- اجزای فرم ---------- */
+function chipHTML(f){
+ var c=catById(f.catId);
+ return '<span class="chip" id="sugg-chip"><i class="dot" style="background:'+c.hue+'"></i>'+esc(c.name)+(f.manual?'':'<span class="badge">پیشنهاد</span>')+'</span>';
+}
+function catOptsHTML(f){
+ return store.cats.map(function(c){
+  return '<button class="opt" data-act="pick-cat" data-cat="'+c.id+'" aria-pressed="'+(c.id===f.catId)+'"><i class="dot" style="background:'+c.hue+'"></i>'+esc(c.name)+'</button>';
+ }).join('');
+}
+function expFormHTML(f){
+ return ''+
+ '<div class="field"><label for="f-title">عنوان</label><input type="text" id="f-title" value="'+esc(f.title)+'" placeholder="مثلاً نان و شیر"></div>'+
+ '<div class="field"><label for="f-amt">مبلغ</label><input type="text" id="f-amt" inputmode="numeric" value="'+esc(f.amountStr)+'" placeholder="به تومان"><div class="amt-hint" id="amt-hint">'+(f.amountStr?fa(parseFa(f.amountStr))+' تومان':'')+'</div></div>'+
+ '<div class="field"><label>تاریخ</label><div class="datestep"><button data-act="day-prev" aria-label="روز قبل">‹</button><span>'+fa(f.day)+' شهریور ۱۴۰۵</span><button data-act="day-next" aria-label="روز بعد">›</button></div></div>'+
+ '<div class="field"><label>دسته</label>'+chipHTML(f)+'<button class="chg" data-act="toggle-catopts">تغییر</button><div class="catopts" id="catopts"'+(ui.catOptsOpen?'':' hidden')+'>'+catOptsHTML(f)+'</div></div>'+
+ (f.tid?'<p class="tplnote">این خرج از الگوی «'+esc(tplById(f.tid).title)+'» تولید شده؛ ویرایشش الگو را عوض نمی‌کند.</p>':'')+
+ '<div class="formactions">'+(f.mode==='edit'?'<button class="btn dang" data-act="del-exp">حذف</button>':'')+
+ '<button class="btn ghost" data-act="close-overlay">انصراف</button><button class="btn pri" data-act="save-exp">ثبت</button></div>';
+}
+function tplFormHTML(f){
+ return ''+
+ '<div class="field"><label for="t-title">عنوان</label><input type="text" id="t-title" value="'+esc(f.title)+'" placeholder="مثلاً قسط وام مسکن"></div>'+
+ '<div class="field"><label for="t-amt">مبلغ</label><input type="text" id="t-amt" inputmode="numeric" value="'+esc(f.amountStr)+'" placeholder="به تومان"><div class="amt-hint" id="t-amt-hint">'+(f.amountStr?fa(parseFa(f.amountStr))+' تومان':'')+'</div></div>'+
+ '<div class="field"><label>روزِ ماه</label><div class="datestep"><button data-act="tday-prev" aria-label="روز قبل">‹</button><span>روز '+fa(f.day)+' هر ماه</span><button data-act="tday-next" aria-label="روز بعد">›</button></div></div>'+
+ '<div class="field"><label>دسته</label>'+chipHTML(f)+'<button class="chg" data-act="toggle-catopts">تغییر</button><div class="catopts" id="catopts"'+(ui.catOptsOpen?'':' hidden')+'>'+catOptsHTML(f)+'</div></div>'+
+ '<div class="field"><label>وضعیت</label><button class="chg" data-act="tpl-toggle-active">'+(f.active?'فعال — توقفش بزن':'متوقف — ازسر بگیر')+'</button></div>'+
+ '<div class="formactions"><button class="btn ghost" data-act="close-overlay">انصراف</button><button class="btn pri" data-act="save-tpl">ذخیره</button></div>';
+}
+function sheetShell(inner,title){return '<div class="scrim" data-act="close-overlay"></div><div class="sheet" role="dialog" aria-label="'+title+'"><h3 class="otitle">'+title+'</h3>'+inner+'</div>'}
+function ledgerRowHTML(e){
+ var c=catById(e.catId);
+ return '<button class="lrow" data-act="open-exp" data-id="'+e.id+'">'+
+  '<span class="lday">'+fa(e.day)+' شهریور</span>'+
+  '<span class="ltitle"><i class="dot" style="background:'+c.hue+'"></i>'+esc(e.title)+(e.tid?'<span class="ltag">از الگو</span>':'')+'</span>'+
+  '<span class="lamt num">'+fa(e.amount)+'</span></button>';
+}
+function catsManagementHTML(){
+ var bc=byCat();
+ return store.cats.map(function(c){
+  var n=(bc[c.id]||[]).length,busy=n>0,sys=c.kind==='system',tr=ui.transferFor===c.id;
+  return '<div class="lrow" style="display:block">'+
+   '<div class="crow">'+
+    '<span style="font-weight:600;font-size:14.5px;display:flex;align-items:center;gap:9px"><i class="dot" style="background:'+c.hue+'"></i>'+esc(c.name)+(sys?'<span class="kindtag">سیستمی</span>':'')+'</span>'+
+    '<span class="cacts"><span class="cnt">'+fa(n)+' خرج</span>'+
+    (busy?'<button class="mini" data-act="transfer-open" data-cat="'+c.id+'">انتقال همه به…</button>':'')+
+    (sys?'':'<button class="mini" data-act="del-cat" data-cat="'+c.id+'"'+(busy?' disabled title="اول خرج‌ها را منتقل کنید"':'')+'>حذف</button>')+
+    '</span></div>'+
+   (sys&&busy?'<div class="chint">دستهٔ سیستمی حذف‌شدنی نیست؛ برای خالی‌کردنش خرج‌ها را منتقل کنید.</div>':'')+
+   (busy&&!sys?'<div class="chint">برای حذف، اول خرج‌ها را به دستهٔ دیگری منتقل کنید.</div>':'')+
+   (tr?'<div class="trrow"><select id="tr-target">'+store.cats.filter(function(x){return x.id!==c.id}).map(function(x){return '<option value="'+x.id+'">'+esc(x.name)+'</option>'}).join('')+'</select><button class="btn pri" data-act="transfer-do" data-cat="'+c.id+'">انتقال</button><button class="btn ghost" data-act="transfer-cancel">انصراف</button></div>':'')+
+  '</div>';
+ }).join('');
+}
+function addCatHTML(){
+ return '<div class="addcat"><h3>دستهٔ جدید</h3><div class="ncrow">'+
+  '<input type="text" id="nc-name" placeholder="نام دسته">'+
+  '<div class="swatches">'+SWATCHES.map(function(h,i){return '<label class="sw" style="background:'+h+'" title="'+h+'"><input type="radio" name="nc-hue" value="'+h+'"'+(i===0?' checked':'')+'></label>'}).join('')+'</div>'+
+  '<button class="btn pri" data-act="add-cat">افزودن</button></div></div>';
+}
+function tplListHTML(){
+ return store.templates.map(function(t){
+  var gen=monthExp().find(function(e){return e.tid===t.id});
+  return '<div class="trow">'+
+   '<div class="ttop"><div><div class="tt">'+esc(t.title)+'</div><div class="tmeta">روز '+fa(t.day)+' هر ماه — '+fa(t.amount)+' تومان</div></div>'+
+   '<div style="display:flex;align-items:center;gap:9px"><span class="tchip '+(t.active?'on':'off')+'">'+(t.active?'فعال':'متوقف')+'</span>'+
+   '<span class="tacts"><button class="mini" data-act="tpl-toggle" data-id="'+t.id+'">'+(t.active?'توقف':'ازسرگیری')+'</button><button class="mini" data-act="tpl-edit" data-id="'+t.id+'">ویرایش</button></span></div></div>'+
+   (t.active&&gen?'<button class="tgen" data-act="open-exp" data-id="'+gen.id+'">خرجِ این ماه تولید شد: '+fa(gen.amount)+' تومان — ویرایش</button>':'')+
+  '</div>';
+ }).join('');
+}
+
+/* ---------- رندر ---------- */
+function render(){
+ var bc=byCat(),exps=monthExp(),total=sumOf(exps);
+ var cats=store.cats.map(function(c){return {c:c,list:bc[c.id]||[]}}).filter(function(x){return x.list.length}).sort(function(a,b){return sumOf(b.list)-sumOf(a.list)});
+ var h='';
+ if(ui.screen==='dash'){
+  var tiles=cats.map(function(x){
+   var c=x.c,s=sumOf(x.list),share=s/total;
+   var span=share>=.3?'s4 tall':(share>=.25?'s3':(share>=.1?'s2':''));
+   return '<button class="tile '+span+'" data-act="open-drill" data-cat="'+c.id+'" style="background:'+c.tint+'">'+
+    '<span class="tn"><i class="dot" style="background:'+c.hue+'"></i>'+esc(c.name)+'</span>'+
+    '<span><span class="ta num">'+fa(s)+'</span><br><span class="tp">'+faP(share)+'</span></span></button>';
+  }).join('');
+  var rows=exps.slice().sort(function(a,b){return b.day-a.day}).map(ledgerRowHTML).join('');
+  h+='<div class="wrap"><div class="topbar">'+
+   '<div class="monthnav"><button data-act="m-prev" aria-label="ماه قبل">‹</button><span class="mname">'+monthLabel(store.month)+'</span><button data-act="m-next" aria-label="ماه بعد">›</button></div>'+
+   '<nav class="links"><button data-act="go-cats">دسته‌ها</button><button data-act="go-tpl">الگوها</button></nav></div>'+
+   (total?'<h1 class="total num">'+fa(total)+'<small>تومان</small></h1>'+
+    '<div class="mosaic">'+tiles+'</div>'+
+    '<div class="ledger">'+rows+'</div>'
+    :'<div class="empty">'+(store.month===CURRENT?'این ماه هنوز خرجی ندارد.<br>با دکمهٔ گوشهٔ صفحه اولین خرج را ثبت کن.':('برای '+monthLabel(store.month)+' خرجی ثبت نشده.'))+'</div>')+
+   '</div>'+
+   '<button class="fab" data-act="open-add" aria-label="ثبت خرج">+</button>';
+ }
+ else if(ui.screen==='cats'){
+  h+='<div class="wrap"><div class="topbar"><h2 class="ptitle">دسته‌ها</h2><nav class="links"><button data-act="go-dash">بازگشت</button><button data-act="go-tpl">الگوها</button></nav></div>'+
+   '<div class="ledger" style="margin-top:14px;border-top-width:2px">'+catsManagementHTML()+'</div>'+addCatHTML()+'</div>';
+ }
+ else if(ui.screen==='tpl'){
+  h+='<div class="wrap"><div class="topbar"><h2 class="ptitle">الگوهای تکرار</h2><nav class="links"><button data-act="go-dash">بازگشت</button><button data-act="go-cats">دسته‌ها</button></nav></div>'+
+   '<div style="margin-top:18px">'+tplListHTML()+'</div>'+
+   '<div style="margin-top:22px"><button class="btn pri" data-act="tpl-add">+ الگوی جدید</button></div>'+
+   '<p class="note">هر الگو اولِ ماهِ جلالی خرجِ خودش را تولید می‌کند؛ خرجِ تولیدشده آزادانه ویرایش می‌شود.</p></div>';
+ }
+ if(ui.drill){
+  var c=catById(ui.drill),list=(bc[ui.drill]||[]).slice().sort(function(a,b){return a.day-b.day}),s=sumOf(list);
+  h+='<div class="full"><div class="fwrap"><div class="dhead"><button class="dback" data-act="close-drill" aria-label="بازگشت">→</button><span class="dtitle"><i class="dot" style="background:'+c.hue+'"></i>'+esc(c.name)+'</span></div>'+
+   '<div class="dtotal num">'+fa(s)+' <span style="font-size:13px;color:var(--ink2);font-weight:500">تومان در '+monthLabel(store.month)+'</span></div>'+
+   '<div class="dsub">'+fa(list.length)+' خرج</div>'+
+   '<div class="ledger" style="margin-top:14px">'+list.map(ledgerRowHTML).join('')+'</div>'+
+   '<button class="eadd" data-act="add-to-cat" data-cat="'+c.id+'">+ افزودن خرج به این دسته</button></div></div>';
+ }
+ if(ui.overlay==='exp')h+=sheetShell(expFormHTML(ui.form),ui.form.mode==='edit'?'ویرایش خرج':'ثبت خرج');
+ if(ui.overlay==='tpl')h+=sheetShell(tplFormHTML(ui.tplForm),ui.tplForm.mode==='edit'?'ویرایش الگو':'الگوی جدید');
+ document.getElementById('app').innerHTML='<div class="variant">'+h+'</div>';
+}
+
+/* ---------- اکشن‌ها ---------- */
+function openExpForm(mode,exp,presetCat){
+ var s=suggest(exp?exp.title:'');
+ ui.form={mode:mode,id:exp?exp.id:null,tid:exp?exp.tid:null,title:exp?exp.title:'',amountStr:exp?String(exp.amount):'',day:exp?exp.day:TODAY_DAY,catId:(exp?exp.catId:(presetCat||s.catId)),manual:!!(exp||presetCat)};
+ ui.catOptsOpen=false;ui.overlay='exp';render();
+}
+function openTplForm(mode,tpl){
+ ui.tplForm={mode:mode,id:tpl?tpl.id:null,title:tpl?tpl.title:'',amountStr:tpl?String(tpl.amount):'',day:tpl?tpl.day:5,catId:tpl?tpl.catId:'qest',active:tpl?tpl.active:true,manual:true};
+ ui.catOptsOpen=false;ui.overlay='tpl';render();
+}
+var ACTIONS={
+ 'open-drill':function(el){ui.drill=el.dataset.cat;render()},
+ 'close-drill':function(){ui.drill=null;render()},
+ 'go-cats':function(){ui.screen='cats';render()},
+ 'go-tpl':function(){ui.screen='tpl';render()},
+ 'go-dash':function(){ui.screen='dash';render()},
+ 'm-prev':function(){store.month=monthShift(store.month,-1);render()},
+ 'm-next':function(){store.month=monthShift(store.month,1);render()},
+ 'open-add':function(){
+  if(store.month!==CURRENT){toast('این پروتوتایپ دادهٔ شهریور ۱۴۰۵ دارد؛ خرج فقط در ماه جاری ثبت می‌شود.');return}
+  openExpForm('add',null,null);
+ },
+ 'add-to-cat':function(el){
+  if(store.month!==CURRENT){toast('ثبت خرج فقط در ماه جاری است.');return}
+  openExpForm('add',null,el.dataset.cat);
+ },
+ 'open-exp':function(el){openExpForm('edit',store.expenses.find(function(e){return e.id===el.dataset.id}),null)},
+ 'close-overlay':function(){ui.overlay=null;ui.form=null;ui.tplForm=null;ui.catOptsOpen=false;render()},
+ 'toggle-catopts':function(){ui.catOptsOpen=!ui.catOptsOpen;render()},
+ 'pick-cat':function(el){if(ui.form){ui.form.catId=el.dataset.cat;ui.form.manual=true}if(ui.tplForm){ui.tplForm.catId=el.dataset.cat}render()},
+ 'day-prev':function(){ui.form.day=Math.max(1,ui.form.day-1);render()},
+ 'day-next':function(){ui.form.day=Math.min(31,ui.form.day+1);render()},
+ 'tday-prev':function(){ui.tplForm.day=Math.max(1,ui.tplForm.day-1);render()},
+ 'tday-next':function(){ui.tplForm.day=Math.min(31,ui.tplForm.day+1);render()},
+ 'save-exp':function(){
+  var f=ui.form;
+  var title=document.getElementById('f-title').value,amount=parseFa(document.getElementById('f-amt').value);
+  if(!norm(title)||amount<=0){toast('عنوان و مبلغِ معتبر لازم است.');return}
+  var learned=learnFrom(title,f.catId);
+  if(f.mode==='edit'){
+   var e=store.expenses.find(function(x){return x.id===f.id});
+   e.title=norm(title);e.amount=amount;e.catId=f.catId;e.day=f.day;
+  }else{
+   store.expenses.push({id:'e'+(++store.seq),title:norm(title),amount:amount,catId:f.catId,day:f.day,tid:null});
+  }
+  ui.overlay=null;ui.form=null;
+  toast((f.mode==='edit'?'خرج به‌روز شد':'خرج ثبت شد')+(learned?' — «'+learned+'» یاد گرفته شد':''));
+  render();
+ },
+ 'del-exp':function(){
+  store.expenses=store.expenses.filter(function(e){return e.id!==ui.form.id});
+  ui.overlay=null;ui.form=null;ui.drill=null;toast('خرج حذف شد.');render();
+ },
+ 'tpl-add':function(){openTplForm('add',null)},
+ 'tpl-edit':function(el){openTplForm('edit',tplById(el.dataset.id))},
+ 'tpl-toggle':function(el){
+  var t=tplById(el.dataset.id);t.active=!t.active;
+  toast(t.active?'الگو ازسر گرفته شد.':'الگو متوقف شد؛ خرجِ ماه‌های بعد تولید نمی‌شود.');render();
+ },
+ 'tpl-toggle-active':function(){ui.tplForm.active=!ui.tplForm.active;render()},
+ 'save-tpl':function(){
+  var f=ui.tplForm;
+  var title=document.getElementById('t-title').value,amount=parseFa(document.getElementById('t-amt').value);
+  if(!norm(title)||amount<=0){toast('عنوان و مبلغِ معتبر لازم است.');return}
+  if(f.mode==='edit'){
+   var t=tplById(f.id);t.title=norm(title);t.amount=amount;t.day=f.day;t.catId=f.catId;t.active=f.active;
+  }else{
+   store.templates.push({id:'t'+(++store.seq),title:norm(title),amount:amount,catId:f.catId,day:f.day,active:f.active});
+  }
+  ui.overlay=null;ui.tplForm=null;toast('الگو ذخیره شد.');render();
+ },
+ 'transfer-open':function(el){ui.transferFor=el.dataset.cat;render()},
+ 'transfer-cancel':function(){ui.transferFor=null;render()},
+ 'transfer-do':function(el){
+  var from=el.dataset.cat,toSel=document.getElementById('tr-target'),to=toSel?toSel.value:null;
+  var n=0;store.expenses.forEach(function(e){if(e.catId===from){e.catId=to;n++}});
+  ui.transferFor=null;
+  toast(fa(n)+' خرج به «'+catById(to).name+'» منتقل شد.');render();
+ },
+ 'del-cat':function(el){
+  var c=catById(el.dataset.cat),n=store.expenses.filter(function(e){return e.catId===c.id}).length;
+  if(n>0||c.kind==='system')return;
+  store.cats=store.cats.filter(function(x){return x.id!==c.id});
+  toast('دستهٔ «'+c.name+'» حذف شد.');render();
+ },
+ 'add-cat':function(){
+  var nameEl=document.getElementById('nc-name'),name=norm(nameEl?nameEl.value:'');
+  if(!name){toast('نام دسته را بنویسید.');return}
+  var hueEl=document.querySelector('input[name="nc-hue"]:checked');
+  var idx=hueEl?SWATCHES.indexOf(hueEl.value):0;
+  store.cats.push({id:'c'+(++store.seq),name:name,kind:'custom',hue:SWATCHES[idx>=0?idx:0],tint:'#EFEDE6'});
+  toast('دستهٔ «'+name+'» اضافه شد.');render();
+ }
+};
+
+/* ---------- رویدادها ---------- */
+var app=document.getElementById('app');
+app.addEventListener('click',function(e){
+ var el=e.target.closest('[data-act]');
+ if(!el)return;
+ var fn=ACTIONS[el.dataset.act];
+ if(fn)fn(el,e);
+});
+/* تایپ: همگام‌سازی وضعیت + پیشنهادِ زنده با تأخیر ۱۵۰ms (تصمیم تیکت ۰۶) */
+var suggTimer=null;
+app.addEventListener('input',function(e){
+ if(e.target.id==='f-title'&&ui.form){ui.form.title=e.target.value;clearTimeout(suggTimer);suggTimer=setTimeout(function(){
+  if(!ui.form||ui.form.manual)return;
+  var s=suggest(document.getElementById('f-title')?document.getElementById('f-title').value:'');
+  ui.form.catId=s.catId;
+  var chip=document.getElementById('sugg-chip');
+  if(chip)chip.outerHTML=chipHTML(ui.form);
+ },150)}
+ if(e.target.id==='f-amt'&&ui.form){ui.form.amountStr=e.target.value;var hint=document.getElementById('amt-hint');if(hint)hint.textContent=parseFa(e.target.value)?fa(parseFa(e.target.value))+' تومان':''}
+ if(e.target.id==='t-amt'&&ui.tplForm){ui.tplForm.amountStr=e.target.value;var h2=document.getElementById('t-amt-hint');if(h2)h2.textContent=parseFa(e.target.value)?fa(parseFa(e.target.value))+' تومان':''}
+});
+document.getElementById('tools').addEventListener('click',function(e){
+ var b=e.target.closest('[data-sw]');if(!b)return;
+ if(b.dataset.sw==='reset'){store=seedStore();ui.screen='dash';ui.drill=null;ui.transferFor=null;ui.overlay=null;ui.form=null;ui.tplForm=null;render();toast('داده‌های نمونه بازنشانی شد.')}
+ if(b.dataset.sw==='dump'){
+  var d=document.getElementById('dump');
+  document.getElementById('dump-pre').textContent=JSON.stringify({month:store.month,cats:store.cats,expenses:store.expenses,templates:store.templates,lexicon:store.lexicon},null,2);
+  d.hidden=!d.hidden;
+ }
+});
+document.getElementById('dump').addEventListener('click',function(e){
+ if(e.target.closest('[data-dump-close]'))document.getElementById('dump').hidden=true;
+});
+document.addEventListener('keydown',function(e){
+ var t=e.target;
+ if(t&&(t.matches&&t.matches('input,textarea,select')||t.isContentEditable))return;
+ if(e.key==='Escape'){if(ui.drill){ui.drill=null;render()}if(ui.overlay){ui.overlay=null;ui.form=null;ui.tplForm=null;ui.catOptsOpen=false;render()}document.getElementById('dump').hidden=true}
+});
+
+render();
+/* پارامتر اشکال‌زدایی: #open=add|tpl فرم، #open=cats|tpls صفحهٔ مدیریت را از اول باز می‌کند */
+(function(){
+ var o=new URLSearchParams(location.hash.slice(1)).get('open');
+ if(o==='add')ACTIONS['open-add']();
+ if(o==='tpl')openTplForm('add',null);
+ if(o==='cats'){ui.screen='cats';render()}
+ if(o==='tpls'){ui.screen='tpl';render()}
+})();
+})();
+</script>
+</body>
+</html>
