@@ -1,0 +1,863 @@
+<!doctype html>
+<!--
+  پروتوتایپ UI — تیکت ۰۷ (جهت‌گیری بصری) — دورانداختنی؛ چیز قابل‌کمیتی اینجا زندگی نمی‌کند.
+  طرح: سه گونهٔ ساختاری متفاوت از اپ «دفتر هزینهٔ ماهانه» روی یک دادهٔ درون‌حافظه،
+       سوییچ با پارامتر ?variant= و نوار شناور پایین (کلیدهای جهت‌دار هم کار می‌کنند).
+    A «دفتر»   — تک‌ستون تایپوگرافیک، سطرهای دفتری با خط‌کشی، بازشدن درجا برای ریز خرج‌ها.
+    B «کاشی»   — کاشی‌های متناسب با سهم هر دسته روی زمینهٔ تیره، دریل‌داون تمام‌صفحه.
+    C «تابلو»  — اسکلت کامل اپ: نوار تب پایین با «+» زعفرانی، خوراک زمانی خرج‌ها، هیرو لاجوردی.
+  همهٔ داده‌ها نمونه‌اند (شهریور ۱۴۰۵)؛ با ⟲ ریست می‌شوند و با ⓘ وضعیت دیده می‌شود.
+-->
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>پروتوتایپ UI — دفتر هزینهٔ ماهانه (تیکت ۰۷)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@100..900&display=swap" rel="stylesheet">
+<style>
+/* ---------- پایه ---------- */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:Vazirmatn,Tahoma,'Segoe UI',sans-serif;background:#101216;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;padding:0}
+input,select{font:inherit;color:inherit}
+img{max-width:100%}
+:focus-visible{outline:2px solid #E8A13A;outline-offset:2px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums}
+#app{min-height:100dvh}
+.variant{min-height:100dvh;padding-bottom:120px;position:relative}
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+
+/* ---------- برچسب پروتوتایپ ---------- */
+#prototag{position:fixed;top:12px;inset-inline-start:12px;z-index:95;font-size:11px;color:#555;background:rgba(255,255,255,.9);border:1px solid #d8d8d2;border-radius:999px;padding:3px 11px;pointer-events:none}
+
+/* ---------- نوار سوییچر (ابزار مقایسه، جزو طرح نیست) ---------- */
+#switcher{position:fixed;bottom:14px;inset-inline-start:50%;transform:translateX(50%);z-index:90;display:flex;align-items:center;gap:4px;background:#15181C;color:#F2F3F5;border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:7px 12px;box-shadow:0 10px 30px rgba(0,0,0,.4)}
+body[data-variant="C"] #switcher{bottom:86px}
+#switcher button{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:16px;line-height:1}
+#switcher button:hover{background:rgba(255,255,255,.14)}
+#switcher strong{font-size:13.5px;font-weight:600;min-width:92px;text-align:center}
+#switcher .sep{width:1px;height:18px;background:rgba(255,255,255,.2);margin:0 3px}
+#dump{position:fixed;inset:0;z-index:96;background:rgba(8,10,12,.92);color:#CFE3D8;padding:26px;overflow:auto;direction:ltr;text-align:left}
+#dump pre{font-family:Consolas,monospace;font-size:12.5px;white-space:pre-wrap}
+#dump .dclose{position:fixed;top:14px;inset-inline-end:14px;color:#fff;border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:6px 16px;font-size:13px}
+
+/* ---------- توست ---------- */
+#toast{position:fixed;top:16px;inset-inline-start:50%;transform:translateX(50%);z-index:99;background:#15181C;color:#fff;border-radius:999px;padding:9px 20px;font-size:13.5px;opacity:0;transition:opacity .25s;pointer-events:none;max-width:86vw;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+#toast.show{opacity:1}
+
+/* =========================================================
+   گونهٔ A — «دفتر»: تک‌ستون تایپوگرافیک روی کاغذ، خط‌کشی سبز-جوهر
+   ========================================================= */
+.va{--paper:#F7F6F1;--panel:#FFFFFF;--ink:#202E28;--ink2:#68766D;--rule:#E2DFD2;--accent:#177A5C;--accent-soft:#E1EFE7;--danger:#B3402E;background:var(--paper);color:var(--ink)}
+.va .wrap{max-width:640px;margin-inline:auto;padding:48px 22px 40px}
+.va .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.va .monthnav{display:flex;align-items:center;gap:2px}
+.va .monthnav button{width:34px;height:34px;border-radius:50%}
+.va .monthnav button:hover{background:var(--accent-soft)}
+.va .mname{font-size:15px;font-weight:600;min-width:112px;text-align:center}
+.va .links{display:flex;gap:16px;font-size:13px;color:var(--ink2)}
+.va .links button:hover{color:var(--accent)}
+.va .total{font-weight:800;font-size:52px;line-height:1.4;margin-top:14px;letter-spacing:-.01em}
+.va .total small{font-family:Vazirmatn,sans-serif;font-size:15px;font-weight:500;color:var(--ink2);margin-inline-start:9px}
+.va .ledger{list-style:none;border-top:2px solid var(--ink);margin-top:16px}
+.va .lrow{border-bottom:1px solid var(--rule)}
+.va .lbtn{display:grid;grid-template-columns:1fr auto;width:100%;text-align:start;padding:13px 2px 9px;row-gap:4px}
+.va .lbtn:hover .cname{color:var(--accent)}
+.va .cname{font-weight:600;font-size:15.5px;display:flex;align-items:center;gap:9px}
+.va .dot{width:9px;height:9px;border-radius:50%;display:inline-block;flex:none}
+.va .lamt{text-align:end;font-size:15px;white-space:nowrap}
+.va .lamt .pct{color:var(--ink2);font-size:12.5px;margin-inline-end:9px}
+.va .lbar{grid-column:1/-1;height:3px;background:var(--rule);border-radius:2px;overflow:hidden}
+.va .lbar i{display:block;height:100%}
+.va .lx{padding:0 2px 14px}
+.va .xline{display:flex;align-items:baseline;gap:10px;padding:9px 10px;border-radius:9px;width:100%;text-align:start}
+.va .xline:hover{background:var(--accent-soft)}
+.va .xday{font-size:12px;color:var(--ink2);min-width:64px;flex:none}
+.va .xtag{font-size:10.5px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:1.5px 8px;flex:none}
+.va .xamt{margin-inline-start:auto;font-size:13.5px;white-space:nowrap}
+.va .xadd{font-size:13px;color:var(--accent);padding:10px 10px 0;display:block}
+.va .xadd:hover{text-decoration:underline}
+.va .fab{position:fixed;bottom:78px;inset-inline-end:26px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;font-size:27px;font-weight:300;box-shadow:0 12px 26px rgba(23,122,92,.38);display:grid;place-items:center;z-index:30}
+.va .empty{padding:64px 12px;text-align:center;color:var(--ink2);font-size:14.5px;line-height:2}
+.va .ptitle{font-size:19px;font-weight:700}
+.va .crow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 2px}
+.va .kindtag{font-size:10px;color:var(--ink2);border:1px solid var(--rule);border-radius:999px;padding:1px 8px}
+.va .cacts{display:flex;align-items:center;gap:10px}
+.va .cnt{font-size:12px;color:var(--ink2)}
+.va .mini{font-size:12.5px;border:1px solid var(--rule);border-radius:999px;padding:5px 12px;background:var(--panel)}
+.va .mini:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.va .mini:disabled{opacity:.42;cursor:not-allowed;text-decoration:line-through}
+.va .chint{font-size:11.5px;color:var(--ink2);padding:0 2px 12px;margin-top:-6px}
+.va .trrow{display:flex;gap:8px;align-items:center;padding:0 2px 14px;flex-wrap:wrap}
+.va .trrow select{border:1px solid var(--rule);border-radius:9px;padding:7px 10px;background:var(--panel);font-size:13px}
+.va .addcat{margin-top:26px;border:1px dashed var(--rule);border-radius:14px;padding:16px}
+.va .addcat h3{font-size:13.5px;font-weight:600;color:var(--ink2);margin-bottom:10px}
+.va .ncrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.va .ncrow input[type=text]{border:1px solid var(--rule);border-radius:9px;padding:9px 12px;background:var(--panel);min-width:180px}
+.va .swatches{display:flex;gap:6px}
+.va .sw{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.va .sw input{appearance:none;width:14px;height:14px;border-radius:50%;border:2px solid #fff;cursor:pointer}
+.va .sw input:checked{outline:2px solid rgba(255,255,255,.9);outline-offset:-4px}
+.va .trow{padding:14px 2px;border-bottom:1px solid var(--rule)}
+.va .trow .ttop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.va .trow .tt{font-weight:600;font-size:15px}
+.va .trow .tmeta{font-size:12.5px;color:var(--ink2);margin-top:3px}
+.va .tchip{font-size:10.5px;border-radius:999px;padding:2px 9px}
+.va .tchip.on{background:var(--accent-soft);color:var(--accent)}
+.va .tchip.off{background:#EFEDE6;color:var(--ink2)}
+.va .tacts{display:flex;gap:8px}
+.va .tgen{font-size:12.5px;color:var(--accent);margin-top:8px;display:inline-block}
+.va .tgen:hover{text-decoration:underline}
+.va .scrim{position:fixed;inset:0;background:rgba(32,46,40,.34);z-index:40}
+.va .sheet{position:fixed;bottom:0;inset-inline:0;z-index:41;background:var(--panel);border-radius:20px 20px 0 0;padding:20px 24px 28px;max-width:640px;margin-inline:auto;max-height:84dvh;overflow:auto;box-shadow:0 -14px 44px rgba(32,46,40,.22)}
+.va .otitle{font-size:17px;font-weight:700;margin-bottom:6px}
+.va .field{border-bottom:1px solid var(--rule);padding:13px 2px}
+.va .field label{display:block;font-size:12px;color:var(--ink2);margin-bottom:7px}
+.va .field input[type=text]{width:100%;border:0;background:none;font-size:16px}
+.va .field input[type=text]:focus{outline:none}
+.va .amt-hint{font-size:12px;color:var(--ink2);margin-top:5px}
+.va .datestep{display:flex;align-items:center;gap:10px;font-size:14.5px}
+.va .datestep button{width:30px;height:30px;border-radius:50%;border:1px solid var(--rule);display:grid;place-items:center}
+.va .datestep button:hover{border-color:var(--accent);color:var(--accent)}
+.va .chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--rule);border-radius:999px;padding:6px 13px;font-size:13.5px;background:var(--paper)}
+.va .chip .badge{font-size:10px;background:var(--accent-soft);color:var(--accent);padding:1.5px 8px;border-radius:999px}
+.va .chg{font-size:12.5px;color:var(--accent);margin-inline-start:10px}
+.va .chg:hover{text-decoration:underline}
+.va .catopts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.va .catopts .opt{border:1px solid var(--rule);border-radius:999px;padding:5.5px 12px;font-size:13px;display:inline-flex;gap:7px;align-items:center;background:var(--panel)}
+.va .catopts .opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.va .tplnote{font-size:12px;color:var(--ink2);background:var(--accent-soft);border-radius:10px;padding:10px 12px;margin-top:12px;line-height:1.9}
+.va .formactions{display:flex;gap:10px;align-items:center;margin-top:20px}
+.va .btn{border-radius:999px;padding:9.5px 24px;font-size:14px;font-weight:600}
+.va .btn.pri{background:var(--accent);color:#fff}
+.va .btn.pri:hover{filter:brightness(1.08)}
+.va .btn.ghost{border:1px solid var(--rule);color:var(--ink2)}
+.va .btn.dang{color:var(--danger);border:1px solid currentColor;margin-inline-start:auto}
+
+/* =========================================================
+   گونهٔ B — «کاشی»: کاشی‌های متناسب با سهم، زمینهٔ بادمجانی تیره
+   ========================================================= */
+.vb{--bg:#211A2D;--panel:#2B2339;--panel2:#3A2F4E;--text:#F4EFEA;--muted:#A99FBB;--ink-on-hue:#241C31;--danger:#F08A7D;background:var(--bg);color:var(--text)}
+.vb .wrap{max-width:520px;margin-inline:auto;padding:48px 18px 40px}
+.vb .top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.vb .monthnav{display:flex;align-items:center;gap:2px}
+.vb .monthnav button{width:34px;height:34px;border-radius:50%;color:var(--muted)}
+.vb .monthnav button:hover{background:var(--panel2);color:var(--text)}
+.vb .mname{font-size:14.5px;font-weight:600;min-width:108px;text-align:center}
+.vb .hlinks{display:flex;gap:8px}
+.vb .hlinks button{background:var(--panel);border-radius:999px;padding:7px 13px;font-size:12.5px;color:var(--muted)}
+.vb .hlinks button:hover{color:var(--text)}
+.vb .total{font-size:47px;font-weight:800;line-height:1.3;margin-top:12px}
+.vb .total small{font-size:15px;font-weight:500;color:var(--muted);margin-inline-start:7px}
+.vb .stack{display:flex;height:14px;border-radius:8px;overflow:hidden;margin:18px 0 4px}
+.vb .stack i{display:block;height:100%}
+.vb .stackcap{font-size:11.5px;color:var(--muted)}
+.vb .mosaic{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;grid-auto-flow:dense;margin-top:18px}
+.vb .tile{border-radius:17px;padding:14px;color:var(--ink-on-hue);text-align:start;display:flex;flex-direction:column;justify-content:space-between;min-height:92px;gap:8px}
+.vb .tile:hover{filter:brightness(1.05)}
+.vb .tile .tn{font-weight:700;font-size:14px}
+.vb .tile .ta{font-size:17.5px;font-weight:800}
+.vb .tile .tp{font-size:11.5px;opacity:.72}
+.vb .s2{grid-column:span 2}.vb .s3{grid-column:span 3}.vb .s4{grid-column:span 4}
+.vb .tall{grid-row:span 2;min-height:194px}
+.vb .tall .ta{font-size:22px}
+.vb .cta{position:fixed;bottom:76px;inset-inline:18px;max-width:484px;margin-inline:auto;background:var(--text);color:var(--ink-on-hue);border-radius:999px;padding:14px;font-weight:700;font-size:15px;text-align:center;box-shadow:0 14px 34px rgba(0,0,0,.45);z-index:30}
+.vb .cta:hover{filter:brightness(.96)}
+.vb .empty{padding:70px 12px;text-align:center;color:var(--muted);font-size:14.5px;line-height:2}
+.vb .full{position:fixed;inset:0;z-index:40;background:var(--bg);overflow:auto;padding:24px 18px 130px}
+.vb .dhead{display:flex;align-items:center;gap:12px}
+.vb .dback{width:38px;height:38px;border-radius:50%;background:var(--panel);display:grid;place-items:center;font-size:17px}
+.vb .dtitle{font-size:18px;font-weight:800;display:flex;align-items:center;gap:9px}
+.vb .dswatch{width:13px;height:13px;border-radius:5px;flex:none}
+.vb .dtotal{font-size:30px;font-weight:800;margin:16px 0 2px}
+.vb .dsub{font-size:12.5px;color:var(--muted)}
+.vb .elist{list-style:none;margin-top:18px;display:flex;flex-direction:column;gap:8px}
+.vb .eitem{display:flex;align-items:center;gap:10px;background:var(--panel);border-radius:14px;padding:13px 15px;width:100%;text-align:start}
+.vb .eitem:hover{background:var(--panel2)}
+.vb .eday{font-size:11px;color:var(--muted);background:var(--panel2);border-radius:8px;padding:3px 8px;flex:none}
+.vb .etitle{font-weight:600;font-size:14px;flex:1}
+.vb .etag{font-size:10px;background:rgba(244,239,234,.14);color:var(--text);border-radius:999px;padding:1.5px 8px;flex:none}
+.vb .eamt{font-size:14px;font-weight:700;white-space:nowrap}
+.vb .eadd{margin-top:14px;width:100%;border:1.5px dashed rgba(244,239,234,.28);border-radius:14px;padding:13px;font-size:13.5px;color:var(--muted);text-align:center}
+.vb .eadd:hover{color:var(--text);border-color:rgba(244,239,234,.5)}
+.vb .ptitle{font-size:19px;font-weight:800}
+.vb .crow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 15px;background:var(--panel);border-radius:15px;margin-bottom:8px}
+.vb .kindtag{font-size:10px;color:var(--muted);border:1px solid rgba(244,239,234,.2);border-radius:999px;padding:1px 8px}
+.vb .cacts{display:flex;align-items:center;gap:9px}
+.vb .cnt{font-size:11.5px;color:var(--muted)}
+.vb .mini{font-size:12px;border:1px solid rgba(244,239,234,.24);border-radius:999px;padding:5px 12px}
+.vb .mini:hover:not(:disabled){background:var(--panel2)}
+.vb .mini:disabled{opacity:.4;cursor:not-allowed;text-decoration:line-through}
+.vb .chint{font-size:11.5px;color:var(--muted);margin:-4px 4px 12px}
+.vb .trrow{display:flex;gap:8px;align-items:center;margin:-2px 4px 14px;flex-wrap:wrap}
+.vb .trrow select{background:var(--panel2);border:1px solid transparent;border-radius:9px;padding:7px 10px;font-size:13px;color:var(--text)}
+.vb .btn{border-radius:999px;padding:9px 20px;font-size:13.5px;font-weight:700}
+.vb .btn.pri{background:var(--text);color:var(--ink-on-hue)}
+.vb .btn.ghost{border:1px solid rgba(244,239,234,.25);color:var(--muted)}
+.vb .addcat{margin-top:18px;border:1.5px dashed rgba(244,239,234,.24);border-radius:16px;padding:16px}
+.vb .addcat h3{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:10px}
+.vb .ncrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.vb .ncrow input[type=text]{background:var(--panel2);border:1px solid transparent;border-radius:11px;padding:10px 13px;min-width:170px;color:var(--text)}
+.vb .swatches{display:flex;gap:6px}
+.vb .sw{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.vb .sw input{appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid rgba(0,0,0,.35);cursor:pointer}
+.vb .sw input:checked{outline:2px solid rgba(255,255,255,.85);outline-offset:-4px}
+.vb .trow{padding:14px 15px;background:var(--panel);border-radius:15px;margin-bottom:8px}
+.vb .trow .ttop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.vb .trow .tt{font-weight:700;font-size:14.5px}
+.vb .trow .tmeta{font-size:12px;color:var(--muted);margin-top:3px}
+.vb .tchip{font-size:10px;border-radius:999px;padding:2px 9px}
+.vb .tchip.on{background:rgba(63,184,175,.18);color:#7ADCD4}
+.vb .tchip.off{background:rgba(244,239,234,.1);color:var(--muted)}
+.vb .tacts{display:flex;gap:8px}
+.vb .tgen{font-size:12.5px;color:#7ADCD4;margin-top:9px;display:inline-block}
+.vb .tgen:hover{text-decoration:underline}
+.vb .otitle{font-size:17px;font-weight:800;margin-bottom:12px}
+.vb .field{margin-bottom:14px}
+.vb .field label{display:block;font-size:11.5px;color:var(--muted);margin-bottom:6px}
+.vb .field input[type=text]{width:100%;background:var(--panel2);border:1px solid transparent;border-radius:12px;padding:12px 14px;font-size:15px}
+.vb .field input[type=text]:focus{outline:none;border-color:rgba(244,239,234,.4)}
+.vb .amt-hint{font-size:11.5px;color:var(--muted);margin-top:5px}
+.vb .datestep{display:flex;align-items:center;gap:10px;font-size:14px}
+.vb .datestep button{width:30px;height:30px;border-radius:50%;background:var(--panel2);display:grid;place-items:center}
+.vb .chip{display:inline-flex;align-items:center;gap:8px;background:var(--panel2);border-radius:999px;padding:7px 14px;font-size:13.5px}
+.vb .chip .badge{font-size:10px;background:rgba(242,179,61,.2);color:#F2B33D;padding:1.5px 8px;border-radius:999px}
+.vb .chg{font-size:12.5px;color:var(--muted);margin-inline-start:10px}
+.vb .chg:hover{color:var(--text)}
+.vb .catopts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.vb .catopts .opt{background:var(--panel2);border-radius:999px;padding:6px 12px;font-size:12.5px;display:inline-flex;gap:7px;align-items:center;border:1.5px solid transparent}
+.vb .catopts .opt[aria-pressed="true"]{border-color:var(--text)}
+.vb .tplnote{font-size:12px;color:var(--muted);background:var(--panel);border-radius:11px;padding:10px 13px;margin-top:4px;line-height:1.9}
+.vb .formactions{display:flex;gap:10px;align-items:center;margin-top:18px}
+.vb .btn.dang{color:var(--danger);border:1px solid currentColor;margin-inline-start:auto}
+
+/* =========================================================
+   گونهٔ C — «تابلو»: اسکلت اپ با نوار تب و «+» زعفرانی
+   ========================================================= */
+.vc{--bg:#F3F5F8;--panel:#FFFFFF;--ink:#1F2942;--ink2:#5E6884;--line:#E3E7EF;--navy:#2B3A8F;--navy2:#3D4FA8;--saffron:#E8A13A;--danger:#C0442F;background:var(--bg);color:var(--ink)}
+.vc .wrap{max-width:600px;margin-inline:auto;padding:48px 20px 60px}
+.vc .monthnav{display:flex;align-items:center;justify-content:center;gap:2px;margin-bottom:16px}
+.vc .monthnav button{width:36px;height:36px;border-radius:50%}
+.vc .monthnav button:hover{background:#E7EBF3}
+.vc .mname{font-size:14.5px;font-weight:700;min-width:118px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 0}
+.vc .hero{background:var(--navy);color:#fff;border-radius:22px;padding:22px 24px}
+.vc .hlabel{font-size:13px;opacity:.72}
+.vc .hamt{font-size:39px;font-weight:800;margin-top:5px;line-height:1.35}
+.vc .hamt small{font-size:14px;font-weight:500;opacity:.72;margin-inline-start:7px}
+.vc .stack{display:flex;height:10px;border-radius:6px;overflow:hidden;margin-top:18px}
+.vc .stack i{display:block;height:100%}
+.vc .feed{margin-top:16px;display:flex;flex-direction:column;gap:8px}
+.vc .frow{display:flex;align-items:center;gap:10px;background:var(--panel);border-radius:15px;padding:12px 14px;border:1px solid var(--line)}
+.vc .fday{font-size:10.5px;color:var(--ink2);background:var(--bg);border-radius:8px;padding:3.5px 8px;min-width:50px;text-align:center;flex:none}
+.vc .ftitle{font-weight:600;font-size:13.5px;flex:1;text-align:start;min-width:0}
+.vc .ftitle:hover{color:var(--navy)}
+.vc .ftitle .etag{font-size:9.5px;background:#EEF1F8;color:var(--navy);border-radius:999px;padding:1px 7px;margin-inline-start:6px}
+.vc .fcat{font-size:11px;border-radius:999px;padding:3.5px 11px;color:#fff;flex:none}
+.vc .fcat:hover{filter:brightness(1.12)}
+.vc .famt{font-size:13.5px;font-weight:700;white-space:nowrap;flex:none}
+.vc .dhead{display:flex;align-items:center;gap:10px;margin-top:16px}
+.vc .dback{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 16px;font-size:12.5px;color:var(--ink2)}
+.vc .dback:hover{color:var(--navy)}
+.vc .dtitle{font-size:16.5px;font-weight:800;display:flex;align-items:center;gap:8px}
+.vc .dswatch{width:12px;height:12px;border-radius:4px;flex:none}
+.vc .dsub{font-size:13px;color:var(--ink2);margin-top:4px}
+.vc .dsub b{color:var(--ink)}
+.vc .tabbar{position:fixed;bottom:14px;inset-inline-start:50%;transform:translateX(50%);z-index:60;display:flex;align-items:center;background:var(--panel);border:1px solid var(--line);border-radius:999px;box-shadow:0 12px 34px rgba(31,41,66,.16);padding:5px}
+.vc .tab{padding:10px 19px;font-size:13px;color:var(--ink2);border-radius:999px}
+.vc .tab[aria-current="true"]{color:var(--navy);font-weight:700;background:var(--bg)}
+.vc .plus{width:46px;height:46px;border-radius:50%;background:var(--saffron);color:#3A2B08;font-size:25px;font-weight:300;margin:0 7px;box-shadow:0 7px 18px rgba(232,161,58,.5);display:grid;place-items:center;flex:none}
+.vc .plus:hover{filter:brightness(1.06)}
+.vc .empty{padding:56px 12px;text-align:center;color:var(--ink2);font-size:14px;line-height:2}
+.vc .sect{display:flex;align-items:center;justify-content:space-between;margin:22px 0 12px}
+.vc .sect h2{font-size:16px;font-weight:800}
+.vc .sect .back{font-size:12.5px;color:var(--ink2)}
+.vc .sect .back:hover{color:var(--navy)}
+.vc .crow{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:13px 15px;margin-bottom:8px}
+.vc .cname2{font-weight:600;font-size:14px;display:flex;align-items:center;gap:9px}
+.vc .kindtag{font-size:9.5px;color:var(--ink2);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+.vc .cacts{display:flex;align-items:center;gap:9px}
+.vc .cnt{font-size:11.5px;color:var(--ink2)}
+.vc .mini{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--panel)}
+.vc .mini:hover:not(:disabled){border-color:var(--navy);color:var(--navy)}
+.vc .mini:disabled{opacity:.42;cursor:not-allowed;text-decoration:line-through}
+.vc .chint{font-size:11px;color:var(--ink2);margin:-5px 4px 10px}
+.vc .trrow{display:flex;gap:8px;align-items:center;margin:-2px 4px 12px;flex-wrap:wrap}
+.vc .trrow select{border:1px solid var(--line);border-radius:9px;padding:7px 10px;background:var(--panel);font-size:13px}
+.vc .addcat{border:1.5px dashed var(--line);border-radius:16px;padding:16px;background:var(--panel)}
+.vc .addcat h3{font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:10px}
+.vc .ncrow{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.vc .ncrow input[type=text]{border:1px solid var(--line);border-radius:11px;padding:10px 13px;min-width:170px;background:var(--bg)}
+.vc .swatches{display:flex;gap:6px}
+.vc .sw{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;cursor:pointer}
+.vc .sw input{appearance:none;width:13px;height:13px;border-radius:50%;border:2px solid rgba(255,255,255,.9);cursor:pointer}
+.vc .sw input:checked{outline:2px solid rgba(31,41,66,.55);outline-offset:-4px}
+.vc .trow{background:var(--panel);border:1px solid var(--line);border-radius:15px;padding:14px 15px;margin-bottom:8px}
+.vc .trow .ttop{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.vc .trow .tt{font-weight:700;font-size:14px}
+.vc .trow .tmeta{font-size:12px;color:var(--ink2);margin-top:3px}
+.vc .tchip{font-size:10px;border-radius:999px;padding:2px 9px}
+.vc .tchip.on{background:#E7F4EC;color:#2F7D4E}
+.vc .tchip.off{background:#EEF1F6;color:var(--ink2)}
+.vc .tacts{display:flex;gap:8px}
+.vc .tgen{font-size:12.5px;color:var(--navy);margin-top:9px;display:inline-block}
+.vc .tgen:hover{text-decoration:underline}
+.vc .scrim{position:fixed;inset:0;background:rgba(31,41,66,.42);z-index:40;display:grid;place-items:center;padding:20px}
+.vc .modal{background:var(--panel);border-radius:20px;padding:22px 24px;width:100%;max-width:460px;max-height:84dvh;overflow:auto;box-shadow:0 24px 60px rgba(31,41,66,.3)}
+.vc .otitle{font-size:16.5px;font-weight:800;margin-bottom:10px}
+.vc .field{margin-bottom:14px}
+.vc .field label{display:block;font-size:11.5px;color:var(--ink2);margin-bottom:6px}
+.vc .field input[type=text]{width:100%;border:1px solid var(--line);border-radius:12px;padding:11px 14px;font-size:15px;background:var(--bg)}
+.vc .field input[type=text]:focus{outline:none;border-color:var(--navy)}
+.vc .amt-hint{font-size:11.5px;color:var(--ink2);margin-top:5px}
+.vc .datestep{display:flex;align-items:center;gap:10px;font-size:14px}
+.vc .datestep button{width:30px;height:30px;border-radius:50%;border:1px solid var(--line);background:var(--panel);display:grid;place-items:center}
+.vc .chip{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:999px;padding:6.5px 13px;font-size:13.5px;background:var(--bg)}
+.vc .chip .badge{font-size:10px;background:#FDF3E0;color:#A8690C;padding:1.5px 8px;border-radius:999px}
+.vc .chg{font-size:12.5px;color:var(--navy);margin-inline-start:10px}
+.vc .chg:hover{text-decoration:underline}
+.vc .catopts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.vc .catopts .opt{border:1.5px solid var(--line);border-radius:999px;padding:5.5px 12px;font-size:12.5px;display:inline-flex;gap:7px;align-items:center;background:var(--panel)}
+.vc .catopts .opt[aria-pressed="true"]{border-color:var(--navy);background:#EEF1F8}
+.vc .tplnote{font-size:12px;color:var(--ink2);background:var(--bg);border-radius:11px;padding:10px 13px;line-height:1.9}
+.vc .formactions{display:flex;gap:10px;align-items:center;margin-top:18px}
+.vc .btn{border-radius:999px;padding:9.5px 24px;font-size:13.5px;font-weight:700}
+.vc .btn.pri{background:var(--navy);color:#fff}
+.vc .btn.pri:hover{background:var(--navy2)}
+.vc .btn.ghost{border:1px solid var(--line);color:var(--ink2)}
+.vc .btn.dang{color:var(--danger);border:1px solid currentColor;margin-inline-start:auto}
+</style>
+</head>
+<body data-variant="A">
+<div id="prototag">پروتوتایپ دورانداختنی — تیکت ۰۷</div>
+<div id="app"></div>
+<div id="dump" hidden><button class="dclose" data-dump-close>بستن</button><pre id="dump-pre"></pre></div>
+<div id="switcher" role="toolbar" aria-label="جابه‌جایی میان گونه‌های پروتوتایپ">
+  <button data-sw="prev" aria-label="گونهٔ قبلی">‹</button>
+  <strong id="var-label">دفتر (A)</strong>
+  <button data-sw="next" aria-label="گونهٔ بعدی">›</button>
+  <span class="sep"></span>
+  <button data-sw="reset" title="بازگرداندن داده‌های نمونه">⟲</button>
+  <button data-sw="dump" title="نمایش وضعیت داده">ⓘ</button>
+</div>
+<div id="toast" role="status"></div>
+
+<script>
+(function(){
+'use strict';
+
+/* ---------- دادهٔ نمونه (شهریور ۱۴۰۵؛ امروز = ۱۵ شهریور) ---------- */
+var JMONTHS=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند'];
+var CURRENT='1405-06', TODAY_DAY=15;
+var CATS=[
+ ['khoraki','خوراکی','system','#3E8E5A'],
+ ['cafe','کافه-رستوران','system','#C75B39'],
+ ['transport','حمل‌ونقل','system','#3B6FD4'],
+ ['beauty','زیبایی و درمان','system','#B0568F'],
+ ['qest','قسط','system','#6D55C0'],
+ ['bill','قبض و اینترنت','system','#2796A3'],
+ ['clothes','پوشاک','custom','#8A7A2E']
+];
+/* [عنوان، مبلغ، دسته، روز، الگوی مبدأ؟] */
+var EXP=[
+ ['خرید هفتگی سوپرمارکت',1240000,'khoraki',1],
+ ['اسنپ تا خانه',95000,'transport',1],
+ ['نان بربری',60000,'khoraki',2],
+ ['قهوه با دوستان',240000,'cafe',3],
+ ['میوه و سبزیجات',480000,'khoraki',4],
+ ['بنزین',450000,'transport',5],
+ ['قسط وام مسکن',2850000,'qest',5,'t1'],
+ ['قسط وام خودرو',1420000,'qest',5,'t2'],
+ ['نان و شیر',125000,'khoraki',7],
+ ['آرایشگاه',350000,'beauty',8],
+ ['اسنپ',80000,'transport',8],
+ ['قبض برق',312000,'bill',9],
+ ['سوپرمارکت محله',310000,'khoraki',9],
+ ['کافه لاته',180000,'cafe',10],
+ ['تاکسی',60000,'transport',11],
+ ['نان سنگک',75000,'khoraki',12],
+ ['داروخانه',218000,'beauty',12],
+ ['اینترنت خانه',450000,'bill',12,'t3'],
+ ['پیتزا سفارش آنلاین',640000,'cafe',13],
+ ['کفش',1450000,'clothes',13],
+ ['خواروبار هفتگی',980000,'khoraki',14],
+ ['مترو کارت',150000,'transport',15]
+];
+var TPL=[
+ ['t1','قسط وام مسکن',2850000,'qest',5,true],
+ ['t2','قسط وام خودرو',1420000,'qest',5,true],
+ ['t3','اینترنت خانه',450000,'bill',12,true],
+ ['t4','باشگاه بدنسازی',900000,'beauty',20,false]
+];
+/* نمونهٔ کوچکی از واژه‌نامهٔ سیستمی (لیست کامل: تیکت ۱۳) */
+var LEX_SEED={
+ 'نان':'khoraki','سوپرمارکت':'khoraki','میوه':'khoraki','شیر':'khoraki','خواروبار':'khoraki',
+ 'قهوه':'cafe','کافه':'cafe','ناهار':'cafe','رستوران':'cafe','پیتزا':'cafe','لاته':'cafe',
+ 'اسنپ':'transport','تاکسی':'transport','بنزین':'transport','مترو':'transport',
+ 'آرایشگاه':'beauty','داروخانه':'beauty','دارو':'beauty',
+ 'قسط':'qest','وام':'qest',
+ 'قبض':'bill','برق':'bill','اینترنت':'bill'
+};
+var STOP={'به':1,'از':1,'با':1,'و':1,'در':1,'تا':1,'برای':1,'روی':1,'که':1,'را':1,'این':1};
+var SWATCHES=['#3E8E5A','#C75B39','#3B6FD4','#B0568F','#6D55C0','#2796A3','#8A7A2E','#A34A5E'];
+
+function seedStore(){
+ return {
+  month:CURRENT, seq:100,
+  cats:CATS.map(function(c){return {id:c[0],name:c[1],kind:c[2],hue:c[3]}}),
+  expenses:EXP.map(function(e,i){return {id:'e'+(i+1),title:e[0],amount:e[1],catId:e[2],day:e[3],tid:e[4]||null}}),
+  templates:TPL.map(function(t){return {id:t[0],title:t[1],amount:t[2],catId:t[3],day:t[4],active:t[5]}}),
+  lexicon:Object.assign({},LEX_SEED)
+ };
+}
+var store=seedStore();
+
+/* وضعیت رابط هر گونه، جدا نگه داشته می‌شود تا مقایسه راحت باشد */
+function freshUi(){return {screen:'dash',tab:'home',open:null,drill:null,filter:null,transferFor:null,catOptsOpen:false,overlay:null,form:null,tplForm:null}}
+var ui={A:freshUi(),B:freshUi(),C:freshUi()};
+
+/* ---------- کمک‌ها ---------- */
+var FA=new Intl.NumberFormat('fa-IR');
+var FAY=new Intl.NumberFormat('fa-IR',{useGrouping:false});
+var FAC=new Intl.NumberFormat('fa-IR',{notation:'compact',maximumFractionDigits:1});
+var FAP=new Intl.NumberFormat('fa-IR',{style:'percent',maximumFractionDigits:0});
+function fa(n){return FA.format(n)}
+function faY(n){return FAY.format(n)}
+function faC(n){return FAC.format(n)}
+function faP(x){return FAP.format(x)}
+function parseFa(s){
+ var d='۰۱۲۳۴۵۶۷۸۹',d2='٠١٢٣٤٥٦٧٨٩';
+ s=String(s).replace(/[۰-۹]/g,function(ch){return String(d.indexOf(ch))}).replace(/[٠-٩]/g,function(ch){return String(d2.indexOf(ch))});
+ s=s.replace(/[^\d]/g,'');
+ return s?parseInt(s,10):0;
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function norm(s){return String(s).replace(/\u200c/g,' ').replace(/[يى]/g,'ی').replace(/ك/g,'ک').replace(/\s+/g,' ').trim()}
+function catById(id){return store.cats.find(function(c){return c.id===id})}
+function tplById(id){return store.templates.find(function(t){return t.id===id})}
+function monthExp(){return store.month===CURRENT?store.expenses:[]}
+function sumOf(list){return list.reduce(function(a,e){return a+e.amount},0)}
+function byCat(){var m={};store.cats.forEach(function(c){m[c.id]=[]});monthExp().forEach(function(e){if(m[e.catId])m[e.catId].push(e)});return m}
+function monthLabel(k){var p=k.split('-');return JMONTHS[parseInt(p[1],10)-1]+' '+faY(parseInt(p[0],10))}
+function monthShift(k,delta){var y=parseInt(k.split('-')[0],10),m=parseInt(k.split('-')[1],10);m+=delta;if(m<1){m=12;y--}if(m>12){m=1;y++}return y+'-'+(m<10?'0'+m:m)}
+/* موتور پیشنهادِ نمونه: بلندترین کلیدِ موجود در عنوان؛ بدون حدس → پربسامدترین دستهٔ کاربر */
+function suggest(title){
+ var t=norm(title),best=null,bl=0;
+ for(var k in store.lexicon){var nk=norm(k);if(nk&&t.indexOf(nk)>=0&&nk.length>bl){best=store.lexicon[k];bl=nk.length}}
+ if(best)return{catId:best,matched:true};
+ var counts={};monthExp().forEach(function(e){counts[e.catId]=(counts[e.catId]||0)+1});
+ var top=null,n=0;for(var c in counts){if(counts[c]>n){n=counts[c];top=c}}
+ return{catId:top||store.cats[0].id,matched:false};
+}
+function learnFrom(title,catId){
+ var t=norm(title).split(' ').filter(function(w){return w.length>=2&&!STOP[w]})[0];
+ if(t){store.lexicon[t]=catId;return t}
+ return null;
+}
+
+/* ---------- اجزای مشترک فرم ---------- */
+function chipHTML(f){
+ var c=catById(f.catId);
+ return '<span class="chip" id="sugg-chip"><i class="dot" style="background:'+c.hue+'"></i>'+esc(c.name)+(f.manual?'':'<span class="badge">پیشنهاد</span>')+'</span>';
+}
+function catOptsHTML(f){
+ return store.cats.map(function(c){
+  return '<button class="opt" data-act="pick-cat" data-cat="'+c.id+'" aria-pressed="'+(c.id===f.catId)+'"><i class="dot" style="background:'+c.hue+'"></i>'+esc(c.name)+'</button>';
+ }).join('');
+}
+function expFormHTML(f){
+ return ''+
+ '<div class="field"><label for="f-title">عنوان</label><input type="text" id="f-title" value="'+esc(f.title)+'" placeholder="مثلاً نان و شیر"></div>'+
+ '<div class="field"><label for="f-amt">مبلغ</label><input type="text" id="f-amt" inputmode="numeric" value="'+esc(f.amountStr)+'" placeholder="به تومان"><div class="amt-hint" id="amt-hint">'+(f.amountStr?fa(parseFa(f.amountStr))+' تومان':'')+'</div></div>'+
+ '<div class="field"><label>تاریخ</label><div class="datestep"><button data-act="day-prev" aria-label="روز قبل">‹</button><span>'+fa(f.day)+' شهریور ۱۴۰۵</span><button data-act="day-next" aria-label="روز بعد">›</button></div></div>'+
+ '<div class="field"><label>دسته</label>'+chipHTML(f)+'<button class="chg" data-act="toggle-catopts">تغییر</button><div class="catopts" id="catopts"'+(ui[variant].catOptsOpen?'':' hidden')+'>'+catOptsHTML(f)+'</div></div>'+
+ (f.tid?'<p class="tplnote">این خرج از الگوی «'+esc(tplById(f.tid).title)+'» تولید شده؛ ویرایشش الگو را عوض نمی‌کند.</p>':'')+
+ '<div class="formactions">'+(f.mode==='edit'?'<button class="btn dang" data-act="del-exp">حذف</button>':'')+
+ '<button class="btn ghost" data-act="close-overlay">انصراف</button><button class="btn pri" data-act="save-exp">ثبت</button></div>';
+}
+function tplFormHTML(f){
+ return ''+
+ '<div class="field"><label for="t-title">عنوان</label><input type="text" id="t-title" value="'+esc(f.title)+'" placeholder="مثلاً قسط وام مسکن"></div>'+
+ '<div class="field"><label for="t-amt">مبلغ</label><input type="text" id="t-amt" inputmode="numeric" value="'+esc(f.amountStr)+'" placeholder="به تومان"><div class="amt-hint" id="t-amt-hint">'+(f.amountStr?fa(parseFa(f.amountStr))+' تومان':'')+'</div></div>'+
+ '<div class="field"><label>روزِ ماه</label><div class="datestep"><button data-act="tday-prev" aria-label="روز قبل">‹</button><span>روز '+fa(f.day)+' هر ماه</span><button data-act="tday-next" aria-label="روز بعد">›</button></div></div>'+
+ '<div class="field"><label>دسته</label>'+chipHTML(f)+'<button class="chg" data-act="toggle-catopts">تغییر</button><div class="catopts" id="catopts"'+(ui[variant].catOptsOpen?'':' hidden')+'>'+catOptsHTML(f)+'</div></div>'+
+ '<div class="field"><label>وضعیت</label><button class="chg" data-act="tpl-toggle-active">'+(f.active?'فعال — توقفش بزن':'متوقف — ازسر بگیر')+'</button></div>'+
+ '<div class="formactions"><button class="btn ghost" data-act="close-overlay">انصراف</button><button class="btn pri" data-act="save-tpl">ذخیره</button></div>';
+}
+function formShellA(inner,title){return '<div class="scrim" data-act="close-overlay"></div><div class="sheet" role="dialog" aria-label="'+title+'"><h3 class="otitle">'+title+'</h3>'+inner+'</div>'}
+function formShellB(inner,title){return '<div class="full" role="dialog" aria-label="'+title+'"><div class="dhead"><button class="dback" data-act="close-overlay" aria-label="بستن">→</button><span class="dtitle">'+title+'</span></div><div style="margin-top:16px">'+inner+'</div></div>'}
+function formShellC(inner,title){return '<div class="scrim" data-act="close-overlay"><div class="modal" role="dialog" aria-label="'+title+'"><h3 class="otitle">'+title+'</h3>'+inner+'</div></div>'}
+function catsManagementHTML(v){
+ var u=ui[v],bc=byCat();
+ return store.cats.map(function(c){
+  var list=bc[c.id]||[],n=list.length,busy=n>0,sys=c.kind==='system',tr=u.transferFor===c.id;
+  return '<div class="lrow">'+
+   '<div class="crow">'+
+    '<span class="'+(v==='C'?'cname2':'cname')+'"><i class="dot" style="background:'+c.hue+'"></i>'+esc(c.name)+(sys?'<span class="kindtag">سیستمی</span>':'')+'</span>'+
+    '<span class="cacts"><span class="cnt">'+fa(n)+' خرج</span>'+
+    (busy?'<button class="mini" data-act="transfer-open" data-cat="'+c.id+'">انتقال همه به…</button>':'')+
+    (sys?'':'<button class="mini" data-act="del-cat" data-cat="'+c.id+'"'+(busy?' disabled title="اول خرج‌ها را منتقل کنید"':'')+'>حذف</button>')+
+    '</span></div>'+
+   (sys&&busy?'<div class="chint">دستهٔ سیستمی حذف‌شدنی نیست؛ برای خالی‌کردنش خرج‌ها را منتقل کنید.</div>':'')+
+   (busy&&!sys?'<div class="chint">برای حذف، اول خرج‌ها را به دستهٔ دیگری منتقل کنید.</div>':'')+
+   (tr?'<div class="trrow"><select id="tr-target">'+store.cats.filter(function(x){return x.id!==c.id}).map(function(x){return '<option value="'+x.id+'">'+esc(x.name)+'</option>'}).join('')+'</select><button class="btn pri" data-act="transfer-do" data-cat="'+c.id+'">انتقال</button><button class="btn ghost" data-act="transfer-cancel">انصراف</button></div>':'')+
+  '</div>';
+ }).join('');
+}
+function addCatHTML(){
+ return '<div class="addcat"><h3>دستهٔ جدید</h3><div class="ncrow">'+
+  '<input type="text" id="nc-name" placeholder="نام دسته">'+
+  '<div class="swatches">'+SWATCHES.map(function(h,i){return '<label class="sw" style="background:'+h+'" title="'+h+'"><input type="radio" name="nc-hue" value="'+h+'"'+(i===0?' checked':'')+'></label>'}).join('')+'</div>'+
+  '<button class="btn pri" data-act="add-cat">افزودن</button></div></div>';
+}
+function tplListHTML(v){
+ return store.templates.map(function(t){
+  var gen=monthExp().find(function(e){return e.tid===t.id});
+  return '<div class="trow">'+
+   '<div class="ttop"><div><div class="tt">'+esc(t.title)+'</div><div class="tmeta">روز '+fa(t.day)+' هر ماه — '+fa(t.amount)+' تومان</div></div>'+
+   '<div style="display:flex;align-items:center;gap:9px"><span class="tchip '+(t.active?'on':'off')+'">'+(t.active?'فعال':'متوقف')+'</span>'+
+   '<span class="tacts"><button class="mini" data-act="tpl-toggle" data-id="'+t.id+'">'+(t.active?'توقف':'ازسرگیری')+'</button><button class="mini" data-act="tpl-edit" data-id="'+t.id+'">ویرایش</button></span></div></div>'+
+   (t.active&&gen?'<button class="tgen" data-act="open-exp" data-id="'+gen.id+'">خرجِ این ماه تولید شد: '+fa(gen.amount)+' تومان — ویرایش</button>':'')+
+  '</div>';
+ }).join('');
+}
+
+/* =========================================================
+   گونهٔ A — دفتر
+   ========================================================= */
+function renderA(){
+ var u=ui.A,bc=byCat(),exps=monthExp(),total=sumOf(exps);
+ var cats=store.cats.map(function(c){return {c:c,list:bc[c.id]||[]}}).filter(function(x){return x.list.length}).sort(function(a,b){return sumOf(b.list)-sumOf(a.list)});
+ var max=cats.length?sumOf(cats[0].list):1;
+ var h='';
+ if(u.screen==='dash'){
+  var rows=cats.map(function(x){
+   var c=x.c,list=x.list.slice().sort(function(a,b){return a.day-b.day}),s=sumOf(list),open=u.open===c.id;
+   return '<div class="lrow">'+
+    '<button class="lbtn" data-act="toggle-cat" data-cat="'+c.id+'" aria-expanded="'+open+'">'+
+     '<span class="cname"><i class="dot" style="background:'+c.hue+'"></i>'+esc(c.name)+'</span>'+
+     '<span class="lamt num"><span class="pct">'+faP(s/total)+'</span>'+fa(s)+'</span>'+
+     '<span class="lbar"><i style="width:'+(s/max*100).toFixed(1)+'%;background:'+c.hue+'"></i></span>'+
+    '</button>'+
+    (open?'<div class="lx">'+list.map(function(e){
+      return '<button class="xline" data-act="open-exp" data-id="'+e.id+'"><span class="xday">'+fa(e.day)+' شهریور</span><span>'+esc(e.title)+'</span>'+(e.tid?'<span class="xtag">از الگو</span>':'')+'<span class="xamt num">'+fa(e.amount)+'</span></button>';
+     }).join('')+'<button class="xadd" data-act="add-to-cat" data-cat="'+c.id+'">+ افزودن خرج به این دسته</button></div>':'')+
+   '</li>';
+  }).join('');
+  h+='<div class="wrap"><div class="topbar">'+
+   '<div class="monthnav"><button data-act="m-prev" aria-label="ماه قبل">‹</button><span class="mname">'+monthLabel(store.month)+'</span><button data-act="m-next" aria-label="ماه بعد">›</button></div>'+
+   '<nav class="links"><button data-act="go-cats">دسته‌ها</button><button data-act="go-tpl">الگوها</button></nav></div>'+
+   (total?'<h1 class="total num">'+fa(total)+'<small>تومان</small></h1><div class="ledger">'+rows+'</div>'
+    :'<div class="empty">'+(store.month===CURRENT?'این ماه هنوز خرجی ندارد.<br>با دکمهٔ گوشهٔ صفحه اولین خرج را ثبت کن.':('برای '+monthLabel(store.month)+' خرجی ثبت نشده.'))+'</div>')+
+   '</div>'+
+   '<button class="fab" data-act="open-add" aria-label="ثبت خرج">+</button>';
+ }
+ else if(u.screen==='cats'){
+  h+='<div class="wrap"><div class="topbar"><h2 class="ptitle">دسته‌ها</h2><nav class="links"><button data-act="go-dash">بازگشت به دفتر</button><button data-act="go-tpl">الگوها</button></nav></div>'+
+   '<div class="ledger" style="margin-top:14px">'+catsManagementHTML('A')+'</div>'+addCatHTML()+'</div>';
+ }
+ else if(u.screen==='tpl'){
+  h+='<div class="wrap"><div class="topbar"><h2 class="ptitle">الگوهای تکرار</h2><nav class="links"><button data-act="go-dash">بازگشت به دفتر</button><button data-act="go-cats">دسته‌ها</button></nav></div>'+
+   '<div class="ledger" style="margin-top:14px">'+tplListHTML('A')+'</div>'+
+   '<div style="margin-top:22px"><button class="btn pri" data-act="tpl-add">+ الگوی جدید</button></div>'+
+   '<p class="chint" style="margin-top:12px">هر الگو اولِ ماهِ جلالی خرجِ خودش را تولید می‌کند؛ خرجِ تولیدشده آزادانه ویرایش می‌شود.</p></div>';
+ }
+ if(u.overlay==='exp')h+=formShellA(expFormHTML(u.form),u.form.mode==='edit'?'ویرایش خرج':'ثبت خرج');
+ if(u.overlay==='tpl')h+=formShellA(tplFormHTML(u.tplForm),u.tplForm.mode==='edit'?'ویرایش الگو':'الگوی جدید');
+ return '<div class="variant va">'+h+'</div>';
+}
+
+/* =========================================================
+   گونهٔ B — کاشی
+   ========================================================= */
+function renderB(){
+ var u=ui.B,bc=byCat(),exps=monthExp(),total=sumOf(exps);
+ var cats=store.cats.map(function(c){return {c:c,list:bc[c.id]||[]}}).filter(function(x){return x.list.length}).sort(function(a,b){return sumOf(b.list)-sumOf(a.list)});
+ var h='';
+ if(u.screen==='dash'){
+  var stack=cats.map(function(x){var s=sumOf(x.list);return '<i style="width:'+(s/total*100).toFixed(1)+'%;background:'+x.c.hue+'" title="'+esc(x.c.name)+'"></i>'}).join('');
+  var tiles=cats.map(function(x){
+   var s=sumOf(x.list),share=s/total;
+   var span=share>=.3?'s4 tall':(share>=.2?'s3':(share>=.12?'s2':''));
+   var amt=share>=.12?fa(s):faC(s);
+   return '<button class="tile '+span+'" data-act="open-drill" data-cat="'+x.c.id+'" style="background:'+x.c.hue+'">'+
+    '<span class="tn">'+esc(x.c.name)+'</span><span><span class="ta num">'+amt+'</span><br><span class="tp">'+faP(share)+' از ماه</span></span></button>';
+  }).join('');
+  h+='<div class="wrap"><div class="top">'+
+   '<div class="monthnav"><button data-act="m-prev" aria-label="ماه قبل">‹</button><span class="mname">'+monthLabel(store.month)+'</span><button data-act="m-next" aria-label="ماه بعد">›</button></div>'+
+   '<div class="hlinks"><button data-act="go-cats">دسته‌ها</button><button data-act="go-tpl">الگوها</button></div></div>'+
+   (total?'<h1 class="total num">'+fa(total)+'<small>تومان</small></h1><div class="stack">'+stack+'</div><div class="stackcap">سهم هر دسته از جمع ماه</div><div class="mosaic">'+tiles+'</div>'
+    :'<div class="empty">'+(store.month===CURRENT?'این ماه هنوز خرجی ندارد.<br>از دکمهٔ پایین اولین خرج را ثبت کن.':('برای '+monthLabel(store.month)+' خرجی ثبت نشده.'))+'</div>')+
+   '</div>'+
+   (total?'<button class="cta" data-act="open-add">+ ثبت خرج</button>':'');
+ }
+ else if(u.screen==='cats'||u.screen==='tpl'){
+  var isCats=u.screen==='cats';
+  h+='<div class="wrap"><div class="top"><div class="monthnav"><span class="mname">'+(isCats?'دسته‌ها':'الگوهای تکرار')+'</span></div><div class="hlinks"><button data-act="go-dash">بازگشت</button></div></div>'+
+   '<div style="margin-top:18px">'+(isCats?'<div>'+catsManagementHTML('B')+'</div>'+addCatHTML():'<div>'+tplListHTML('B')+'</div><div style="margin-top:16px"><button class="btn pri" data-act="tpl-add">+ الگوی جدید</button></div><p class="chint" style="margin-top:10px">هر الگو اولِ ماه خرجِ خودش را تولید می‌کند؛ خرجِ تولیدشده آزادانه ویرایش می‌شود.</p>')+'</div></div>';
+ }
+ if(u.drill){
+  var c=catById(u.drill),list=(bc[u.drill]||[]).slice().sort(function(a,b){return a.day-b.day}),s=sumOf(list);
+  h+='<div class="full"><div class="dhead"><button class="dback" data-act="close-drill" aria-label="بازگشت">→</button><span class="dtitle"><i class="dswatch" style="background:'+c.hue+'"></i>'+esc(c.name)+'</span></div>'+
+   '<div class="dtotal num">'+fa(s)+' <span style="font-size:13px;color:var(--muted);font-weight:500">تومان در '+monthLabel(store.month)+'</span></div>'+
+   '<div class="dsub">'+fa(list.length)+' خرج</div>'+
+   '<ul class="elist">'+list.map(function(e){
+    return '<li><button class="eitem" data-act="open-exp" data-id="'+e.id+'"><span class="eday">'+fa(e.day)+' شهریور</span><span class="etitle">'+esc(e.title)+(e.tid?'<span class="etag">از الگو</span>':'')+'</span><span class="eamt num">'+fa(e.amount)+'</span></button></li>';
+   }).join('')+'</ul>'+
+   '<button class="eadd" data-act="add-to-cat" data-cat="'+c.id+'">+ افزودن خرج به این دسته</button></div>';
+ }
+ if(u.overlay==='exp')h+=formShellB(expFormHTML(u.form),u.form.mode==='edit'?'ویرایش خرج':'ثبت خرج');
+ if(u.overlay==='tpl')h+=formShellB(tplFormHTML(u.tplForm),u.tplForm.mode==='edit'?'ویرایش الگو':'الگوی جدید');
+ return '<div class="variant vb">'+h+'</div>';
+}
+
+/* =========================================================
+   گونهٔ C — تابلو
+   ========================================================= */
+function renderC(){
+ var u=ui.C,bc=byCat(),exps=monthExp(),total=sumOf(exps);
+ var cats=store.cats.map(function(c){return {c:c,list:bc[c.id]||[]}}).filter(function(x){return x.list.length}).sort(function(a,b){return sumOf(b.list)-sumOf(a.list)});
+ var h='';
+ var tabbar='<div class="tabbar" role="tablist">'+
+  '<button class="tab" role="tab" data-act="tab" data-tab="home" aria-current="'+(u.tab==='home')+'">خانه</button>'+
+  '<button class="tab" role="tab" data-act="tab" data-tab="cats" aria-current="'+(u.tab==='cats')+'">دسته‌ها</button>'+
+  '<button class="plus" data-act="open-add" aria-label="ثبت خرج">+</button>'+
+  '<button class="tab" role="tab" data-act="tab" data-tab="tpl" aria-current="'+(u.tab==='tpl')+'">الگوها</button>'+
+  '</div>';
+ if(u.tab==='home'){
+  if(u.filter){
+   var c=catById(u.filter),list=(bc[u.filter]||[]).slice().sort(function(a,b){return a.day-b.day}),s=sumOf(list);
+   h+='<div class="wrap"><div class="dhead"><button class="dback" data-act="clear-filter">همهٔ خرج‌ها</button><span class="dtitle"><i class="dswatch" style="background:'+c.hue+'"></i>'+esc(c.name)+'</span></div>'+
+    '<div class="dsub">جمع این دسته در '+monthLabel(store.month)+': <b class="num">'+fa(s)+' تومان</b> — '+fa(list.length)+' خرج</div>'+
+    '<div class="feed">'+list.map(function(e){
+     return '<div class="frow"><span class="fday">'+fa(e.day)+' شهریور</span><button class="ftitle" data-act="open-exp" data-id="'+e.id+'">'+esc(e.title)+(e.tid?'<span class="etag">از الگو</span>':'')+'</button><span class="famt num">'+fa(e.amount)+'</span></div>';
+    }).join('')+'</div>'+
+    '<div style="margin-top:14px"><button class="mini" data-act="add-to-cat" data-cat="'+c.id+'">+ افزودن خرج به این دسته</button></div></div>';
+  }else{
+   var stack=cats.map(function(x){var s=sumOf(x.list);return '<i style="width:'+(s/total*100).toFixed(1)+'%;background:'+x.c.hue+'" title="'+esc(x.c.name)+'"></i>'}).join('');
+   var feed=monthExp().slice().sort(function(a,b){return b.day-a.day}).map(function(e){
+    var c=catById(e.catId);
+    return '<div class="frow"><span class="fday">'+fa(e.day)+' شهریور</span><button class="ftitle" data-act="open-exp" data-id="'+e.id+'">'+esc(e.title)+(e.tid?'<span class="etag">از الگو</span>':'')+'</button><button class="fcat" data-act="filter-cat" data-cat="'+c.id+'" style="background:'+c.hue+'">'+esc(c.name)+'</button><span class="famt num">'+fa(e.amount)+'</span></div>';
+   }).join('');
+   h+='<div class="wrap"><div class="monthnav"><button data-act="m-prev" aria-label="ماه قبل">‹</button><span class="mname">'+monthLabel(store.month)+'</span><button data-act="m-next" aria-label="ماه بعد">›</button></div>'+
+    '<section class="hero"><div class="hlabel">جمع '+monthLabel(store.month)+'</div><div class="hamt num">'+fa(total)+'<small>تومان</small></div>'+
+    (total?'<div class="stack">'+stack+'</div>':'')+'</section>'+
+    (total?'<div class="feed">'+feed+'</div>':'<div class="empty">'+(store.month===CURRENT?'این ماه هنوز خرجی ندارد.<br>از دکمهٔ «+» پایین اولین خرج را ثبت کن.':('برای '+monthLabel(store.month)+' خرجی ثبت نشده.'))+'</div>')+'</div>';
+  }
+ }
+ else if(u.tab==='cats'){
+  h+='<div class="wrap"><div class="sect"><h2>دسته‌ها</h2><span class="cnt">'+fa(store.cats.length)+' دسته</span></div>'+
+   '<div>'+catsManagementHTML('C')+'</div>'+addCatHTML()+'</div>';
+ }
+ else if(u.tab==='tpl'){
+  h+='<div class="wrap"><div class="sect"><h2>الگوهای تکرار</h2><button class="mini" data-act="tpl-add">+ الگوی جدید</button></div>'+
+   '<div>'+tplListHTML('C')+'</div>'+
+   '<p class="chint" style="margin-top:10px">هر الگو اولِ ماه خرجِ خودش را تولید می‌کند؛ خرجِ تولیدشده آزادانه ویرایش می‌شود.</p></div>';
+ }
+ h+=tabbar;
+ if(u.overlay==='exp')h+=formShellC(expFormHTML(u.form),u.form.mode==='edit'?'ویرایش خرج':'ثبت خرج');
+ if(u.overlay==='tpl')h+=formShellC(tplFormHTML(u.tplForm),u.tplForm.mode==='edit'?'ویرایش الگو':'الگوی جدید');
+ return '<div class="variant vc">'+h+'</div>';
+}
+
+var VARIANTS={
+ A:{label:'دفتر (A)',render:renderA},
+ B:{label:'کاشی (B)',render:renderB},
+ C:{label:'تابلو (C)',render:renderC}
+};
+var ORDER=['A','B','C'];
+
+/* ---------- اکشن‌ها ---------- */
+function rerender(){render()}
+function openExpForm(mode,exp,presetCat){
+ var u=ui[variant];
+ var s=suggest(exp?exp.title:'');
+ u.form={mode:mode,id:exp?exp.id:null,tid:exp?exp.tid:null,title:exp?exp.title:'',amountStr:exp?String(exp.amount):'',day:exp?exp.day:TODAY_DAY,catId:(exp?exp.catId:(presetCat||s.catId)),manual:!!(exp||presetCat)};
+ u.catOptsOpen=false;u.overlay='exp';rerender();
+}
+function openTplForm(mode,tpl){
+ var u=ui[variant];
+ u.tplForm={mode:mode,id:tpl?tpl.id:null,title:tpl?tpl.title:'',amountStr:tpl?String(tpl.amount):'',day:tpl?tpl.day:5,catId:tpl?tpl.catId:'qest',active:tpl?tpl.active:true,manual:true};
+ u.catOptsOpen=false;u.overlay='tpl';rerender();
+}
+var ACTIONS={
+ 'toggle-cat':function(el){var u=ui.A;u.open=u.open===el.dataset.cat?null:el.dataset.cat;rerender()},
+ 'open-drill':function(el){ui.B.drill=el.dataset.cat;rerender()},
+ 'close-drill':function(){ui.B.drill=null;rerender()},
+ 'filter-cat':function(el){ui.C.filter=el.dataset.cat;rerender()},
+ 'clear-filter':function(){ui.C.filter=null;rerender()},
+ 'go-cats':function(){ui[variant].screen='cats';rerender()},
+ 'go-tpl':function(){ui[variant].screen='tpl';rerender()},
+ 'go-dash':function(){ui[variant].screen='dash';rerender()},
+ 'tab':function(el){ui.C.tab=el.dataset.tab;rerender()},
+ 'm-prev':function(){store.month=monthShift(store.month,-1);rerender()},
+ 'm-next':function(){store.month=monthShift(store.month,1);rerender()},
+ 'open-add':function(){
+  if(store.month!==CURRENT){toast('این پروتوتایپ دادهٔ شهریور ۱۴۰۵ دارد؛ خرج فقط در ماه جاری ثبت می‌شود.');return}
+  openExpForm('add',null,null);
+ },
+ 'add-to-cat':function(el){
+  if(store.month!==CURRENT){toast('ثبت خرج فقط در ماه جاری است.');return}
+  openExpForm('add',null,el.dataset.cat);
+ },
+ 'open-exp':function(el){openExpForm('edit',store.expenses.find(function(e){return e.id===el.dataset.id}),null)},
+ 'close-overlay':function(){var u=ui[variant];u.overlay=null;u.form=null;u.tplForm=null;u.catOptsOpen=false;rerender()},
+ 'toggle-catopts':function(){var u=ui[variant];u.catOptsOpen=!u.catOptsOpen;rerender()},
+ 'pick-cat':function(el){var u=ui[variant];if(u.form){u.form.catId=el.dataset.cat;u.form.manual=true}if(u.tplForm){u.tplForm.catId=el.dataset.cat}rerender()},
+ 'day-prev':function(){var u=ui[variant];u.form.day=Math.max(1,u.form.day-1);rerender()},
+ 'day-next':function(){var u=ui[variant];u.form.day=Math.min(31,u.form.day+1);rerender()},
+ 'tday-prev':function(){var u=ui[variant];u.tplForm.day=Math.max(1,u.tplForm.day-1);rerender()},
+ 'tday-next':function(){var u=ui[variant];u.tplForm.day=Math.min(31,u.tplForm.day+1);rerender()},
+ 'save-exp':function(){
+  var u=ui[variant],f=u.form;
+  var title=document.getElementById('f-title').value,amount=parseFa(document.getElementById('f-amt').value);
+  if(!norm(title)||amount<=0){toast('عنوان و مبلغِ معتبر لازم است.');return}
+  var learned=learnFrom(title,f.catId);
+  if(f.mode==='edit'){
+   var e=store.expenses.find(function(x){return x.id===f.id});
+   e.title=norm(title);e.amount=amount;e.catId=f.catId;e.day=f.day;
+  }else{
+   store.expenses.push({id:'e'+(++store.seq),title:norm(title),amount:amount,catId:f.catId,day:f.day,tid:null});
+  }
+  u.overlay=null;u.form=null;
+  toast((f.mode==='edit'?'خرج به‌روز شد':'خرج ثبت شد')+(learned?' — «'+learned+'» یاد گرفته شد':''));
+  rerender();
+ },
+ 'del-exp':function(){
+  var u=ui[variant];
+  store.expenses=store.expenses.filter(function(e){return e.id!==u.form.id});
+  u.overlay=null;u.form=null;toast('خرج حذف شد.');rerender();
+ },
+ 'tpl-add':function(){openTplForm('add',null)},
+ 'tpl-edit':function(el){openTplForm('edit',tplById(el.dataset.id))},
+ 'tpl-toggle':function(el){
+  var t=tplById(el.dataset.id);t.active=!t.active;
+  toast(t.active?'الگو ازسر گرفته شد.':'الگو متوقف شد؛ خرجِ ماه‌های بعد تولید نمی‌شود.');rerender();
+ },
+ 'tpl-toggle-active':function(){var u=ui[variant];u.tplForm.active=!u.tplForm.active;rerender()},
+ 'save-tpl':function(){
+  var u=ui[variant],f=u.tplForm;
+  var title=document.getElementById('t-title').value,amount=parseFa(document.getElementById('t-amt').value);
+  if(!norm(title)||amount<=0){toast('عنوان و مبلغِ معتبر لازم است.');return}
+  if(f.mode==='edit'){
+   var t=tplById(f.id);t.title=norm(title);t.amount=amount;t.day=f.day;t.catId=f.catId;t.active=f.active;
+  }else{
+   store.templates.push({id:'t'+(++store.seq),title:norm(title),amount:amount,catId:f.catId,day:f.day,active:f.active});
+  }
+  u.overlay=null;u.tplForm=null;toast('الگو ذخیره شد.');rerender();
+ },
+ 'transfer-open':function(el){ui[variant].transferFor=el.dataset.cat;rerender()},
+ 'transfer-cancel':function(){ui[variant].transferFor=null;rerender()},
+ 'transfer-do':function(el){
+  var from=el.dataset.cat,toSel=document.getElementById('tr-target'),to=toSel?toSel.value:null;
+  var n=0;store.expenses.forEach(function(e){if(e.catId===from){e.catId=to;n++}});
+  ui[variant].transferFor=null;
+  toast(fa(n)+' خرج به «'+catById(to).name+'» منتقل شد.');rerender();
+ },
+ 'del-cat':function(el){
+  var c=catById(el.dataset.cat),n=store.expenses.filter(function(e){return e.catId===c.id}).length;
+  if(n>0||c.kind==='system')return;
+  store.cats=store.cats.filter(function(x){return x.id!==c.id});
+  toast('دستهٔ «'+c.name+'» حذف شد.');rerender();
+ },
+ 'add-cat':function(){
+  var nameEl=document.getElementById('nc-name'),name=norm(nameEl?nameEl.value:'');
+  if(!name){toast('نام دسته را بنویسید.');return}
+  var hueEl=document.querySelector('input[name="nc-hue"]:checked');
+  store.cats.push({id:'c'+(++store.seq),name:name,kind:'custom',hue:hueEl?hueEl.value:SWATCHES[0]});
+  toast('دستهٔ «'+name+'» اضافه شد.');rerender();
+ }
+};
+
+/* ---------- رندر، سوییچر، رویدادها ---------- */
+var app=document.getElementById('app');
+var variant='A';
+function initialVariant(){
+ var p=new URLSearchParams(location.search).get('variant');
+ if(!p&&location.hash.indexOf('variant=')>=0)p=new URLSearchParams(location.hash.slice(1)).get('variant');
+ return ORDER.indexOf(p)>=0?p:'A';
+}
+function setParam(v){
+ try{history.replaceState(null,'',location.pathname+'?variant='+v)}
+ catch(err){location.hash='variant='+v}
+}
+function render(){
+ document.body.dataset.variant=variant;
+ app.innerHTML=VARIANTS[variant].render();
+ document.getElementById('var-label').textContent=VARIANTS[variant].label;
+}
+function cycle(delta){
+ var i=ORDER.indexOf(variant);
+ variant=ORDER[(i+delta+ORDER.length)%ORDER.length];
+ setParam(variant);render();
+}
+var toastEl=document.getElementById('toast'),toastTimer=null;
+function toast(msg){
+ toastEl.textContent=msg;toastEl.classList.add('show');
+ clearTimeout(toastTimer);toastTimer=setTimeout(function(){toastEl.classList.remove('show')},2600);
+}
+
+app.addEventListener('click',function(e){
+ var el=e.target.closest('[data-act]');
+ if(!el)return;
+ var fn=ACTIONS[el.dataset.act];
+ if(fn)fn(el,e);
+});
+/* تایپ: همگام‌سازی وضعیت + پیشنهادِ زنده با تأخیر ۱۵۰ms (تصمیم تیکت ۰۶) */
+var suggTimer=null;
+app.addEventListener('input',function(e){
+ var u=ui[variant];
+ if(e.target.id==='f-title'&&u.form){u.form.title=e.target.value;clearTimeout(suggTimer);suggTimer=setTimeout(function(){
+  if(!u.form||u.form.manual)return;
+  var s=suggest(document.getElementById('f-title')?document.getElementById('f-title').value:'');
+  u.form.catId=s.catId;
+  var chip=document.getElementById('sugg-chip');
+  if(chip)chip.outerHTML=chipHTML(u.form);
+ },150)}
+ if(e.target.id==='f-amt'&&u.form){u.form.amountStr=e.target.value;var hint=document.getElementById('amt-hint');if(hint)hint.textContent=parseFa(e.target.value)?fa(parseFa(e.target.value))+' تومان':''}
+ if(e.target.id==='t-amt'&&u.tplForm){u.tplForm.amountStr=e.target.value;var h2=document.getElementById('t-amt-hint');if(h2)h2.textContent=parseFa(e.target.value)?fa(parseFa(e.target.value))+' تومان':''}
+});
+
+/* نوار سوییچر */
+document.getElementById('switcher').addEventListener('click',function(e){
+ var b=e.target.closest('[data-sw]');if(!b)return;
+ var sw=b.dataset.sw;
+ if(sw==='prev')cycle(-1);
+ if(sw==='next')cycle(1);
+ if(sw==='reset'){store=seedStore();ui={A:freshUi(),B:freshUi(),C:freshUi()};render();toast('داده‌های نمونه بازنشانی شد.')}
+ if(sw==='dump'){
+  var d=document.getElementById('dump');
+  document.getElementById('dump-pre').textContent=JSON.stringify({month:store.month,cats:store.cats,expenses:store.expenses,templates:store.templates,lexicon:store.lexicon},null,2);
+  d.hidden=!d.hidden;
+ }
+});
+document.getElementById('dump').addEventListener('click',function(e){
+ if(e.target.closest('[data-dump-close]'))document.getElementById('dump').hidden=true;
+});
+
+/* کلیدهای جهت‌دار (آینه‌ای برای RTL: چپ = بعدی) و Escape */
+document.addEventListener('keydown',function(e){
+ var t=e.target;
+ if(t&&(t.matches&&t.matches('input,textarea,select')||t.isContentEditable))return;
+ if(e.key==='Escape'){var u=ui[variant];if(u.overlay){u.overlay=null;u.form=null;u.tplForm=null;u.catOptsOpen=false;render()}document.getElementById('dump').hidden=true;return}
+ if(e.key==='ArrowLeft')cycle(1);
+ if(e.key==='ArrowRight')cycle(-1);
+});
+
+variant=initialVariant();
+render();
+/* پارامتر اشکال‌زدایی: #open=add|tpl فرم، #open=cats|tpls صفحهٔ مدیریت را از اول باز می‌کند */
+(function(){
+ var o=new URLSearchParams(location.hash.slice(1)).get('open');
+ var goScreen=function(s){ if(variant==='C'){ui.C.tab=s}else{ui[variant].screen=s} render() };
+ if(o==='add')ACTIONS['open-add']();
+ if(o==='tpl')openTplForm('add',null);
+ if(o==='cats')goScreen('cats');
+ if(o==='tpls')goScreen('tpl');
+})();
+})();
+</script>
+</body>
+</html>

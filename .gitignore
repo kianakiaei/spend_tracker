@@ -54,3 +54,6 @@ temp/
 !.vscode/extensions.json
 .DS_Store
 Thumbs.db
+
+# prototype scratch renders
+.scratch/**/prototypes/.shots/
