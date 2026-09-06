@@ -1,7 +1,7 @@
 # 15 — پیش‌نمایش اقساط در ماه‌های آینده
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: —
 
 ## Question
