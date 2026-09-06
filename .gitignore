@@ -21,6 +21,11 @@ out/
 coverage/
 .nyc_output/
 
+# Playwright artifacts
+test-results/
+playwright-report/
+blob-report/
+
 # Logs
 logs/
 *.log
@@ -43,6 +48,9 @@ pnpm-debug.log*
 *.sqlite
 *.sqlite3
 *.db
+*.db-journal
+*.db-wal
+*.db-shm
 
 # Temp / uploads
 tmp/
