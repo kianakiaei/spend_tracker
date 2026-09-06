@@ -20,6 +20,7 @@ Labels: wayfinder:map
 
 ## Decisions so far
 
+- [تثبیت معماری نهایی و قرارداد API موبایل](issues/12-architecture-api-contract.md): همهٔ CRUD دامنه Route Handler زیر `/api/v1` (Server Action فقط شکرِ فرم؛ RSC مستقیم از سرویس می‌خواند)؛ منابع: expenses / categories (+move-expenses) / recurring-templates / summaries / classify + mount بهتر-auth بیرون v1؛ بدون صفحه‌بندی در v1؛ خطا = problem+json؛ opId و If-Match در v1 نیستند؛ auth = better-auth 1.7.3 با `bearer()`؛ ساختار `src/{app, db, lib/{schemas, services, categorization, jalali}}`؛ **dev/تست هرگز به Turso نمی‌زنند (تأکید کاربر)**؛ prod = Vercel hobby + توکن never-expire؛ classify: POST با source و confidence، بی‌اثر؛ آستانه‌های تست per-glob تأیید شد.
 - [طراحی بصری UI](issues/07-ui-design-direction.md): نسخهٔ ۲ تلفیقی تأیید شد — کاغذ روشن + جوهر تیره + یک اکسنت یشمی؛ داشبورد = جمع ماه بزرگ + کاشی‌های متناسب با سهم (تینت ملایم) + لیست دفتریِ خرج‌ها؛ کاشی = دریل‌داون تمام‌صفحه، خرج = شیت ویرایش، ثبت = شیت پایینی با بج «پیشنهاد»؛ جریان‌های دسته‌ها/الگوها طبق ۰۵/۰۶. منابع اولیه: prototypes/ui-direction-v2.html و ui-direction.html.
 - [موتور دسته‌بندی و UX یادگیری](issues/06-categorization-learning-ux.md): «همیشه پیشنهاد» با بجِ قابل‌تغییر — حتی بی‌حدس (fallback: پربسامدترین دستهٔ خود کاربر)؛ پیشنهادِ زندهٔ سمت کلاینت با سرویس مشترک + یادگیری سمت سرور هنگام ذخیرهٔ خرج (کلیدهای نرمال‌شده، decay نرمِ ×۰٫۵ در تناقض؛ تولید الگو یادگیری نمی‌سازد)؛ واژه‌نامهٔ seed دست‌نویس در کد (لیست دقیق → تیکت ۱۳)؛ بج فقط در فرم — بدون نشانِ لیست و بدون مالتی‌سلکت مستقل.
 - [استک Next.js تمام‌استک و الگوی API برای موبایل](issues/10-nextjs-fullstack-api.md): next **16.3.4** (App Router تنها روتر، Turbopack پیش‌فرض، `proxy.ts` جای middleware، params/cookies ناهمگام) + React 19.2.8 + TypeScript 7.0.2 (fallback 5.9.3) + zod 4.5.4 + Tailwind 4.3.3؛ قاعدهٔ مرز API: **همهٔ CRUD دامنه Route Handler زیر `app/api/v1/...`**، Server Action فقط شکرِ فرم وب که همان سرویس دامنه را صدا می‌زند، RSC هرگز Route Handler خود را fetch نمی‌کند؛ اعتبارسنجی با helper نازک `parseJson`/`parseQuery` روی Zod 4؛ خطا با **problem+json (RFC 9457)**؛ کلاینت تایپ‌سیف = fetch wrapper + اشتراک Zod schema (OpenAPI از همان اسکیماها وقتی موبایل نزدیک شد)؛ **auth = better-auth 1.7.3** (آداپتور رسمی Drizzle با sqlite، پلاگین `bearer()` برای موبایل آینده؛ Auth.js v5 هنوز beta و پروژه رسماً در Better Auth ادغام شده)؛ عدم‌قطعیت ثبت‌شده: ترکیب better-auth+Turso/libSQL باید اوایل پیاده‌سازی smoke-test شود.
@@ -35,9 +36,7 @@ Labels: wayfinder:map
 ## Not yet specified
 
 - پلن تست دقیق هر ماژول — با خروجی تحقیق ۱۱ و شروع پیاده‌سازی شکل می‌گیرد.
-- مقصد دیپلوی (Vercel یا جایگزین)، ریجن Turso و مدیریت سکرت‌های `.env` — به معماری (تیکت ۱۲) وابسته است؛ نزدیک انتها.
-- تولید خودکار خرجِ الگوها سمت سرور (اولین درخواستِ هر ماه، idempotent) — جای دقیقش (lazy-on-request در برابر cron) با معماری Next روشن می‌شود.
-- پیش‌نمایش اقساطِ ماه‌های آینده هنگام ناوبری به ماه‌های بعد (الگوها تا وقتی ماهشان نرسیده تولید نمی‌شوند — تولید فقط در ماه جاری).
+- چرخش به اجرا: وقتی تیکت‌های تصمیم باقی‌مانده (Auth و سشن، واژه‌نامهٔ سیستمی، مکان تولید الگوها، پیش‌نمایش اقساط) بسته شدند، شکستن پیاده‌سازی به تیکت‌های اجرایی — طبق تصمیم کاربر، این تلاش اجرا را هم خودش حمل می‌کند.
 
 ## Out of scope
 
