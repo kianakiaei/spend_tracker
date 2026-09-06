@@ -57,3 +57,7 @@ Thumbs.db
 
 # prototype scratch renders
 .scratch/**/prototypes/.shots/
+
+# Next.js scaffold
+next-env.d.ts
+.vercel
