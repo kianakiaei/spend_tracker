@@ -20,6 +20,8 @@ Labels: wayfinder:map
 
 ## Decisions so far
 
+- [اسکفولد اجرا + بستن عدم‌قطعیت better-auth+libSQL](issues/18-scaffold-auth-smoke-test-infra.md): **اپ Next.js 16.3.4 اسکفولد و smoke واقعی سبز شد** — ثبت‌نام/ورود/`get-session` با کوکی و `Authorization: Bearer` (مسیر موبایل) روی فایل libSQL موقت + migrator، همگی پاس. عدم‌قطعیت ثبت‌شدهٔ تیکت ۱۲ **بسته**: ترکیب better-auth 1.7.3 + drizzle sqlite adapter + libSQL کار می‌کند؛ فقط `BETTER_AUTH_SECRET` در حالت production الزامی است (dev در `.env` گیت‌ایگنورد، CI مقدار ساختگی، prod با تیکت ۳۱). **انحراف نسخه: TS 7.0.2 → fallback ثبت‌شدهٔ 5.9.3** (typescript-eslint 8.69 TS 7.0 را رد می‌کند؛ دقیق پین شد). زیرساخت: vitest 5.0.0 دو project (node/jsdom)، playwright 1.63 + webServer، CI شش‌مرحله‌ای بدون service container، اسکریپت‌های db:generate/db:migrate — آستانه‌های پوشش با تیکت‌های ۱۹–۲۴. گام بعدی: ۱۹ (با شماره)، ۲۰/۲۱ موازی آزاد.
+
 - [شکستن پیاده‌سازی به تیکت‌های اجرایی](issues/17-implementation-breakdown.md): **۱۴ تیکت اجرایی ۱۸–۳۱ منتشر شد**، هر تیکت = یک سشن ~۱۰۰K با پلن تست خودش (آستانه‌های per-glob تیکت ۱۱ هم‌گام با هر ماژول فعال می‌شوند، بستن نهایی ۳۰). ترتیب: اسکفولد+smoke-test auth (۱۸) → اسکیما+seed (۱۹) ∥ جلالی (۲۰) ∥ موتور دسته‌بندی (۲۱) → سرویس‌های دسته/خرج+یادگیری (۲۲) → الگوی تکرار+ensure+پیش‌نمایش (۲۳) → جمع+ترکیب پیش‌بینی (۲۴) → API v1+problem+json+fetch wrapper (۲۵) → داشبورد از پروتوتایپ (۲۶) ∥ فرم خرج+پیشنهاد زنده (۲۷) ∥ دریل‌داون/دسته‌ها/الگوها (۲۸) ∥ auth UX (۲۹) → E2E پنج‌جریان+آستانه‌ها (۳۰) → دیپلوی Vercel (۳۱، با خروجی ۱۶). تیکت‌های UI از مهارت frontend-design الزمی‌اند؛ Vazirmatn سلف‌هاست. کار با `/implement` از frontier («اول با شماره» = ۱۸).
 
 - [پیش‌نمایش اقساط در ماه‌های آینده](issues/15-future-months-installment-preview.md): **پیش‌نمایش ترکیبی فقط برای ماه‌های آیندهٔ جلالی** — جمع بزرگ و کاشی‌ها = ثبت‌شده + پیش‌بینی الگوهای فعال (زیرنویس «شامل پیش‌بینی»؛ فیلد additive `forecastToman` در summaries؛ سطرها از خواندن جدید `GET /api/v1/recurring-templates/preview?month=`)؛ سطر پیش‌بینی با بج، غیرقابل ویرایش، کلیک = ویرایش الگو؛ با رسیدن ماه، پیش‌بینی به خرج تولیدشده تبدیل می‌شود. **تاریخ خرج اختیاری شد** — خرجِ بی‌تاریخ عضو ماهِ فرم است (`occurredAt` nullable؛ `monthKey` همیشه پر ولی برای بی‌تاریخ ست‌شونده در نوشتن)؛ بدون هیچ قید تاریخی — گذشته/آینده/بی‌تاریخ همه مجاز؛ پیش‌بینی فقط برای ماه‌های بعد از جاری.
@@ -41,7 +43,7 @@ Labels: wayfinder:map
 
 ## Not yet specified
 
-— خالی. نقشهٔ تصمیم کامل است و شکستن اجرا هم بسته شد ([تیکت ۱۷](issues/17-implementation-breakdown.md) → تیکت‌های اجرایی ۱۸–۳۱). باقی‌مانده اجراست: frontier = [تیکت ۱۸](issues/18-scaffold-auth-smoke-test-infra.md) با `/implement` در سشن تازه؛ [تیکت ۱۶](issues/16-turso-account-and-prod-secrets.md) (HITL، با wizard) موازی و آزاد است و فقط دیپلوی (۳۱) را گاز می‌دهد.
+— خالی. نقشهٔ تصمیم کامل است و شکستن اجرا هم بسته شد ([تیکت ۱۷](issues/17-implementation-breakdown.md) → تیکت‌های اجرایی ۱۸–۳۱). باقی‌مانده اجراست: **تیکت ۱۸ رزول شد** (اسکفولد + smoke auth + زیرساخت تست/CI، 2026-09-06) → frontier = [تیکت ۱۹](issues/19-domain-schema-migrations-seeding.md) با `/implement`؛ [تیکت ۲۰](issues/20-jalali-module.md) و [تیکت ۲۱](issues/21-categorization-engine-seed-lexicon.md) موازی آزادند؛ [تیکت ۱۶](issues/16-turso-account-and-prod-secrets.md) (HITL، با wizard) موازی و آزاد است و فقط دیپلوی (۳۱) را گاز می‌دهد.
 
 ## Out of scope
 
