@@ -9,3 +9,41 @@ export {
   titleSchema,
   uuidv7Schema,
 } from "./domain";
+
+export {
+  classifyRequestSchema,
+  classifyResponseSchema,
+  createCategoryRequestSchema,
+  createExpenseRequestSchema,
+  createTemplateRequestSchema,
+  categoryResponseSchema,
+  expenseResponseSchema,
+  forecastRowResponseSchema,
+  monthQuerySchema,
+  monthSummaryResponseSchema,
+  moveExpensesRequestSchema,
+  moveExpensesResponseSchema,
+  recurringTemplateResponseSchema,
+  updateCategoryRequestSchema,
+  updateExpenseRequestSchema,
+  updateTemplateRequestSchema,
+} from "./api";
+
+export type {
+  CategoryDto,
+  ClassifyDto,
+  ClassifyRequest,
+  CreateCategoryRequest,
+  CreateExpenseRequest,
+  CreateTemplateRequest,
+  ExpenseDto,
+  ForecastRowDto,
+  MonthQuery,
+  MonthSummaryDto,
+  MoveExpensesDto,
+  MoveExpensesRequest,
+  RecurringTemplateDto,
+  UpdateCategoryRequest,
+  UpdateExpenseRequest,
+  UpdateTemplateRequest,
+} from "./api";

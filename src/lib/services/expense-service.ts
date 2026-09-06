@@ -68,6 +68,8 @@ export interface UpdateExpenseInput {
 }
 
 export interface ExpenseService {
+  /** One expense with its category — the v1 API's GET [id] (ticket 25). */
+  get(userId: string, id: string): Promise<ExpenseWithCategory>;
   /**
    * `entryMonthKey` is the month the form was opened in ("ماه فرم") — used
    * only for undated expenses; a dated expense always lands in its own
@@ -106,6 +108,18 @@ export function createExpenseService(db: DomainDb): ExpenseService {
   }
 
   return {
+    async get(userId, id) {
+      parseOrThrow(uuidv7Schema, id, "expense id");
+      const [row] = await db
+        .select({ expense: expenses, category: categories })
+        .from(expenses)
+        .innerJoin(categories, eq(categories.id, expenses.categoryId))
+        .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
+        .limit(1);
+      if (!row) throw new NotFoundError(`expense ${id} not found`);
+      return { ...row.expense, category: row.category };
+    },
+
     async create(userId, input, entryMonthKey) {
       const data = parseOrThrow(createExpenseInputSchema, input, "expense input");
       parseOrThrow(jalaliMonthKeySchema, entryMonthKey, "entry month");
