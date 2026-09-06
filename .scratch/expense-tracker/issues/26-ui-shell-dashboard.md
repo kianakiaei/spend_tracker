@@ -1,8 +1,9 @@
 # 26 — پوستهٔ UI + داشبورد ماه از پروتوتایپ v2 (RSC)
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 24
+Assignee: IDEHAL (agent session, 2026-09-07)
 
 ## Question
 
@@ -18,3 +19,13 @@ Blocked by: 24
 
 - UI بدون آستانه (پوشش با E2E — تیکت ۱۱)؛ ناوبری ماه و ترکیب نمایش‌ها با E2E در ۳۰ اثبات می‌شود؛ اگر کامپوننت کلاینت حیاتی نوشته شد (ناوبری)، RTL/jsdom برایش.
 - خروجی دیداری: داشبورد سه حالت (جاری/گذشته/آینده) روی دادهٔ dev با اسکرین‌شات در کامنت تیکت برای تأیید کاربر.
+
+## Comments
+
+- 2026-09-07 — **رزول شد: پوستهٔ RTL + داشبورد RSC سبز — ۲۶۳ پاس (۲۲ فایل)، lint/tsc تمیز** — با مهارت frontend-design و بازسازی از نوِ نسخهٔ ۲ تأییدشدهٔ ۰۷ (کد پروتوتایپ کپی نشده). ساختار: توکن‌های ۰۷ به‌صورت `@theme` در `globals.css` (paper/panel/ink/ink-muted/rule/accent/accent-soft)؛ **Vazirmatn متغیر (100..900) سلف‌هاست** — `src/app/fonts/Vazirmatn-Variable.woff2` (~109KB + OFL) با `next/font/local`، هیچ fetch هنگام build؛ روت `lang=fa dir=rtl`. پوسته = روت‌گروپ `(app)` با هدر ساکت (جای ایمیل/خروج خالی برای ۲۹؛ `/login` عمداً بیرون پوسته).
+  - **داشبورد** (`src/app/(app)/page.tsx`) RSC است و مستقیم از سرویس‌ها می‌خواند (getSummary + listByMonth + preview + categoryService.list — هرگز handler؛ تیکت ۱۲). `?month=` ناهمگام Next 16، بی‌کران در دو جهت؛ کلید ناموجود → ریدایرکت به `/`؛ بی‌کلید = ماه جاری. گارد سشن مرجع (`auth.api.getSession` → بی‌سشن redirect به `/login`). چهار خواندن موازی؛ ensure دوگانهٔ ماه جاری بی‌خطر است (ON CONFLICT — تصمیم ۱۴).
+  - **کاشی‌ها** (`summary-tiles.tsx`): سهم از byCategory، مرتب‌شده نزولی — بزرگ‌ترین همیشه لنگرِ چهارسوتنی دوردیفه (در موبایل دوسوتنی تمام‌عرض)؛ تینت = رنگ خود دسته شسته‌شده ۸۵٪ به سمت کاغذ (`tintOf`)، رنگ null → خاکستری ink-muted. زیر sm شبکه ۲ستونه (شش‌ستونه در ۴۲۰px مبلغ یک‌ستونی‌ها را می‌بُرید — اصلاح شد).
+  - **دفتر** (`ledger.tsx`): قاعدهٔ جوهری ۲px بالا؛ چیپ «بدون تاریخ» بالای بلوک سطرهای بی‌تاریخ (روز «—»)؛ سطرهای تاریخ‌دار و پیش‌بینی با هم بر روز جلالی میان‌می‌شوند (پایداری sort = ثبت‌شده مقدم بر پیش‌بینی در روز برابر)؛ «از الگو» برای sourceRecurringId؛ بج «پیش‌بینی» با روز clamp شده در ماه آینده؛ سطر پیش‌بینی → `/templates` (با ۲۸)؛ سطر خرج فعلاً بی‌تعامل (شیت با ۲۷). کاشی → `/categories/[id]?month=`.
+  - **افزودنی‌های ماژول ۲۰** (TDD): `shiftJalaliMonthKey` (گام ناوبری، وارون دقیق روی ۲۴ ماه تست شد) و `jalaliDayOfMonth` (میان‌گذاری دفتر) — jalali همچنان ۱۰۰/۱۰۰. `src/lib/format.ts`: formatNumber/formatPercent فارسی. تست کامپوننت برای تنها کلاینتِ حیاتی (`month-nav.test.tsx` — push کلید شیفت‌شده، عبور سال).
+  - **خروجی دیداری (سه حالت روی دادهٔ dev — اسکریپت: [screenshots/capture.mjs](../screenshots/capture.mjs))**: [جاری](../screenshots/dashboard-current.png) — لنگر قسط ۳۴٪ + چیپ بی‌تاریخ + «از الگو»های تولیدِ واقعی ensure؛ [گذشته](../screenshots/dashboard-past-1405-05.png) — بدون پیش‌بینی، فقط ثبت‌شده‌ها؛ [آینده](../screenshots/dashboard-future-1405-07.png) — زیرنویس «شامل پیش‌بینی الگوها» + کاشیِ فقط-پیش‌بینی + سطرهای بج‌دار با روز clamp. منتظر تأیید کاربر.
+  - **سرنخ برای ۲۹ (خارج از این تیکت):** proxy فعلی `/login` را هم می‌گیرد (matcher استثنا ندارد) → کوکی‌لس روی `/login` حلقهٔ ریدایرکت می‌سازد تا صفحه‌اش ساخته شود؛ `/login` و `/forgot-password` و `/reset-password` باید به استثناهای matcher اضافه شوند.
