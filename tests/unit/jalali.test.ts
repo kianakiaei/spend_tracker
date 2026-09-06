@@ -6,6 +6,7 @@ import {
   formatJalali,
   formatToman,
   fromISODate,
+  fromJalaliMonthKey,
   jalaliDayLabel,
   jalaliDaysInMonth,
   jalaliIntlDate,
@@ -57,6 +58,22 @@ describe("jalali month grouping", () => {
     const key = jalaliMonthKey(fromISODate("2026-09-06"));
     expect(key).toMatch(/^\d{4}-(0[1-9]|1[0-2])$/);
     expect(key < "1405-07" && key > "1405-05").toBe(true);
+  });
+
+  it("inverts: month key → a local-midnight Date inside that month (ticket 23)", () => {
+    // 1405-06-01 is Gregorian 2026-08-23 (Shahrivar starts)
+    expect(toISODate(fromJalaliMonthKey("1405-06"))).toBe("2026-08-23");
+    expect(toISODate(fromJalaliMonthKey("1405-01"))).toBe("2026-03-21"); // Nowruz
+    // round-trip holds for every anchor month
+    for (const key of ["1403-12", "1404-06", "1405-06", "1405-12"]) {
+      expect(jalaliMonthKey(fromJalaliMonthKey(key))).toBe(key);
+    }
+  });
+
+  it("rejects a malformed month key", () => {
+    expect(() => fromJalaliMonthKey("1405-6")).toThrow(RangeError);
+    expect(() => fromJalaliMonthKey("140506")).toThrow(RangeError);
+    expect(() => fromJalaliMonthKey("")).toThrow(RangeError);
   });
 
   it("bounds the month: Shahrivar 1405 starts 2026-08-23, ends 2026-09-22", () => {

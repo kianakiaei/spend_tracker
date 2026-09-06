@@ -3,10 +3,11 @@ import {
   endOfMonth,
   format,
   getDaysInMonth,
+  newDate,
   parseISO,
   startOfMonth,
 } from "date-fns-jalali";
-import { dateOnlySchema } from "@/lib/schemas";
+import { dateOnlySchema, jalaliMonthKeySchema } from "@/lib/schemas";
 
 // The one module in the app that knows about calendars (ticket 12). Dates
 // are stored as Gregorian date-only strings 'YYYY-MM-DD'; Jalali exists only
@@ -76,6 +77,20 @@ const tehranISODate = new Intl.DateTimeFormat("en-CA", {
  * UTC, but the monthly boundary is Tehran midnight (ticket 14). */
 export function currentJalaliMonthKey(now: Date = new Date()): string {
   return jalaliMonthKey(fromISODate(tehranISODate.format(now)));
+}
+
+/** Local-midnight Date of the FIRST day of the Jalali month a key names —
+ * the monthKey→Date inverse of jalaliMonthKey ('1405-06' → 2026-08-23).
+ * The month-key-based recurring logic (ticket 23) builds its month bounds
+ * and occurrence dates on this. */
+export function fromJalaliMonthKey(monthKey: string): Date {
+  if (!jalaliMonthKeySchema.safeParse(monthKey).success) {
+    throw new RangeError(
+      `expected a Jalali month key 'YYYY-MM', got ${JSON.stringify(monthKey)}`,
+    );
+  }
+  const [y, m] = monthKey.split("-").map(Number);
+  return newDate(y!, m! - 1, 1);
 }
 
 // --- display (the only place Jalali becomes visible text) ---
