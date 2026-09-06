@@ -2,12 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 import {
   addJalaliMonths,
   currentJalaliMonthKey,
-  fromISODate,
-  jalaliDaysInMonth,
-  jalaliMonthKey,
   endOfJalaliMonth,
+  formatJalali,
+  formatToman,
+  fromISODate,
+  jalaliDayLabel,
+  jalaliDaysInMonth,
+  jalaliIntlDate,
+  jalaliMonthKey,
+  jalaliMonthLabel,
   startOfJalaliMonth,
+  toEnglishDigits,
   toISODate,
+  toPersianDigits,
 } from "@/lib/jalali";
 
 // Ticket 20 — the single jalali calendar module. Hard rule (ticket 04):
@@ -99,5 +106,39 @@ describe("currentJalaliMonthKey (Tehran-aware, ticket 14)", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+describe("jalali display (fa-IR)", () => {
+  const shahrivar15 = fromISODate("2026-09-06"); // 1405-06-15, a Sunday
+
+  it("formats jalali dates with Persian digits by default", () => {
+    expect(formatJalali(shahrivar15)).toBe("۱۴۰۵/۰۶/۱۵");
+    expect(formatJalali(shahrivar15, "yyyy-MM-dd")).toBe("۱۴۰۵-۰۶-۱۵");
+  });
+
+  it("labels the month as 'name + year' and the day as 'weekday + day + month'", () => {
+    expect(jalaliMonthLabel(shahrivar15)).toBe("شهریور ۱۴۰۵");
+    expect(jalaliMonthLabel(fromISODate("2026-03-21"))).toBe("فروردین ۱۴۰۵");
+    expect(jalaliDayLabel(shahrivar15)).toBe("یک‌شنبه ۱۵ شهریور");
+  });
+
+  it("renders the canonical full date via ICU's persian calendar", () => {
+    expect(jalaliIntlDate(shahrivar15)).toBe("۱۴۰۵ شهریور ۱۵, یکشنبه");
+  });
+
+  it("maps digits both ways, including Arabic-Indic input", () => {
+    expect(toPersianDigits(1234567)).toBe("۱۲۳۴۵۶۷");
+    expect(toPersianDigits("1405-06")).toBe("۱۴۰۵-۰۶");
+    expect(toPersianDigits("خرید 3x")).toBe("خرید ۳x");
+    expect(toEnglishDigits("۱۴۰۵/۰۶/۱۵")).toBe("1405/06/15");
+    expect(toEnglishDigits("٤٥٦")).toBe("456");
+    expect(toEnglishDigits("۱٬۲۳۴ t")).toBe("1٬234 t");
+  });
+
+  it("formats toman amounts with Persian digits and the toman suffix", () => {
+    expect(formatToman(1234567)).toBe("۱٬۲۳۴٬۵۶۷ تومان");
+    expect(formatToman(950000)).toBe("۹۵۰٬۰۰۰ تومان");
+    expect(formatToman(0)).toBe("۰ تومان");
   });
 });

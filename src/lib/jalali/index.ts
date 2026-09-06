@@ -77,3 +77,58 @@ const tehranISODate = new Intl.DateTimeFormat("en-CA", {
 export function currentJalaliMonthKey(now: Date = new Date()): string {
   return jalaliMonthKey(fromISODate(tehranISODate.format(now)));
 }
+
+// --- display (the only place Jalali becomes visible text) ---
+
+const FA_DIGITS = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+
+/** Latin digits → Persian digits; letters and punctuation untouched. */
+export function toPersianDigits(value: string | number): string {
+  return String(value).replace(
+    /[0-9]/g,
+    (digit) => FA_DIGITS[Number(digit)],
+  );
+}
+
+/** Persian (۶۶-۶F) and Arabic-Indic (۶۶۰-۶۶۹) digits → Latin, for parsing
+ * anything a user typed. */
+export function toEnglishDigits(s: string): string {
+  return s
+    .replace(/[\u06F0-\u06F9]/g, (c) => String(c.charCodeAt(0) - 0x06f0))
+    .replace(/[\u0660-\u0669]/g, (c) => String(c.charCodeAt(0) - 0x0660));
+}
+
+/** Jalali date in a date-fns-jalali pattern, Persian digits — display only.
+ * Default 'yyyy/MM/dd' → '۱۴۰۵/۰۶/۱۵'. */
+export function formatJalali(d: Date, pattern = "yyyy/MM/dd"): string {
+  return toPersianDigits(format(d, pattern));
+}
+
+/** 'شهریور ۱۴۰۵' — dashboard month heading. */
+export function jalaliMonthLabel(d: Date): string {
+  return toPersianDigits(format(d, "MMMM yyyy"));
+}
+
+/** 'یک‌شنبه ۱۵ شهریور' — list-row date. */
+export function jalaliDayLabel(d: Date): string {
+  return toPersianDigits(format(d, "EEEE d MMMM"));
+}
+
+const jalaliIntl = new Intl.DateTimeFormat("fa-IR-u-ca-persian", {
+  dateStyle: "full",
+});
+
+/** Canonical full date via ICU's persian calendar — the Intl counterpart of
+ * date-fns-jalali for ready-made display strings (research 04, §4). */
+export function jalaliIntlDate(d: Date): string {
+  return jalaliIntl.format(d);
+}
+
+const tomanFormat = new Intl.NumberFormat("fa-IR", {
+  maximumFractionDigits: 0,
+});
+
+/** Integer tomans → '۱٬۲۳۴٬۵۶۷ تومان' (toman is no ISO currency; suffix by hand). */
+export function formatToman(amount: number): string {
+  return `${tomanFormat.format(amount)} تومان`;
+}
