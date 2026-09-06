@@ -142,3 +142,37 @@ describe("jalali display (fa-IR)", () => {
     expect(formatToman(0)).toBe("۰ تومان");
   });
 });
+
+describe("wide-range properties (1996–2060, research 04 checklist)", () => {
+  const start = new Date(1996, 0, 1);
+  const end = new Date(2060, 11, 31);
+  const everyDay = () => {
+    const days: Date[] = [];
+    for (const d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      days.push(new Date(d));
+    }
+    return days;
+  };
+
+  it("round-trips every Gregorian date-only string through local midnight", () => {
+    for (const d of everyDay()) {
+      const iso = toISODate(d);
+      expect(toISODate(fromISODate(iso)), iso).toBe(iso);
+    }
+  });
+
+  it("agrees with ICU's persian calendar on every month key", () => {
+    // two independent engines: jalaali-js (behind date-fns-jalali) vs ICU
+    // (behind Intl) — a disagreement would corrupt monthly grouping
+    const icu = new Intl.DateTimeFormat("en-u-ca-persian", {
+      year: "numeric",
+      month: "2-digit",
+    });
+    for (const d of everyDay()) {
+      const parts = icu.formatToParts(d);
+      const year = parts.find((p) => p.type === "year")!.value;
+      const month = parts.find((p) => p.type === "month")!.value;
+      expect(jalaliMonthKey(d), toISODate(d)).toBe(`${year}-${month}`);
+    }
+  });
+});
