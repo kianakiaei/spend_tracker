@@ -1,7 +1,7 @@
 # 19 — اسکیمای دامنه + مهاجرت افزایشی + seed دسته‌های سیستمی
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: 18
 
 ## Question
