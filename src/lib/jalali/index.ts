@@ -66,6 +66,13 @@ export function addJalaliMonths(d: Date, n: number): Date {
   return addMonths(d, n);
 }
 
+/** n months away from a Jalali month key — the month navigator's step
+ * ('1405-12' + 1 → '1406-01'). Built on day 1 of the month, so no clamping
+ * can ever apply; invalid keys throw like fromJalaliMonthKey. */
+export function shiftJalaliMonthKey(monthKey: string, n: number): string {
+  return jalaliMonthKey(addJalaliMonths(fromJalaliMonthKey(monthKey), n));
+}
+
 const tehranISODate = new Intl.DateTimeFormat("en-CA", {
   timeZone: "Asia/Tehran",
   year: "numeric",

@@ -13,6 +13,7 @@ import {
   jalaliMonthKey,
   jalaliMonthLabel,
   startOfJalaliMonth,
+  shiftJalaliMonthKey,
   toEnglishDigits,
   toISODate,
   toPersianDigits,
@@ -191,5 +192,30 @@ describe("wide-range properties (1996–2060, research 04 checklist)", () => {
       const month = parts.find((p) => p.type === "month")!.value;
       expect(jalaliMonthKey(d), toISODate(d)).toBe(`${year}-${month}`);
     }
+  });
+});
+
+describe("shiftJalaliMonthKey (month navigation, ticket 26)", () => {
+  it("shifts within the year, zero-padded", () => {
+    expect(shiftJalaliMonthKey("1405-06", 1)).toBe("1405-07");
+    expect(shiftJalaliMonthKey("1405-06", -1)).toBe("1405-05");
+    expect(shiftJalaliMonthKey("1405-03", -2)).toBe("1405-01");
+  });
+
+  it("wraps across the year boundary in both directions", () => {
+    expect(shiftJalaliMonthKey("1405-12", 1)).toBe("1406-01");
+    expect(shiftJalaliMonthKey("1405-01", -1)).toBe("1404-12");
+    expect(shiftJalaliMonthKey("1405-12", 14)).toBe("1407-02");
+  });
+
+  it("stays an exact inverse over a two-year walk", () => {
+    let key = "1405-06";
+    for (let i = 0; i < 24; i++) key = shiftJalaliMonthKey(key, 1);
+    expect(key).toBe("1407-06");
+  });
+
+  it("rejects keys that are not jalali month keys", () => {
+    expect(() => shiftJalaliMonthKey("1405-13", 1)).toThrow(RangeError);
+    expect(() => shiftJalaliMonthKey("junk", 1)).toThrow(RangeError);
   });
 });
