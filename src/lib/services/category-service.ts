@@ -71,17 +71,25 @@ export interface CategoryService {
   ): Promise<{ moved: number }>;
 }
 
+/** Ownership guard shared with the other services: the row must exist and
+ * belong to this user (404 otherwise) — the FK-less schema's stand-in. */
+export async function getOwnedCategory(
+  db: DomainDb,
+  userId: string,
+  id: string,
+): Promise<Category> {
+  parse(idSchema, id, "category id");
+  const [category] = await db
+    .select()
+    .from(categories)
+    .where(and(eq(categories.id, id), eq(categories.userId, userId)))
+    .limit(1);
+  if (!category) throw new NotFoundError(`category ${id} not found`);
+  return category;
+}
+
 export function createCategoryService(db: DomainDb): CategoryService {
-  async function getOwned(userId: string, id: string): Promise<Category> {
-    parse(idSchema, id, "category id");
-    const [category] = await db
-      .select()
-      .from(categories)
-      .where(and(eq(categories.id, id), eq(categories.userId, userId)))
-      .limit(1);
-    if (!category) throw new NotFoundError(`category ${id} not found`);
-    return category;
-  }
+  const getOwned = (userId: string, id: string) => getOwnedCategory(db, userId, id);
 
   async function assertNameFree(
     userId: string,
