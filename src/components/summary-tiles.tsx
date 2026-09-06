@@ -27,10 +27,13 @@ export function tintOf(color: string | null | undefined): string {
   return `#${channel(0)}${channel(1)}${channel(2)}`;
 }
 
+/** Tile spans by share — two columns on phones (a six-column grid clips
+ * single-column tiles there), the ticket-07 six-column mosaic from sm up.
+ * The largest share is always the four-column double-row anchor. */
 function spanClass(index: number, share: number): string {
-  if (index === 0) return "col-span-4 row-span-2";
-  if (share >= 0.25) return "col-span-3";
-  if (share >= 0.1) return "col-span-2";
+  if (index === 0) return "col-span-2 row-span-2 sm:col-span-4";
+  if (share >= 0.25) return "col-span-2 sm:col-span-3";
+  if (share >= 0.1) return "col-span-1 sm:col-span-2";
   return "col-span-1";
 }
 
@@ -46,10 +49,13 @@ export function SummaryTiles({
   if (summary.byCategory.length === 0) return null;
   const colorOf = new Map(categories.map((c) => [c.id, c.color]));
   const total = summary.totalToman;
+  // Largest first — the anchor tile is the biggest share, not the first
+  // category in dashboard order (ticket 26: «کاشیِ بزرگ‌ترین»).
+  const ranked = [...summary.byCategory].sort((a, b) => b.totalToman - a.totalToman);
 
   return (
-    <div className="mt-5 grid grid-cols-6 gap-2.5 [grid-auto-flow:dense]">
-      {summary.byCategory.map((row, index) => {
+    <div className="mt-5 grid grid-cols-2 gap-2.5 [grid-auto-flow:dense] sm:grid-cols-6">
+      {ranked.map((row, index) => {
         const color = colorOf.get(row.categoryId) ?? null;
         const share = total > 0 ? row.totalToman / total : 0;
         const tall = index === 0;
