@@ -27,7 +27,23 @@ export async function loadCategorizerState(
   db: DomainDb,
   userId: string,
 ): Promise<CategorizerState> {
-  const categoryRows = await db
+  const categoryRows = await listUserCategoryRefs(db, userId);
+
+  const rows = await listLearnedKeys(db, userId);
+
+  const categorizer = createCategorizer({
+    lexicon: SEED_LEXICON,
+    learnedKeys: rows,
+    categories: categoryRows,
+  });
+
+  return { categorizer, categories: categoryRows, learnedRows: rows };
+}
+
+/** The user's categories in display order — the engine's ref plus the order
+ * used for fallback/learned tie-breaks. */
+async function listUserCategoryRefs(db: DomainDb, userId: string) {
+  return db
     .select({
       id: categories.id,
       name: categories.name,
@@ -37,8 +53,16 @@ export async function loadCategorizerState(
     .from(categories)
     .where(eq(categories.userId, userId))
     .orderBy(asc(categories.order), asc(categories.createdAt));
+}
 
-  const rows = await db
+/** The user's learned counters, shaped like the engine's records — the RSC
+ * hands them to the client-side suggestion engine as props (ticket 27:
+ * live suggestion from memory, no POST while typing). */
+export async function listLearnedKeys(
+  db: DomainDb,
+  userId: string,
+): Promise<Array<{ key: string; categoryId: string; count: number }>> {
+  return db
     .select({
       key: learnedKeys.key,
       categoryId: learnedKeys.categoryId,
@@ -46,12 +70,4 @@ export async function loadCategorizerState(
     })
     .from(learnedKeys)
     .where(eq(learnedKeys.userId, userId));
-
-  const categorizer = createCategorizer({
-    lexicon: SEED_LEXICON,
-    learnedKeys: rows,
-    categories: categoryRows,
-  });
-
-  return { categorizer, categories: categoryRows, learnedRows: rows };
 }

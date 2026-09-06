@@ -86,6 +86,13 @@ export function currentJalaliMonthKey(now: Date = new Date()): string {
   return jalaliMonthKey(fromISODate(tehranISODate.format(now)));
 }
 
+/** Current Gregorian date-only string on the Tehran calendar day — the
+ * date-only counterpart of currentJalaliMonthKey, so a «today» default and
+ * the current-month comparison can never disagree (ticket 27). */
+export function currentTehranISODate(now: Date = new Date()): string {
+  return tehranISODate.format(now);
+}
+
 /** Local-midnight Date of the FIRST day of the Jalali month a key names —
  * the monthKey→Date inverse of jalaliMonthKey ('1405-06' → 2026-08-23).
  * The month-key-based recurring logic (ticket 23) builds its month bounds

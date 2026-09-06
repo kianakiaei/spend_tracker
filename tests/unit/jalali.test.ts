@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   addJalaliMonths,
   currentJalaliMonthKey,
+  currentTehranISODate,
   endOfJalaliMonth,
   formatJalali,
   formatToman,
@@ -122,6 +123,30 @@ describe("currentJalaliMonthKey (Tehran-aware, ticket 14)", () => {
     try {
       vi.setSystemTime(Date.UTC(2026, 7, 22, 20, 30));
       expect(currentJalaliMonthKey()).toBe("1405-06");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
+describe("currentTehranISODate (Tehran-aware, ticket 27)", () => {
+  it("gives the Tehran calendar day as a Gregorian date-only string", () => {
+    // 2026-08-22 20:30 UTC = 2026-08-23 00:00 in Tehran — the pair of
+    // currentJalaliMonthKey above, so the sheet's «today» default and the
+    // current-month comparison can never disagree.
+    expect(currentTehranISODate(new Date(Date.UTC(2026, 7, 22, 20, 30)))).toBe(
+      "2026-08-23",
+    );
+    expect(currentTehranISODate(new Date(Date.UTC(2026, 7, 22, 19, 0)))).toBe(
+      "2026-08-22",
+    );
+  });
+
+  it("reads 'now' through the same Tehran lens by default", () => {
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(Date.UTC(2026, 7, 22, 20, 30));
+      expect(currentTehranISODate()).toBe("2026-08-23");
     } finally {
       vi.useRealTimers();
     }

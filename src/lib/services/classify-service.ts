@@ -44,7 +44,7 @@ export function createClassifyService(db: DomainDb): ClassifyService {
         };
       }
 
-      const fallback = await mostFrequentCategory(db, userId);
+      const fallback = await getFallbackCategory(db, userId);
       return {
         categoryId: fallback.id,
         source: "fallback",
@@ -53,6 +53,17 @@ export function createClassifyService(db: DomainDb): ClassifyService {
       };
     },
   };
+}
+
+/** The ticket-06 fallback as a first-class read (ticket 27): most-frequent
+ * category of the user; first system category (خوراکی) without history. The
+ * RSC precomputes it at page load so the client-side suggestion engine can
+ * answer «همیشه پیشنهاد» from memory. */
+export async function getFallbackCategory(
+  db: DomainDb,
+  userId: string,
+): Promise<Category> {
+  return mostFrequentCategory(db, userId);
 }
 
 /** Most expenses wins; ties break by the user's category order — same

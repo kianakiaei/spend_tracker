@@ -1,13 +1,16 @@
 export { createCategoryService, getOwnedCategory } from "./category-service";
 export { createExpenseService } from "./expense-service";
-export { createClassifyService } from "./classify-service";
+export {
+  createClassifyService,
+  getFallbackCategory,
+} from "./classify-service";
 export {
   createRecurringService,
   ensureRecurringExpensesGenerated,
 } from "./recurring-service";
 export { createSummaryService } from "./summary-service";
 export { learnOnSave } from "./learning";
-export { loadCategorizerState } from "./categorizer-state";
+export { listLearnedKeys, loadCategorizerState } from "./categorizer-state";
 export {
   CategoryInUseError,
   DomainError,
