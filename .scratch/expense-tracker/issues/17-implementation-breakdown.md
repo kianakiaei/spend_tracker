@@ -1,7 +1,7 @@
 # 17 — شکستن پیاده‌سازی به تیکت‌های اجرایی
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: —
 
 ## Question
