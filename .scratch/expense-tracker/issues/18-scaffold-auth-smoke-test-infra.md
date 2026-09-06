@@ -1,8 +1,9 @@
 # 18 — اسکفولد اپ + smoke-test better-auth روی libSQL لوکال + زیرساخت تست و CI
 
 Type: task
-Status: open
+Status: claimed
 Blocked by: —
+Assignee: IDEHAL (agent session, 2026-09-06)
 
 ## Question
 
