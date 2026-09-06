@@ -1,8 +1,9 @@
 # 20 — ماژول واحد تاریخ جلالی src/lib/jalali
 
 Type: task
-Status: open
+Status: in progress
 Blocked by: 18
+Assignee: IDEHAL (agent session, 2026-09-06)
 
 ## Question
 
