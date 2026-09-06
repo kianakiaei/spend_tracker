@@ -1,8 +1,9 @@
 # 07 — طراحی بصری UI (frontend-design)
 
 Type: prototype
-Status: open
+Status: claimed
 Blocked by: —
+Assignee: IDEHAL (agent session, 2026-09-06)
 
 ## Question
 
