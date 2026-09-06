@@ -1,8 +1,9 @@
 # 14 — مکان تولید خودکار خرجِ الگوها (lazy در برابر cron)
 
 Type: grilling
-Status: open
+Status: claimed
 Blocked by: —
+Assignee: IDEHAL (agent session, 2026-09-06)
 
 ## Question
 
