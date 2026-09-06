@@ -2,7 +2,8 @@ import { and, asc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { categories, expenses } from "@/db/schema";
 import { newId } from "@/lib/id";
-import { fromISODate, jalaliMonthKey } from "@/lib/jalali";
+import { currentJalaliMonthKey, fromISODate, jalaliMonthKey } from "@/lib/jalali";
+import { monthPosition } from "@/lib/recurring";
 import {
   amountTomanSchema,
   dateOnlySchema,
@@ -14,6 +15,7 @@ import { getOwnedCategory } from "./category-service";
 import { NotFoundError, ValidationError } from "./errors";
 import { learnOnSave } from "./learning";
 import { parseOrThrow } from "./parse";
+import { ensureRecurringExpensesGenerated } from "./recurring-service";
 import type { DomainDb, Expense, ExpenseWithCategory } from "./types";
 
 // Expense service (ticket 22): create/update/delete are free — NO date
@@ -180,6 +182,14 @@ export function createExpenseService(db: DomainDb): ExpenseService {
 
     async listByMonth(userId, monthKey) {
       parseOrThrow(jalaliMonthKeySchema, monthKey, "month key");
+
+      // Decision 14's second wiring: the first request reaching the CURRENT
+      // month's ledger generates due templates before reading. Past months
+      // never generate (no backfill); the future belongs to preview.
+      // Recording a fresh expense is deliberately NOT a call-site.
+      if (monthPosition(monthKey, currentJalaliMonthKey()) === "current") {
+        await ensureRecurringExpensesGenerated(db, userId, monthKey);
+      }
 
       const rows = await db
         .select({ expense: expenses, category: categories })

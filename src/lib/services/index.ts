@@ -5,6 +5,7 @@ export {
   createRecurringService,
   ensureRecurringExpensesGenerated,
 } from "./recurring-service";
+export { createSummaryService } from "./summary-service";
 export { learnOnSave } from "./learning";
 export { loadCategorizerState } from "./categorizer-state";
 export {
@@ -23,6 +24,11 @@ export type {
   RecurringService,
   UpdateRecurringTemplateInput,
 } from "./recurring-service";
+export type {
+  MonthSummary,
+  SummaryCategoryRow,
+  SummaryService,
+} from "./summary-service";
 export type {
   Category,
   DomainDb,

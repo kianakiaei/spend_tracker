@@ -1,6 +1,6 @@
 import { and, asc, eq, max } from "drizzle-orm";
 import { z } from "zod";
-import { categories, expenses } from "@/db/schema";
+import { categories, expenses, recurringTemplates } from "@/db/schema";
 import { newId } from "@/lib/id";
 import { categoryNameSchema, uuidv7Schema } from "@/lib/schemas";
 import {
@@ -52,7 +52,8 @@ export interface CategoryService {
   get(userId: string, id: string): Promise<Category>;
   create(userId: string, input: CreateCategoryInput): Promise<Category>;
   update(userId: string, id: string, input: UpdateCategoryInput): Promise<Category>;
-  /** 409 if the category is a system one or still has expenses. */
+  /** 409 if the category is a system one or still has expenses or recurring
+   * templates pointing at it. */
   remove(userId: string, id: string): Promise<void>;
   /** Bulk move for the delete-category flow (ticket 05): every expense of
    * `sourceId` re-points to `targetId`. Learning does NOT fire here — it is
@@ -186,6 +187,25 @@ export function createCategoryService(db: DomainDb): CategoryService {
       if (inUse) {
         throw new CategoryInUseError(
           `"${category.name}" still has expenses`,
+        );
+      }
+
+      // A template still pointing here would orphan its forecast rows —
+      // ticket 24's composite reads every forecast back under a live
+      // category. Same 409 as expenses.
+      const [templateUse] = await db
+        .select({ id: recurringTemplates.id })
+        .from(recurringTemplates)
+        .where(
+          and(
+            eq(recurringTemplates.userId, userId),
+            eq(recurringTemplates.categoryId, id),
+          ),
+        )
+        .limit(1);
+      if (templateUse) {
+        throw new CategoryInUseError(
+          `"${category.name}" is used by a recurring template`,
         );
       }
 

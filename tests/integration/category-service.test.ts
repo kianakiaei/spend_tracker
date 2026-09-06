@@ -3,6 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { expenses } from "@/db/schema";
 import { newId } from "@/lib/id";
 import { createCategoryService } from "@/lib/services/category-service";
+import { createRecurringService } from "@/lib/services/recurring-service";
 import {
   CategoryInUseError,
   DuplicateCategoryNameError,
@@ -161,6 +162,25 @@ describe("categoryService — delete rules (ticket 22: 409 in the handler)", () 
 
     await expect(service.remove(userId, custom.id)).resolves.toBeUndefined();
     await expect(service.get(userId, custom.id)).rejects.toThrow(NotFoundError);
+  });
+
+  it("refuses to delete a category a recurring template still points at (ticket 24)", async () => {
+    const userId = await fx.signUp();
+    const recurring = createRecurringService(fx.db);
+    const custom = await service.create(userId, { name: "باشگاه" });
+    await recurring.create(userId, {
+      amountToman: 400_000,
+      title: "باشگاه",
+      categoryId: custom.id,
+      dayOfMonth: 5,
+      startDate: "2025-01-01",
+      endDate: null,
+    });
+
+    await expect(service.remove(userId, custom.id)).rejects.toThrow(
+      CategoryInUseError,
+    );
+    await expect(service.get(userId, custom.id)).resolves.toBeTruthy();
   });
 });
 
