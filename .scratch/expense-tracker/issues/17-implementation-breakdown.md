@@ -1,7 +1,7 @@
 # 17 — شکستن پیاده‌سازی به تیکت‌های اجرایی
 
 Type: task
-Status: claimed
+Status: resolved
 Blocked by: —
 
 ## Question
@@ -12,3 +12,29 @@ Blocked by: —
 - ترتیب پیشنهادی: شروع با smoke-test اسکفولد (نصب Next.js 16 + Drizzle/Turso لوکال + better-auth ثبت‌نام/ورود — عدم‌قطعیت ثبت‌شدهٔ تیکت ۱۲) و بعد شاخه‌های دامنه: schema/migration (با اصلاح‌های ۱۴/۱۵)، ماژول جلالی، موتور دسته‌بندی، سرویس‌ها (با ensure و preview)، API v1، UI از پروتوتایپ، E2E.
 - موازی و مستقل: [۱۶ — ثبت‌نام Turso/Resend و سکرت‌های prod] (HITL، با اکانت و مرورگر کاربر) — خروجی‌اش فقط envهای prod را تغذیه می‌کند و مسیرش نباید شکستن را نگه دارد.
 - خروجی: تیکت‌های اجرایی شماره‌خورده با وابستگی‌های `Blocked by`، آمادهٔ کار با `/implement`.
+
+## Answer
+
+**۱۴ تیکت اجرایی ۱۸–۳۱ منتشر شد** (2026-09-06) — هر تیکت = یک سشن ~۱۰۰K با خروجی روشن و پلن تست خودش؛ ترتیب همان پیشنهاد تیکت است با شکستِ ریزتر در سرویس‌ها و UI:
+
+| # | تیکت | Blocked by |
+|---|---|---|
+| ۱۸ | [اسکفولد + smoke-test better-auth روی libSQL لوکال + زیرساخت تست/CI](18-scaffold-auth-smoke-test-infra.md) — بستن عدم‌قطعیت ثبت‌شدهٔ ۱۲ | — |
+| ۱۹ | [اسکیمای دامنه + مهاجرت + seed دسته‌های سیستمی](19-domain-schema-migrations-seeding.md) (با اصلاح‌های ۱۴/۱۵ و پل slug تیکت ۱۳) | ۱۸ |
+| ۲۰ | [ماژول واحد جلالی src/lib/jalali](20-jalali-module.md) | ۱۸ |
+| ۲۱ | [موتور دسته‌بندی + واژه‌نامهٔ سیستمی src/lib/categorization](21-categorization-engine-seed-lexicon.md) (محتوای نهایی تیکت ۱۳) | ۱۸ |
+| ۲۲ | [سرویس‌های دسته/خرج + یادگیری هنگام ذخیره](22-category-expense-services-learning.md) | ۱۹، ۲۰، ۲۱ |
+| ۲۳ | [سرویس الگوی تکرار + تولید lazy (ensure) + پیش‌نمایش](23-recurring-service-ensure-preview.md) | ۱۹، ۲۰ |
+| ۲۴ | [سرویس جمع + ترکیب پیش‌بینی ماه آینده](24-summary-service-forecast-composite.md) | ۲۲، ۲۳ |
+| ۲۵ | [API v1 + problem+json + proxy + fetch wrapper تایپ‌شده](25-api-v1-handlers-problem-json.md) | ۲۲، ۲۳، ۲۴ |
+| ۲۶ | [پوستهٔ UI + داشبورد از پروتوتایپ v2](26-ui-shell-dashboard.md) | ۲۴ |
+| ۲۷ | [ثبت/ویرایش خرج: شیت پایینی + پیشنهاد زنده](27-expense-form-suggestion.md) | ۲۵، ۲۶ |
+| ۲۸ | [دریل‌داون دسته + مدیریت دسته‌ها + الگوها (UI)](28-category-templates-ui.md) | ۲۵، ۲۶ |
+| ۲۹ | [Auth UX: /login، ریست رمز، محافظت دولایه، هدر حساب](29-auth-ui-protection.md) | ۲۵، ۲۶ |
+| ۳۰ | [E2E پنج‌جریان + بستن آستانه‌های پوشش + CI کامل](30-e2e-coverage-closeout.md) | ۲۶–۲۹ |
+| ۳۱ | [دیپلوی Vercel + envهای prod + اولین استفادهٔ واقعی](31-deploy-vercel-prod.md) | ۳۰ و ۱۶ |
+
+- **موازی‌سازی:** بعد از ۱۸، سه تیکت ۱۹/۲۰/۲۱ مستقل‌اند؛ بعد از ۲۵، سه تیکت UI (۲۷/۲۸/۲۹) مستقل‌اند. تیکت ۱۶ (HITL، wizard) هم‌اکنون آزاد است و فقط ۳۱ را گاز می‌دهد.
+- **پلن تست هر ماژول** به تیکتش چسبید (آستانه‌های per-glob تیکت ۱۱: categorization/jalali/recurring ≥۹۰/۸۵، services ≥۸۰/۷۵، UI با E2E)؛ آستانه‌ها هم‌گام با هر ماژول فعال می‌شوند، بستن نهایی در ۳۰.
+- **الزام نقشه در تیکت‌های UI ثبت شد:** هر سشن UI از مهارت frontend-design؛ فونت Vazirmatn سلف‌هاست (ریسک fetch از ایران هنگام build).
+- **گام بعدی:** frontier با قاعدهٔ «اول با شماره» = تیکت ۱۸، با `/implement` در سشن تازه.
