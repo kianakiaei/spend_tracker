@@ -20,6 +20,7 @@ Labels: wayfinder:map
 
 ## Decisions so far
 
+- [مکان تولید خودکار خرجِ الگوها (lazy در برابر cron)](issues/14-recurring-generation-placement.md): **lazy-on-request** — سرویس `ensureRecurringExpensesGenerated` (در src/lib/services) که از سرویس جمع و سرویس فهرست خرج‌ها فقط برای ماه جلالی جاری (Asia/Tehran) قبل از خواندن صدا زده می‌شود؛ idempotent با `ON CONFLICT DO NOTHING` روی یونیک‌ایندکس؛ خواندن هرگز به‌خاطر تولید نمی‌شکند (try/catch + تلاش مجدد خودکار در درخواست بعد)؛ الگوی میان‌ماهی با روزِ گذشته هم همین ماه تولید می‌کند (خرجِ پس‌تاریخ، آزادانه‌حذف)؛ ماهِ جاافتاده خالی می‌ماند — backfill ممنوع؛ cron رد شد ولی افزودنش بعداً additive است.
 - [لیست دقیق واژه‌نامهٔ سیستمی (سیدِدینگ)](issues/13-seed-lexicon.md): ۷۴ کلید کانونی (۶۸ توکنی + ۶ عبارتی) برای ۶ دستهٔ سیستمی؛ دو قاعدهٔ طراحی — purity مقدم بر پوشش، و کلید عبارتی فقط وقتی توکنِ تنها گمراه‌کننده است («اسنپ فود»/«اسنپ مارکت» از توکن «اسنپ» جلو می‌زنند)؛ چون دسته‌ها در دیتابیس UUIDv7 هر کاربرند، **شناسهٔ سیستمی دسته (slug)** به‌عنوان پل کد↔دسته تعریف شد (groceries، cafe-restaurant، … — در واژه‌نامهٔ دامنه)؛ انحراف عمدی از سهمیهٔ ~۱۰–۲۰ برای قسط (۵) و قبض و اینترنت (۸) به‌نام purity؛ حذف‌های عامدانه: خرید، بیمه، آب، موبایل، بلیط، چای، اجاره و…؛ محتوای نهایی ماژول در کامنت تیکت، فایل در پیاده‌سازی: `src/lib/categorization/seed-lexicon.ts`.
 - [Auth و سشن روی Next.js](issues/08-auth-session-nextjs.md): ثبت‌نام باز، بدون تأیید ایمیل؛ تک‌مسیر `/login` با toggle (بدون remember-me)؛ بدون لندینگ — بی‌سشن همیشه به `/login`، بعد از ورود `/` بدون `?next`؛ محافظت دولایه (proxy فقط presence کوکی، guard RSC مرجع)؛ سشن ۷ روز لغزان؛ ریست رمز واقعی با Resend روی دامنهٔ کاربر (`/forgot-password` + `/reset-password`، توکن ۱ ساعت؛ dev بدون کلید = لینک در کنسول، تست stub)؛ مرز موبایل = توکن از `set-auth-token` + `Authorization: Bearer` بدون endpoint جداگانه؛ UI نسخهٔ ۱ = فقط «خروج» + نمایش ایمیل.
 - [تثبیت معماری نهایی و قرارداد API موبایل](issues/12-architecture-api-contract.md): همهٔ CRUD دامنه Route Handler زیر `/api/v1` (Server Action فقط شکرِ فرم؛ RSC مستقیم از سرویس می‌خواند)؛ منابع: expenses / categories (+move-expenses) / recurring-templates / summaries / classify + mount بهتر-auth بیرون v1؛ بدون صفحه‌بندی در v1؛ خطا = problem+json؛ opId و If-Match در v1 نیستند؛ auth = better-auth 1.7.3 با `bearer()`؛ ساختار `src/{app, db, lib/{schemas, services, categorization, jalali}}`؛ **dev/تست هرگز به Turso نمی‌زنند (تأکید کاربر)**؛ prod = Vercel hobby + توکن never-expire؛ classify: POST با source و confidence، بی‌اثر؛ آستانه‌های تست per-glob تأیید شد.
@@ -38,7 +39,7 @@ Labels: wayfinder:map
 ## Not yet specified
 
 - پلن تست دقیق هر ماژول — با خروجی تحقیق ۱۱ و شروع پیاده‌سازی شکل می‌گیرد.
-- چرخش به اجرا: وقتی تیکت‌های تصمیم باقی‌مانده (مکان تولید الگوها، پیش‌نمایش اقساط) بسته شدند، شکستن پیاده‌سازی به تیکت‌های اجرایی — طبق تصمیم کاربر، این تلاش اجرا را هم خودش حمل می‌کند. (محتوای واژه‌نامهٔ سیستمی از ۱۳ نهایی است؛ فایل `src/lib/categorization/seed-lexicon.ts` در همین شکستن ساخته می‌شود.)
+- چرخش به اجرا: وقتی آخرین تیکت تصمیم (پیش‌نمایش اقساط — تیکت ۱۵) بسته شد، شکستن پیاده‌سازی به تیکت‌های اجرایی (تیکت ۱۶ تهیهٔ Turso هم موازی روی frontier است) — طبق تصمیم کاربر، این تلاش اجرا را هم خودش حمل می‌کند. (محتوای واژه‌نامهٔ سیستمی از ۱۳ نهایی است؛ فایل `src/lib/categorization/seed-lexicon.ts` در همین شکستن ساخته می‌شود.)
 
 ## Out of scope
 
