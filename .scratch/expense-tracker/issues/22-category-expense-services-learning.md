@@ -1,8 +1,9 @@
 # 22 — سرویس‌های دسته و خرج + یادگیری هنگام ذخیره src/lib/services
 
 Type: task
-Status: open
+Status: resolved
 Blocked by: 19, 20, 21
+Assignee: IDEHAL (agent session, 2026-09-06)
 
 ## Question
 
@@ -18,3 +19,16 @@ Blocked by: 19, 20, 21
 
 - integration روی فایل temp + migrator — آستانهٔ `services` ≥۸۰٪ خط / ≥۷۵٪ شاخه فعال شود.
 - 409ِ حذف دستهٔ پُر + رد حذف سیستمی + انتقال گروهی واقعاً خرج‌ها را می‌برد؛ monthKey بی‌تاریخ از ماه فرم و با دادن تاریخ جابه‌جا می‌شود؛ یادگیری عادی (count++)، تناقض (decay ×۰٫۵ با اعداد دقیق)، حذف خرج → بدون unlearn؛ fallback پربسامدترین و بی‌تاریخچه = خوراکی.
+
+## Comments
+
+- 2026-09-06 — **رزول شد: سرویس‌های دامنه سبز — categoryService / expenseService / classifyService (+learning) با db تزریقی، صفر import از `next/*`** — lint/tsc/vitest 162 پاس (۳ فایل integration جدید روی فایل temp + migrator، helper مشترک `tests/helpers/integration.ts` که همان seed ثبت‌نام را صدا می‌زند)؛ پوشش services واقعی **۹۹٫۳٪ خط / ۸۹٫۷٪ شاخه** در برابر آستانهٔ ۸۰/۸۰ (از تیکت ۱۹ فعال بود و از ≥۸۰/۷۵ این تیکت سخت‌گیرانه‌تر — تغییری لازم نداشت). ساختار: `errors.ts` (DomainError نوع‌دار با status/code برای ترجمهٔ problem+json در ۲۵: 404 ناشناخته/بیگانه، 400 اعتبارسنجی، 409 سه تعارض دامنه)، `types.ts` (DomainDb تزریقی)، `parse.ts` (parseOrThrow — issues ساختاریافتهٔ zod به‌عنوان مواد خام آرایهٔ errors)، `category-service.ts`، `expense-service.ts`، `classify-service.ts`، `categorizer-state.ts` (پل SQL→موتور ۲۱؛ حل slug→UUID همان‌جا داخل موتور)، `learning.ts` (learnOnSave). تصمیم‌های تفسیری ثبت‌شده:
+  - **انحراف اسکیما — PK جدول learnedKeys از (userId, key) به (userId, key, categoryId) گسترش یافت (مهاجرت ۰۰۰۲، حفظ داده‌ها).** تیکت ۱۹ یک ردیف به‌ازای هر (کاربر، کلید) فرض کرده بود، ولی شمارندهٔ موتور ۲۱ per key **و** category است: purity = best/total روی ردیف‌های خواهر زیر یک کلید و decay تناقض (×۰٫۵ فقط دستهٔ پیشنهادی) دو ردیف زیر یک کلید لازم دارد — با PK قدیمی قابل ذخیره نبود. پیشوند (userId, key) همان ایندکس خواندنِ هدف تیکت ۱۳ را حمل می‌کند. تست: «نان» با دو ردیف (transport 1.5، groceries 1) سبز.
+  - **یادگیری: هر ذخیره (ایجاد/ویرایش) با دستهٔ نهایی** → count++ کلیدهای `extractKeys` عنوان؛ تناقض با پیشنهادِ موتور (محاسبه روی شمارنده‌های پیش‌از-ذخیره) → decay ×۰٫۵ دقیق + count دستهٔ جدید؛ اعداد دقیق تست شد (transport 3 → 1.5). حذف خرج هیچ unlearn نمی‌کند.
+  - **moveExpenses یادگیری نمی‌سازد** — خوانش محتاطانهٔ دامنهٔ همین تیکت (یادگیری = ذخیرهٔ خرج). جملهٔ تیکت ۰۶ («همان مسیر هم یادگیریِ معمول را شلیک می‌کند») تفسیر باز مانده؛ اگر UI حذف دسته (تیکت ۲۸) خواست، additive از مسیر `learnOnSave` اضافه می‌شود. self-move = 400.
+  - **قواعد monthKey:** تاریخ‌دار → مشتق با `jalaliMonthKey(fromISODate)` (اعتبار تقویم واقعی هم همین‌جا: 2026-02-30 → 400)؛ بی‌تاریخ → پارامتر صریح `entryMonthKey` (ماه فرم)؛ تاریخ‌دار همیشه به ماه خودش می‌رود حتی اگر با ماه فرم فرق کند. **بی‌تاریخ‌کردنِ خرج تاریخ‌دار ماهِ فعلی‌اش را نگه می‌دارد** (ماه ثبت دیگر قابل بازیابی نیست؛ جابه‌جایی بی‌تاریخ↔بی‌تاریخ طبق ۱۵ در این نسخه نیست).
+  - **classify:** خروجی عین قرارداد ۱۲ — `{categoryId, source: 'learned'|'system'|'fallback', matchedKey, confidence: {purity, support}|null}`؛ fallback = پربسامدترین دستهٔ کاربر با tie-break ترتیب دسته‌ها (deterministic، هم‌خوان با tie-break موتور)؛ بی‌تاریخچه = دستهٔ سیستمی اول (خوراکی). بی‌اثر تست شد (هیچ نوشتنی). ناوردای «کاربر بی‌دسته» شکستهٔ سروری است → Error ساده (500 در هندلر، نه 400).
+  - **حذف دسته:** سیستمی → `SystemCategoryProtectedError` (409) حتی وقتی خرج دارد (چکِ سیستمی اول)؛ پُر → `CategoryInUseError` (409)؛ نام تکراری per user → `DuplicateCategoryNameError` (409 — انتخابِ ثبت‌نشده در ۱۲، معنای HTTP Conflict). تغییر نام سیستمی آزاد؛ رنک دسته‌های سفارشی = max(order)+1.
+  - **listByMonth:** بی‌تاریخ‌ها بالای لیست (SQLite در ASC اصلاً NULL را اول می‌گذارد)، بعد occurredAt صعودی، tie-break createdAt/id؛ هر سطر دسته‌اش را با خود می‌آورد (`ExpenseWithCategory`).
+  - **یادداشت اجرایی (از code-review):** یک ویرایش نیمه‌کاره (`getOwnedCategory`) جا-کامیت شده بود که HEAD را موقتاً قرمز می‌کرد؛ با کامیت جدا ترمیم شد. parseOrThrow/گاردهای مشترک از یافته‌های همان code-review استانداردسازی شد.
+  - گام بعدی: تیکت ۲۳ (الگوی تکرار + ensure + پیش‌نمایش) آزاد شد؛ ۲۴ بعد از ۲۳ گاز می‌خورد.
