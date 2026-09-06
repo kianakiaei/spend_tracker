@@ -34,3 +34,13 @@ export const learnedKeySourceSchema = z.literal("learned");
 
 /** Every domain id is a UUIDv7 generated in the app (ticket 05). */
 export const uuidv7Schema = z.uuid({ version: "v7" });
+
+/** Expense/template titles: trimmed, never empty — normalization (canonical)
+ * happens separately in the categorization engine. */
+export const titleSchema = z.string().trim().min(1, "title is required");
+
+/** Category names: trimmed, never empty, unique per user. */
+export const categoryNameSchema = z
+  .string()
+  .trim()
+  .min(1, "category name is required");
