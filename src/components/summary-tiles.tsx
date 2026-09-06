@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CategoryDot, tintOf } from "./category-color";
 import { formatNumber, formatPercent } from "@/lib/format";
 import type { Category } from "@/lib/services";
 import type { MonthSummary } from "@/lib/services";
@@ -7,29 +8,12 @@ import type { MonthSummary } from "@/lib/services";
 // money this month (recorded + forecast, from the summary's byCategory),
 // sized by its share — the largest is the four-column double-row anchor, the
 // rest span 3 / 2 / 1 columns of the six-column dense grid. Color arrives
-// only through the category itself: the dot keeps its color, the tile
-// background is that color washed 85% toward the paper.
-
-const FALLBACK_COLOR = "#82887e";
-
-/** A category color washed toward the paper — the tile tint. Null colors
- * (custom categories until ticket 28 brings the swatches) fall back to the
- * muted ink gray. */
-export function tintOf(color: string | null | undefined): string {
-  const hex = color != null && /^#[0-9a-fA-F]{6}$/.test(color) ? color : FALLBACK_COLOR;
-  const channel = (index: number) => {
-    const own = Number.parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16);
-    const paper = [0xfa, 0xfa, 0xf7][index];
-    return Math.round(own * 0.15 + paper * 0.85)
-      .toString(16)
-      .padStart(2, "0");
-  };
-  return `#${channel(0)}${channel(1)}${channel(2)}`;
-}
+// only through the category itself (dot + washed tint, category-color.tsx).
 
 /** Tile spans by share — two columns on phones (a six-column grid clips
  * single-column tiles there), the ticket-07 six-column mosaic from sm up.
- * The largest share is always the four-column double-row anchor. */
+ * Below 25% both spans collapse to one column on phones; the percent label
+ * carries the exact share. */
 function spanClass(index: number, share: number): string {
   if (index === 0) return "col-span-2 row-span-2 sm:col-span-4";
   if (share >= 0.25) return "col-span-2 sm:col-span-3";
@@ -51,7 +35,9 @@ export function SummaryTiles({
   const total = summary.totalToman;
   // Largest first — the anchor tile is the biggest share, not the first
   // category in dashboard order (ticket 26: «کاشیِ بزرگ‌ترین»).
-  const ranked = [...summary.byCategory].sort((a, b) => b.totalToman - a.totalToman);
+  const ranked = [...summary.byCategory].sort(
+    (a, b) => b.totalToman - a.totalToman,
+  );
 
   return (
     <div className="mt-5 grid grid-cols-2 gap-2.5 [grid-auto-flow:dense] sm:grid-cols-6">
@@ -63,15 +49,11 @@ export function SummaryTiles({
           <Link
             key={row.categoryId}
             href={`/categories/${row.categoryId}?month=${monthKey}`}
-            className={`${spanClass(index, share)} ${tall ? "min-h-[186px]" : "min-h-[88px]"} flex flex-col justify-between gap-2.5 rounded-2xl border border-rule p-3.5 text-start hover:border-[#d4d1c6]`}
+            className={`${spanClass(index, share)} ${tall ? "min-h-[186px]" : "min-h-[88px]"} flex flex-col justify-between gap-2.5 rounded-2xl border border-rule p-3.5 text-start hover:border-rule-strong`}
             style={{ backgroundColor: tintOf(color) }}
           >
             <span className="flex items-center gap-1.5 text-[13px] font-semibold">
-              <i
-                className="size-[9px] shrink-0 rounded-full"
-                style={{ backgroundColor: color ?? FALLBACK_COLOR }}
-                aria-hidden
-              />
+              <CategoryDot color={color} />
               {row.name}
             </span>
             <span>

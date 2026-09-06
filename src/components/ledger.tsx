@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CategoryDot } from "./category-color";
 import { formatNumber } from "@/lib/format";
 import {
   formatJalali,
@@ -14,18 +15,19 @@ import type { RecurringForecastRow } from "@/lib/recurring";
 // tiles, opened by the one heavy ink rule. Undated expenses sit on top (the
 // service orders them there; the «بدون تاریخ» chip marks the block), then
 // dated rows and — in a future month — forecast rows interleave by Jalali
-// day, recorded before forecast on a tie (stable sort). Expense rows are
-// read-only HERE: the edit sheet is ticket 27; a forecast row opens the
-// templates page (built with ticket 28).
-
-const FALLBACK_COLOR = "#82887e";
+// day, recorded before forecast on a tie (stable sort). Ascending order is
+// the resolved ticket-22 service contract, deliberately kept over the
+// prototype's newest-first throwaway sort. Expense rows are read-only HERE:
+// the edit sheet is ticket 27; a forecast row opens the templates page
+// (built with ticket 28).
 
 const TAG_CLASS =
   "shrink-0 rounded-full bg-accent-soft px-2 py-px text-[10px] font-medium text-accent";
 
+const LI_CLASS = "border-b border-rule";
+const ROW_CLASS = "flex items-center gap-2.5 px-0.5 py-2.5";
 const DAY_CLASS = "w-[66px] shrink-0 text-[11.5px] text-ink-muted";
-const AMOUNT_CLASS =
-  "whitespace-nowrap text-[13.5px] font-bold tabular-nums";
+const AMOUNT_CLASS = "whitespace-nowrap text-[13.5px] font-bold tabular-nums";
 
 /** Chronological entries: dated recorded rows and forecast rows on the same
  * Jalali day scale. */
@@ -73,56 +75,39 @@ export function Ledger({
       )}
       <ul>
         {undated.map((expense) => (
-          <li
-            key={expense.id}
-            className="flex items-center gap-2.5 border-b border-rule px-0.5 py-2.5"
-          >
-            <span className={DAY_CLASS}>—</span>
-            <RowTitle
+          <li key={expense.id} className={`${LI_CLASS} ${ROW_CLASS}`}>
+            <Row
+              day="—"
               title={expense.title}
               color={expense.category.color}
               tag={expense.sourceRecurringId !== null ? "از الگو" : null}
+              amountToman={expense.amountToman}
             />
-            <span className={AMOUNT_CLASS}>{formatNumber(expense.amountToman)}</span>
           </li>
         ))}
         {[...dated, ...forecastEntries]
           .sort((a, b) => a.day - b.day)
           .map((entry) =>
             entry.kind === "expense" ? (
-              <li
-                key={entry.expense.id}
-                className="flex items-center gap-2.5 border-b border-rule px-0.5 py-2.5"
-              >
-                <span className={DAY_CLASS}>
-                  {formatJalali(fromISODate(entry.expense.occurredAt), "d MMMM")}
-                </span>
-                <RowTitle
+              <li key={entry.expense.id} className={`${LI_CLASS} ${ROW_CLASS}`}>
+                <Row
+                  day={formatJalali(fromISODate(entry.expense.occurredAt), "d MMMM")}
                   title={entry.expense.title}
                   color={entry.expense.category.color}
                   tag={entry.expense.sourceRecurringId !== null ? "از الگو" : null}
+                  amountToman={entry.expense.amountToman}
                 />
-                <span className={AMOUNT_CLASS}>
-                  {formatNumber(entry.expense.amountToman)}
-                </span>
               </li>
             ) : (
-              <li key={entry.forecast.templateId} className="border-b border-rule">
-                <Link
-                  href="/templates"
-                  className="flex items-center gap-2.5 px-0.5 py-2.5 hover:bg-accent-soft"
-                >
-                  <span className={DAY_CLASS}>
-                    {toPersianDigits(entry.forecast.day)} {monthName}
-                  </span>
-                  <RowTitle
+              <li key={entry.forecast.templateId} className={LI_CLASS}>
+                <Link href="/templates" className={`${ROW_CLASS} rounded-lg hover:bg-accent-soft`}>
+                  <Row
+                    day={`${toPersianDigits(entry.forecast.day)} ${monthName}`}
                     title={entry.forecast.title}
                     color={colorOf.get(entry.forecast.categoryId) ?? null}
                     tag="پیش‌بینی"
+                    amountToman={entry.forecast.amountToman}
                   />
-                  <span className={AMOUNT_CLASS}>
-                    {formatNumber(entry.forecast.amountToman)}
-                  </span>
                 </Link>
               </li>
             ),
@@ -132,26 +117,30 @@ export function Ledger({
   );
 }
 
-/** Day cell, dot + title + optional tag, amount — the shared row anatomy
- * (ticket 26: «روز، عنوان + نقطهٔ دسته، از الگو، مبلغ»). */
-function RowTitle({
+/** One shared row anatomy (ticket 26: «روز، عنوان + نقطهٔ دسته، از الگو،
+ * مبلغ») — undated, dated and forecast rows all render through it. */
+function Row({
+  day,
   title,
   color,
   tag,
+  amountToman,
 }: {
+  day: string;
   title: string;
   color: string | null;
   tag: string | null;
+  amountToman: number;
 }) {
   return (
-    <span className="flex min-w-0 flex-1 items-center gap-2 text-[13.5px] font-semibold">
-      <i
-        className="size-[9px] shrink-0 rounded-full"
-        style={{ backgroundColor: color ?? FALLBACK_COLOR }}
-        aria-hidden
-      />
-      <span className="truncate">{title}</span>
-      {tag && <span className={TAG_CLASS}>{tag}</span>}
-    </span>
+    <>
+      <span className={DAY_CLASS}>{day}</span>
+      <span className="flex min-w-0 flex-1 items-center gap-2 text-[13.5px] font-semibold">
+        <CategoryDot color={color} />
+        <span className="truncate">{title}</span>
+        {tag && <span className={TAG_CLASS}>{tag}</span>}
+      </span>
+      <span className={AMOUNT_CLASS}>{formatNumber(amountToman)}</span>
+    </>
   );
 }
