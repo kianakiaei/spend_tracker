@@ -4,6 +4,7 @@ import {
   createCategorizer,
   SEED_LEXICON,
   type Categorizer,
+  type LearnedKeyRecord,
   type UserCategoryRef,
 } from "@/lib/categorization";
 import type { DomainDb } from "./types";
@@ -20,7 +21,7 @@ export interface CategorizerState {
    * order used for fallback/learned tie-breaks. */
   categories: Array<UserCategoryRef & { order: number }>;
   /** Raw learnedKeys rows, kept for the learning upserts (learnOnSave). */
-  learnedRows: Array<{ key: string; categoryId: string; count: number }>;
+  learnedRows: LearnedKeyRecord[];
 }
 
 export async function loadCategorizerState(
@@ -61,7 +62,7 @@ async function listUserCategoryRefs(db: DomainDb, userId: string) {
 export async function listLearnedKeys(
   db: DomainDb,
   userId: string,
-): Promise<Array<{ key: string; categoryId: string; count: number }>> {
+): Promise<LearnedKeyRecord[]> {
   return db
     .select({
       key: learnedKeys.key,

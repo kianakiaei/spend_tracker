@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { CategoryDot } from "./category-color";
 import { useExpenseSheet } from "./expense-sheet/provider";
+import { Tag } from "./tag";
 import { formatNumber } from "@/lib/format";
 import {
   formatJalali,
@@ -26,11 +27,9 @@ import type { RecurringForecastRow } from "@/lib/recurring";
 // expense row opens the edit sheet, a forecast row still navigates to the
 // templates page (built with ticket 28).
 
-const TAG_CLASS =
-  "shrink-0 rounded-full bg-accent-soft px-2 py-px text-[10px] font-medium text-accent";
-
 const LI_CLASS = "border-b border-rule";
 const ROW_CLASS = "flex items-center gap-2.5 px-0.5 py-2.5";
+const ROW_BUTTON_CLASS = `${ROW_CLASS} w-full rounded-lg text-start hover:bg-accent-soft`;
 const DAY_CLASS = "w-[66px] shrink-0 text-[11.5px] text-ink-muted";
 const AMOUNT_CLASS = "whitespace-nowrap text-[13.5px] font-bold tabular-nums";
 
@@ -86,7 +85,7 @@ export function Ledger({
             <button
               type="button"
               onClick={() => openEdit(expense)}
-              className={`${ROW_CLASS} w-full rounded-lg text-start hover:bg-accent-soft`}
+              className={ROW_BUTTON_CLASS}
             >
               <Row
                 day="—"
@@ -106,7 +105,7 @@ export function Ledger({
                 <button
                   type="button"
                   onClick={() => openEdit(entry.expense)}
-                  className={`${ROW_CLASS} w-full rounded-lg text-start hover:bg-accent-soft`}
+                  className={ROW_BUTTON_CLASS}
                 >
                   <Row
                     day={formatJalali(fromISODate(entry.expense.occurredAt), "d MMMM")}
@@ -157,7 +156,7 @@ function Row({
       <span className="flex min-w-0 flex-1 items-center gap-2 text-[13.5px] font-semibold">
         <CategoryDot color={color} />
         <span className="truncate">{title}</span>
-        {tag && <span className={TAG_CLASS}>{tag}</span>}
+        {tag && <Tag>{tag}</Tag>}
       </span>
       <span className={AMOUNT_CLASS}>{formatNumber(amountToman)}</span>
     </>

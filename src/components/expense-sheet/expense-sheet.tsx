@@ -9,6 +9,7 @@ import DatePicker from "react-multi-date-picker";
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import { CategoryDot } from "@/components/category-color";
+import { Tag } from "@/components/tag";
 import type { SuggestionAnswer } from "@/lib/categorization/suggestion-engine";
 import type { ClientSuggestionEngine } from "@/lib/categorization/suggestion-engine";
 import { api } from "@/lib/api/client";
@@ -39,9 +40,6 @@ import { effectiveMonthKey, parseAmountInput } from "./sheet-helpers";
 // in-memory engine; the only network calls are the explicit save/delete.
 
 const DEBOUNCE_MS = 150;
-
-const BADGE_CLASS =
-  "shrink-0 rounded-full bg-accent-soft px-2 py-px text-[10px] font-medium text-accent";
 
 const CHIP_CLASS =
   "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[13.5px]";
@@ -140,28 +138,30 @@ export function ExpenseSheet({
     categories.find((c) => c.id === activeCategoryId) ?? categories[0];
   // The month this save will land in — the sheet's honest subtitle (a dated
   // expense always follows its own date, ticket 15).
-  const targetMonth = `ثبت در ${jalaliMonthLabel(
+  const targetMonthLabel = jalaliMonthLabel(
     fromJalaliMonthKey(effectiveMonthKey(date, monthKey, expense?.monthKey)),
-  )}`;
+  );
+  const targetMonth = isEdit
+    ? `ذخیره در ${targetMonthLabel}`
+    : `ثبت در ${targetMonthLabel}`;
 
   const canSave = title.trim() !== "" && amount !== null && !pending;
 
   async function save() {
-    const parsedAmount = parseAmountInput(amountRaw);
-    if (title.trim() === "" || parsedAmount === null) return;
+    if (pending || title.trim() === "" || amount === null) return;
     setPending(true);
     setError(null);
     try {
       if (expense) {
         await api.expenses.update(expense.id, {
-          amountToman: parsedAmount,
+          amountToman: amount,
           title: title.trim(),
           categoryId: activeCategoryId,
           occurredAt: date,
         });
       } else {
         await api.expenses.create({
-          amountToman: parsedAmount,
+          amountToman: amount,
           title: title.trim(),
           categoryId: activeCategoryId,
           occurredAt: date,
@@ -289,7 +289,7 @@ export function ExpenseSheet({
               <span className={`${CHIP_CLASS} border-rule bg-paper`}>
                 {activeCategory && <CategoryDot color={activeCategory.color} />}
                 <span>{activeCategory?.name ?? "—"}</span>
-                {!manual && <span className={BADGE_CLASS}>پیشنهاد</span>}
+                {!manual && <Tag>پیشنهاد</Tag>}
               </span>
               <button
                 type="button"

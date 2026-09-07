@@ -7,6 +7,9 @@ import {
 import { Ledger } from "@/components/ledger";
 import {
   currentJalaliMonthKey,
+  currentTehranISODate,
+  formatJalali,
+  fromISODate,
   fromJalaliMonthKey,
   jalaliMonthLabel,
   shiftJalaliMonthKey,
@@ -217,6 +220,10 @@ describe("per-month date defaults and the target month", () => {
       "aria-pressed",
       "false",
     );
+    // the picker really holds today, in Jalali/Persian digits
+    expect(
+      screen.getByDisplayValue(formatJalali(fromISODate(currentTehranISODate()))),
+    ).toBeInTheDocument();
   });
 
   it("pressing «بدون تاریخ» clears a picked date", async () => {
