@@ -44,3 +44,7 @@ export const categoryNameSchema = z
   .string()
   .trim()
   .min(1, "category name is required");
+
+/** A category's position in the user's display list (ticket 28's reorder);
+ * the six system seeds occupy 0..5 and customs stack above them. */
+export const categoryOrderSchema = z.number().int().min(0);

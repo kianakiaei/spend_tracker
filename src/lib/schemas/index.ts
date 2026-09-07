@@ -2,6 +2,7 @@ export {
   amountTomanSchema,
   categoryKindSchema,
   categoryNameSchema,
+  categoryOrderSchema,
   dateOnlySchema,
   dayOfMonthSchema,
   jalaliMonthKeySchema,

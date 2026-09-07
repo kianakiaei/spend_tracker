@@ -1,4 +1,4 @@
-import { and, asc, eq } from "drizzle-orm";
+import { and, asc, count, eq } from "drizzle-orm";
 import { z } from "zod";
 import { categories, expenses } from "@/db/schema";
 import { newId } from "@/lib/id";
@@ -93,6 +93,9 @@ export interface ExpenseService {
   /** A month's ledger: undated expenses first (the «بدون تاریخ» chip is the
    * UI's), then by occurrence date, insertion order as the tie-break. */
   listByMonth(userId: string, monthKey: string): Promise<ExpenseWithCategory[]>;
+  /** All-time expense count per category (the categories page's delete
+   * guard, ticket 28): missing key = zero. Aggregation lives in SQL. */
+  countByCategory(userId: string): Promise<Record<string, number>>;
 }
 
 export function createExpenseService(db: DomainDb): ExpenseService {
@@ -215,6 +218,18 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         .orderBy(asc(expenses.occurredAt), asc(expenses.createdAt), asc(expenses.id));
 
       return rows.map((row) => ({ ...row.expense, category: row.category }));
+    },
+
+    async countByCategory(userId) {
+      const rows = await db
+        .select({
+          categoryId: expenses.categoryId,
+          count: count(expenses.id),
+        })
+        .from(expenses)
+        .where(eq(expenses.userId, userId))
+        .groupBy(expenses.categoryId);
+      return Object.fromEntries(rows.map((row) => [row.categoryId, row.count]));
     },
   };
 }

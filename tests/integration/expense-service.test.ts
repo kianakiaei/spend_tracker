@@ -283,3 +283,48 @@ describe("expenseService.remove + listByMonth (ticket 22)", () => {
     );
   });
 });
+
+describe("expenseService.countByCategory (ticket 28: the delete guard's counter)", () => {
+  it("counts every expense per category across all months, dated or not", async () => {
+    const userId = await fx.signUp();
+    const groceries = await systemCategory(userId, "groceries");
+    const transport = await systemCategory(userId, "transport");
+    const custom = await categories.create(userId, { name: "کتاب" });
+
+    await expensesService.create(
+      userId, { amountToman: 10_000, title: "نان", categoryId: groceries }, "1405-05",
+    );
+    await expensesService.create(
+      userId, { amountToman: 20_000, title: "شیر", categoryId: groceries }, "1405-06",
+    );
+    await expensesService.create(
+      userId,
+      { amountToman: 5_000, title: "تاکسی", categoryId: transport, occurredAt: "2026-08-30" },
+      "1405-05",
+    );
+    await expensesService.create(
+      userId, { amountToman: 1_000, title: "کتاب", categoryId: custom.id }, "1405-06",
+    );
+
+    const counts = await expensesService.countByCategory(userId);
+    expect(counts).toEqual({
+      [groceries]: 2,
+      [transport]: 1,
+      [custom.id]: 1,
+    });
+  });
+
+  it("is scoped to the user and empty for a fresh one", async () => {
+    const userId = await fx.signUp();
+    const other = await fx.signUp();
+    const groceries = await systemCategory(other, "groceries");
+    await expensesService.create(
+      other, { amountToman: 3_000, title: "نان", categoryId: groceries }, "1405-06",
+    );
+
+    expect(await expensesService.countByCategory(userId)).toEqual({});
+    expect(await expensesService.countByCategory(other)).toEqual({
+      [groceries]: 1,
+    });
+  });
+});

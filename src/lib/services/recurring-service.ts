@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { expenses, recurringTemplates } from "@/db/schema";
 import { newId } from "@/lib/id";
@@ -88,6 +88,10 @@ export interface RecurringService {
    * current month has real generated expenses, a missed past month stays
    * empty (decision 15). */
   preview(userId: string, monthKey: string): Promise<RecurringForecastRow[]>;
+  /** All-time template count per category, PAUSED ones included — a paused
+   * template still points at its category and still blocks the delete
+   * (ticket 28's guard counter). Aggregation lives in SQL. */
+  countByCategory(userId: string): Promise<Record<string, number>>;
 }
 
 function realDateOrThrow(iso: string): void {
@@ -233,6 +237,18 @@ export function createRecurringService(db: DomainDb): RecurringService {
       return due
         .map((template) => toForecastRow(template, monthKey))
         .sort((a, b) => a.day - b.day);
+    },
+
+    async countByCategory(userId) {
+      const rows = await db
+        .select({
+          categoryId: recurringTemplates.categoryId,
+          count: count(recurringTemplates.id),
+        })
+        .from(recurringTemplates)
+        .where(eq(recurringTemplates.userId, userId))
+        .groupBy(recurringTemplates.categoryId);
+      return Object.fromEntries(rows.map((row) => [row.categoryId, row.count]));
     },
   };
 }

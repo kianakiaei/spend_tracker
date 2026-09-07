@@ -532,6 +532,50 @@ describe("categories resource", () => {
     expect(free.status).toBe(204);
   });
 
+  it("PATCH accepts an order change and the next GET lists it there (ticket 28)", async () => {
+    const a = await categoriesRoute.POST(
+      v1Request("/categories", { method: "POST", session: sessionA, body: { name: "الف" } }),
+    );
+    const first = (await a.json()) as { id: string };
+    const groceries = await systemCategoryBySlug(db, sessionA.userId, "groceries");
+
+    // pull the custom ahead of the first system seed
+    const moved = await categoryIdRoute.PATCH(
+      v1Request(`/categories/${first.id}`, {
+        method: "PATCH",
+        session: sessionA,
+        body: { order: 0 },
+      }),
+      idCtx(first.id),
+    );
+    expect(moved.status).toBe(200);
+    await categoryIdRoute.PATCH(
+      v1Request(`/categories/${groceries.id}`, {
+        method: "PATCH",
+        session: sessionA,
+        body: { order: 1 },
+      }),
+      idCtx(groceries.id),
+    );
+
+    const list = await categoriesRoute.GET(
+      v1Request("/categories", { session: sessionA }),
+    );
+    const rows = (await list.json()) as Array<{ id: string }>;
+    expect(rows[0]!.id).toBe(first.id);
+    expect(rows[1]!.id).toBe(groceries.id);
+
+    const invalid = await categoryIdRoute.PATCH(
+      v1Request(`/categories/${first.id}`, {
+        method: "PATCH",
+        session: sessionA,
+        body: { order: -1 },
+      }),
+      idCtx(first.id),
+    );
+    await expectProblem(invalid, 400, "validation_failed");
+  });
+
   it("move-expenses re-points every expense to the target and returns the count", async () => {
     const source = await categoriesRoute.POST(
       v1Request("/categories", {

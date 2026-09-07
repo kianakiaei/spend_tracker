@@ -367,3 +367,32 @@ describe("recurringService.preview — forecast rows (decision 15)", () => {
     await expect(recurring.preview(userId, "1405-7")).rejects.toThrow(ValidationError);
   });
 });
+
+describe("recurringService.countByCategory (ticket 28: the delete guard's counter)", () => {
+  it("counts templates per category — paused ones still block a delete", async () => {
+    const userId = await fx.signUp();
+    const installment = (await systemCategoryBySlug(fx.db, userId, "installment")).id;
+    const groceries = (await systemCategoryBySlug(fx.db, userId, "groceries")).id;
+
+    await createTemplate(userId); // installment
+    const paused = await createTemplate(userId, {
+      title: "اشتراک گیاه‌پزشکی",
+      categoryId: groceries,
+    });
+    await recurring.update(userId, paused.id, { active: false });
+
+    expect(await recurring.countByCategory(userId)).toEqual({
+      [installment]: 1,
+      [groceries]: 1,
+    });
+  });
+
+  it("is scoped to the user and empty for a fresh one", async () => {
+    const userId = await fx.signUp();
+    const other = await fx.signUp();
+    await createTemplate(other);
+
+    expect(await recurring.countByCategory(userId)).toEqual({});
+    expect(Object.keys(await recurring.countByCategory(other))).toHaveLength(1);
+  });
+});

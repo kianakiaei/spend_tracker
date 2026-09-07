@@ -2,7 +2,7 @@ import { and, asc, eq, max } from "drizzle-orm";
 import { z } from "zod";
 import { categories, expenses, recurringTemplates } from "@/db/schema";
 import { newId } from "@/lib/id";
-import { categoryNameSchema, uuidv7Schema } from "@/lib/schemas";
+import { categoryOrderSchema, categoryNameSchema, uuidv7Schema } from "@/lib/schemas";
 import {
   CategoryInUseError,
   DuplicateCategoryNameError,
@@ -29,6 +29,7 @@ const updateCategoryInputSchema = z.object({
   name: categoryNameSchema.optional(),
   color: z.string().nullish(),
   icon: z.string().nullish(),
+  order: categoryOrderSchema.optional(),
 });
 
 const idSchema = uuidv7Schema;
@@ -43,6 +44,7 @@ export interface UpdateCategoryInput {
   name?: string;
   color?: string | null;
   icon?: string | null;
+  order?: number;
 }
 
 export interface CategoryService {
@@ -151,6 +153,7 @@ export function createCategoryService(db: DomainDb): CategoryService {
         name?: string;
         color?: string | null;
         icon?: string | null;
+        order?: number;
         updatedAt: Date;
       } = { updatedAt: new Date() };
       if (data.name !== undefined && data.name !== existing.name) {
@@ -159,6 +162,7 @@ export function createCategoryService(db: DomainDb): CategoryService {
       }
       if (data.color !== undefined) set.color = data.color;
       if (data.icon !== undefined) set.icon = data.icon;
+      if (data.order !== undefined) set.order = data.order;
 
       const [category] = await db
         .update(categories)

@@ -3,6 +3,7 @@ import {
   amountTomanSchema,
   categoryKindSchema,
   categoryNameSchema,
+  categoryOrderSchema,
   dateOnlySchema,
   dayOfMonthSchema,
   jalaliMonthKeySchema,
@@ -43,10 +44,13 @@ export const createCategoryRequestSchema = z.object({
   icon: z.string().nullish(),
 });
 
+/** PATCH /api/v1/categories/[id] — rename/restyle freely; `order` is the
+ * ticket-28 reorder (the manager swaps two PATCHes). */
 export const updateCategoryRequestSchema = z.object({
   name: categoryNameSchema.optional(),
   color: z.string().nullish(),
   icon: z.string().nullish(),
+  order: categoryOrderSchema.optional(),
 });
 
 /** POST /api/v1/categories/[id]/move-expenses — bulk move for the

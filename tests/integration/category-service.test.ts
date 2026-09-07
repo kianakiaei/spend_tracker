@@ -222,3 +222,32 @@ describe("categoryService — moveExpenses (ticket 22)", () => {
     ).rejects.toThrow(ValidationError);
   });
 });
+
+describe("categoryService — display order (ticket 28)", () => {
+  it("rewrites a category's order and list() follows the new sequence", async () => {
+    const userId = await fx.signUp();
+    const list = await service.list(userId);
+    const first = list[0]!;
+    const last = list.at(-1)!;
+
+    // pull the last system category to the front, pushing the old head back
+    await service.update(userId, last.id, { order: 0 });
+    await service.update(userId, first.id, { order: 1 });
+
+    const reordered = await service.list(userId);
+    expect(reordered[0]!.id).toBe(last.id);
+    expect(reordered[1]!.id).toBe(first.id);
+  });
+
+  it("rejects a negative or fractional order", async () => {
+    const userId = await fx.signUp();
+    const custom = await service.create(userId, { name: "ورزش" });
+
+    await expect(service.update(userId, custom.id, { order: -1 })).rejects.toThrow(
+      ValidationError,
+    );
+    await expect(service.update(userId, custom.id, { order: 1.5 })).rejects.toThrow(
+      ValidationError,
+    );
+  });
+});
