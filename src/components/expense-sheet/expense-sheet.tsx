@@ -1,0 +1,388 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import DatePicker from "react-multi-date-picker";
+// The OFFICIAL persian calendar + locale (research 04 — never `jalali`):
+// the picker displays Jalali while the state stays a Gregorian date-only
+// string.
+import persian from "react-date-object/calendars/persian";
+import persian_fa from "react-date-object/locales/persian_fa";
+import { CategoryDot } from "@/components/category-color";
+import type { SuggestionAnswer } from "@/lib/categorization/suggestion-engine";
+import type { ClientSuggestionEngine } from "@/lib/categorization/suggestion-engine";
+import { api } from "@/lib/api/client";
+import {
+  currentJalaliMonthKey,
+  currentTehranISODate,
+  formatToman,
+  fromISODate,
+  fromJalaliMonthKey,
+  jalaliMonthLabel,
+  toISODate,
+} from "@/lib/jalali";
+import type { Category } from "@/lib/services";
+import type { SheetOpen } from "./provider";
+import { effectiveMonthKey, parseAmountInput } from "./sheet-helpers";
+
+// The record/edit bottom sheet (ticket 27), following the approved
+// prototype-v2 anatomy: ink-ruled fields on a paper panel rising over a
+// scrim; the category chip carrying the «پیشنهاد» badge while the engine
+// still owns it; the jade ثبت against a quiet انصراف; delete (edit only)
+// isolated on the other side with an inline confirm.
+//
+// The ticket-06 suggestion contract lives in the two flags below: the chip
+// follows the debounced engine answer until the user picks a category by
+// hand, then the engine goes silent for the rest of the form and the badge
+// drops. Edit starts manual — the row's category is a fact, not a
+// suggestion. Typing is side-effect-free: classification is the pure
+// in-memory engine; the only network calls are the explicit save/delete.
+
+const DEBOUNCE_MS = 150;
+
+const BADGE_CLASS =
+  "shrink-0 rounded-full bg-accent-soft px-2 py-px text-[10px] font-medium text-accent";
+
+const CHIP_CLASS =
+  "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[13.5px]";
+
+const CHIP_QUIET = "border-rule bg-paper text-ink";
+const CHIP_PRESSED = "border-accent bg-accent-soft text-accent";
+
+const OPTION_CLASS =
+  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px]";
+
+const BTN_GHOST =
+  "rounded-full border border-rule px-5 py-2.5 text-[14px] font-semibold text-ink-muted hover:text-ink";
+
+const FIELD_CLASS = "border-b border-rule py-3";
+const LABEL_CLASS = "mb-1.5 block text-[12px] text-ink-muted";
+const INPUT_CLASS =
+  "w-full border-0 bg-transparent p-0 text-[16px] outline-none placeholder:text-ink-muted/70";
+
+export function ExpenseSheet({
+  open,
+  onClose,
+  monthKey,
+  categories,
+  engine,
+}: {
+  open: SheetOpen;
+  onClose: () => void;
+  monthKey: string;
+  categories: Category[];
+  engine: ClientSuggestionEngine;
+}) {
+  const router = useRouter();
+  const isEdit = open.mode === "edit";
+  const expense = isEdit ? open.expense : null;
+
+  const [title, setTitle] = useState(expense?.title ?? "");
+  const [amountRaw, setAmountRaw] = useState(
+    expense ? String(expense.amountToman) : "",
+  );
+  // Create defaults (ticket 27): the current month starts on today; any
+  // other month starts undated — the undated expense then belongs to the
+  // form's month (decision 15).
+  const [date, setDate] = useState<string | null>(
+    expense
+      ? expense.occurredAt
+      : monthKey === currentJalaliMonthKey()
+        ? currentTehranISODate()
+        : null,
+  );
+  const [manual, setManual] = useState(isEdit);
+  const [pickedId, setPickedId] = useState<string | null>(
+    expense?.categoryId ?? null,
+  );
+  const [optsOpen, setOptsOpen] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Live suggestion (ticket 06): ~150ms after the last keystroke; silent
+  // once the category is manual. The first answer classifies immediately so
+  // the sheet never opens category-less.
+  const [suggestion, setSuggestion] = useState<SuggestionAnswer | null>(() =>
+    manual ? null : engine.classify(title),
+  );
+  useEffect(() => {
+    if (manual) return;
+    const timer = setTimeout(
+      () => setSuggestion(engine.classify(title)),
+      DEBOUNCE_MS,
+    );
+    return () => clearTimeout(timer);
+  }, [engine, manual, title]);
+
+  // Escape closes; the page behind the sheet never scrolls.
+  useEffect(() => {
+    function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+    document.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [onClose]);
+
+  const amount = parseAmountInput(amountRaw);
+  const activeCategoryId =
+    manual && pickedId !== null
+      ? pickedId
+      : suggestion !== null
+        ? suggestion.categoryId
+        : (pickedId ?? categories[0]?.id ?? "");
+  const activeCategory =
+    categories.find((c) => c.id === activeCategoryId) ?? categories[0];
+  // The month this save will land in — the sheet's honest subtitle (a dated
+  // expense always follows its own date, ticket 15).
+  const targetMonth = `ثبت در ${jalaliMonthLabel(
+    fromJalaliMonthKey(effectiveMonthKey(date, monthKey, expense?.monthKey)),
+  )}`;
+
+  const canSave = title.trim() !== "" && amount !== null && !pending;
+
+  async function save() {
+    const parsedAmount = parseAmountInput(amountRaw);
+    if (title.trim() === "" || parsedAmount === null) return;
+    setPending(true);
+    setError(null);
+    try {
+      if (expense) {
+        await api.expenses.update(expense.id, {
+          amountToman: parsedAmount,
+          title: title.trim(),
+          categoryId: activeCategoryId,
+          occurredAt: date,
+        });
+      } else {
+        await api.expenses.create({
+          amountToman: parsedAmount,
+          title: title.trim(),
+          categoryId: activeCategoryId,
+          occurredAt: date,
+          entryMonthKey: monthKey,
+        });
+      }
+      onClose();
+      // Fresh dashboard AND fresh learned counters — learning happened
+      // server-side on this save (ticket 06).
+      router.refresh();
+    } catch {
+      // Network/handler faults speak with one generic voice; every field
+      // keeps exactly what the user typed (ticket 27).
+      setError("ذخیره نشد؛ دوباره تلاش کنید.");
+      setPending(false);
+    }
+  }
+
+  async function remove() {
+    if (!expense || pending) return;
+    setPending(true);
+    setError(null);
+    try {
+      await api.expenses.remove(expense.id);
+      onClose();
+      router.refresh();
+    } catch {
+      setError("حذف نشد؛ دوباره تلاش کنید.");
+      setPending(false);
+      setConfirmingDelete(false);
+    }
+  }
+
+  return (
+    <>
+      <div
+        aria-hidden
+        onClick={onClose}
+        className="animate-scrim-in fixed inset-0 z-40 bg-ink/30"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="expense-sheet-title"
+        className="animate-sheet-in fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[84dvh] w-full max-w-[680px] overflow-auto rounded-t-[20px] bg-panel px-6 pb-7 pt-5 shadow-[0_-14px_44px_rgba(32,36,31,0.2)]"
+      >
+        <h2 id="expense-sheet-title" className="text-[17px] font-bold">
+          {isEdit ? "ویرایش خرج" : "ثبت خرج"}
+        </h2>
+        <p aria-live="polite" className="mt-0.5 text-[13px] text-ink-muted">
+          {targetMonth}
+        </p>
+
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            void save();
+          }}
+        >
+          <div className={FIELD_CLASS}>
+            <label htmlFor="expense-title" className={LABEL_CLASS}>
+              عنوان
+            </label>
+            <input
+              id="expense-title"
+              type="text"
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+              placeholder="مثلاً نان و شیر"
+              autoFocus
+              className={INPUT_CLASS}
+            />
+          </div>
+
+          <div className={FIELD_CLASS}>
+            <label htmlFor="expense-amount" className={LABEL_CLASS}>
+              مبلغ
+            </label>
+            <input
+              id="expense-amount"
+              type="text"
+              inputMode="numeric"
+              value={amountRaw}
+              onChange={(event) => setAmountRaw(event.target.value)}
+              placeholder="به تومان"
+              className={INPUT_CLASS}
+            />
+            <p aria-live="polite" className="mt-1.5 text-[12px] text-ink-muted">
+              {amount !== null ? formatToman(amount) : ""}
+            </p>
+          </div>
+
+          <div className={FIELD_CLASS}>
+            <span id="expense-date-label" className={LABEL_CLASS}>
+              تاریخ
+            </span>
+            <div className="flex items-center gap-2.5">
+              <button
+                type="button"
+                aria-pressed={date === null}
+                onClick={() => setDate(null)}
+                className={`${CHIP_CLASS} ${date === null ? CHIP_PRESSED : CHIP_QUIET}`}
+              >
+                بدون تاریخ
+              </button>
+              <DatePicker
+                value={date ? fromISODate(date) : null}
+                calendar={persian}
+                locale={persian_fa}
+                editable={false}
+                placeholder="انتخاب تاریخ"
+                calendarPosition="top-start"
+                zIndex={60}
+                inputClass="w-[128px] cursor-pointer rounded-lg border border-rule bg-paper px-3 py-1.5 text-[13.5px] outline-none"
+                onChange={(value) => {
+                  setDate(value ? toISODate(value.toDate()) : null);
+                }}
+              />
+            </div>
+          </div>
+
+          <div className={FIELD_CLASS}>
+            <span className={LABEL_CLASS}>دسته</span>
+            <div className="flex items-center gap-2.5">
+              <span className={`${CHIP_CLASS} border-rule bg-paper`}>
+                {activeCategory && <CategoryDot color={activeCategory.color} />}
+                <span>{activeCategory?.name ?? "—"}</span>
+                {!manual && <span className={BADGE_CLASS}>پیشنهاد</span>}
+              </span>
+              <button
+                type="button"
+                onClick={() => setOptsOpen((wasOpen) => !wasOpen)}
+                className="text-[12.5px] text-accent hover:underline"
+              >
+                تغییر
+              </button>
+            </div>
+            {optsOpen && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    type="button"
+                    aria-pressed={category.id === activeCategoryId}
+                    onClick={() => {
+                      setPickedId(category.id);
+                      setManual(true);
+                    }}
+                    className={`${OPTION_CLASS} ${
+                      category.id === activeCategoryId
+                        ? "border-accent bg-accent-soft"
+                        : "border-rule bg-panel"
+                    }`}
+                  >
+                    <CategoryDot color={category.color} />
+                    {category.name}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {expense?.sourceRecurringId && (
+            <p className="mt-3 rounded-[10px] bg-accent-soft px-3 py-2 text-[12px] leading-7 text-ink-muted">
+              این خرج از الگو تولید شده؛ ویرایشش الگو را عوض نمی‌کند.
+            </p>
+          )}
+
+          {error && (
+            <p role="alert" className="mt-3 text-[13px] text-danger">
+              {error}
+            </p>
+          )}
+
+          {isEdit && confirmingDelete ? (
+            <div className="mt-5 flex items-center gap-2.5">
+              <p className="me-auto text-[13.5px] text-ink-muted">
+                این خرج حذف شود؟
+              </p>
+              <button
+                type="button"
+                onClick={() => setConfirmingDelete(false)}
+                className={BTN_GHOST}
+              >
+                انصراف
+              </button>
+              <button
+                type="button"
+                onClick={() => void remove()}
+                disabled={pending}
+                className="rounded-full bg-danger px-6 py-2.5 text-[14px] font-semibold text-white hover:brightness-110 disabled:opacity-60"
+              >
+                حذف
+              </button>
+            </div>
+          ) : (
+            <div className="mt-5 flex items-center gap-2.5">
+              {isEdit && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmingDelete(true)}
+                  className="me-auto rounded-full border border-danger px-5 py-2.5 text-[14px] font-semibold text-danger hover:bg-danger/5"
+                >
+                  حذف
+                </button>
+              )}
+              <button type="button" onClick={onClose} className={BTN_GHOST}>
+                انصراف
+              </button>
+              <button
+                type="submit"
+                disabled={!canSave}
+                aria-busy={pending || undefined}
+                className="rounded-full bg-accent px-6 py-2.5 text-[14px] font-semibold text-white hover:brightness-110 disabled:opacity-60"
+              >
+                {isEdit ? "ذخیره" : "ثبت"}
+              </button>
+            </div>
+          )}
+        </form>
+      </div>
+    </>
+  );
+}

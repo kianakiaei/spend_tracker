@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import { CategoryDot } from "./category-color";
+import { useExpenseSheet } from "./expense-sheet/provider";
 import { formatNumber } from "@/lib/format";
 import {
   formatJalali,
@@ -17,9 +20,11 @@ import type { RecurringForecastRow } from "@/lib/recurring";
 // dated rows and — in a future month — forecast rows interleave by Jalali
 // day, recorded before forecast on a tie (stable sort). Ascending order is
 // the resolved ticket-22 service contract, deliberately kept over the
-// prototype's newest-first throwaway sort. Expense rows are read-only HERE:
-// the edit sheet is ticket 27; a forecast row opens the templates page
-// (built with ticket 28).
+// prototype's newest-first throwaway sort.
+//
+// Ticket 27: the ledger is a client island inside the sheet provider — an
+// expense row opens the edit sheet, a forecast row still navigates to the
+// templates page (built with ticket 28).
 
 const TAG_CLASS =
   "shrink-0 rounded-full bg-accent-soft px-2 py-px text-[10px] font-medium text-accent";
@@ -46,6 +51,8 @@ export function Ledger({
   forecast: RecurringForecastRow[];
   categories: Category[];
 }) {
+  const { openEdit } = useExpenseSheet();
+
   if (expenses.length === 0 && forecast.length === 0) return null;
 
   const colorOf = new Map(categories.map((c) => [c.id, c.color]));
@@ -75,28 +82,40 @@ export function Ledger({
       )}
       <ul>
         {undated.map((expense) => (
-          <li key={expense.id} className={`${LI_CLASS} ${ROW_CLASS}`}>
-            <Row
-              day="—"
-              title={expense.title}
-              color={expense.category.color}
-              tag={expense.sourceRecurringId !== null ? "از الگو" : null}
-              amountToman={expense.amountToman}
-            />
+          <li key={expense.id} className={LI_CLASS}>
+            <button
+              type="button"
+              onClick={() => openEdit(expense)}
+              className={`${ROW_CLASS} w-full rounded-lg text-start hover:bg-accent-soft`}
+            >
+              <Row
+                day="—"
+                title={expense.title}
+                color={expense.category.color}
+                tag={expense.sourceRecurringId !== null ? "از الگو" : null}
+                amountToman={expense.amountToman}
+              />
+            </button>
           </li>
         ))}
         {[...dated, ...forecastEntries]
           .sort((a, b) => a.day - b.day)
           .map((entry) =>
             entry.kind === "expense" ? (
-              <li key={entry.expense.id} className={`${LI_CLASS} ${ROW_CLASS}`}>
-                <Row
-                  day={formatJalali(fromISODate(entry.expense.occurredAt), "d MMMM")}
-                  title={entry.expense.title}
-                  color={entry.expense.category.color}
-                  tag={entry.expense.sourceRecurringId !== null ? "از الگو" : null}
-                  amountToman={entry.expense.amountToman}
-                />
+              <li key={entry.expense.id} className={LI_CLASS}>
+                <button
+                  type="button"
+                  onClick={() => openEdit(entry.expense)}
+                  className={`${ROW_CLASS} w-full rounded-lg text-start hover:bg-accent-soft`}
+                >
+                  <Row
+                    day={formatJalali(fromISODate(entry.expense.occurredAt), "d MMMM")}
+                    title={entry.expense.title}
+                    color={entry.expense.category.color}
+                    tag={entry.expense.sourceRecurringId !== null ? "از الگو" : null}
+                    amountToman={entry.expense.amountToman}
+                  />
+                </button>
               </li>
             ) : (
               <li key={entry.forecast.templateId} className={LI_CLASS}>
