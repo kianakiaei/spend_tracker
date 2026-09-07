@@ -36,8 +36,10 @@ import { effectiveMonthKey, parseAmountInput } from "./sheet-helpers";
 // follows the debounced engine answer until the user picks a category by
 // hand, then the engine goes silent for the rest of the form and the badge
 // drops. Edit starts manual — the row's category is a fact, not a
-// suggestion. Typing is side-effect-free: classification is the pure
-// in-memory engine; the only network calls are the explicit save/delete.
+// suggestion — and so does the drilldown's locked create (ticket 28),
+// which additionally keeps the picker away entirely. Typing is
+// side-effect-free: classification is the pure in-memory engine; the only
+// network calls are the explicit save/delete.
 
 const DEBOUNCE_MS = 150;
 
@@ -74,6 +76,13 @@ export function ExpenseSheet({
   const router = useRouter();
   const isEdit = open.mode === "edit";
   const expense = isEdit ? open.expense : null;
+  // The drilldown's locked create (ticket 28): the category is a fact the
+  // page brought in, exactly like an edit row's category — the picker and
+  // the engine stay away.
+  const lockedCategory =
+    open.mode === "create" && "lockedCategoryId" in open
+      ? (categories.find((c) => c.id === open.lockedCategoryId) ?? null)
+      : null;
 
   const [title, setTitle] = useState(expense?.title ?? "");
   const [amountRaw, setAmountRaw] = useState(
@@ -89,9 +98,11 @@ export function ExpenseSheet({
         ? currentTehranISODate()
         : null,
   );
-  const [manual, setManual] = useState(isEdit);
+  // Manual from the start when the category is a fact — an edit row's own
+  // category or the drilldown's locked one (ticket 28).
+  const [manual, setManual] = useState(isEdit || lockedCategory !== null);
   const [pickedId, setPickedId] = useState<string | null>(
-    expense?.categoryId ?? null,
+    expense?.categoryId ?? lockedCategory?.id ?? null,
   );
   const [optsOpen, setOptsOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
@@ -99,8 +110,9 @@ export function ExpenseSheet({
   const [error, setError] = useState<string | null>(null);
 
   // Live suggestion (ticket 06): ~150ms after the last keystroke; silent
-  // once the category is manual. The first answer classifies immediately so
-  // the sheet never opens category-less.
+  // once the category is manual (an edit row or the drilldown's locked
+  // category). The first answer classifies immediately so the sheet never
+  // opens category-less.
   const [suggestion, setSuggestion] = useState<SuggestionAnswer | null>(() =>
     manual ? null : engine.classify(title),
   );
@@ -143,7 +155,9 @@ export function ExpenseSheet({
   );
   const targetMonth = isEdit
     ? `ذخیره در ${targetMonthLabel}`
-    : `ثبت در ${targetMonthLabel}`;
+    : lockedCategory
+      ? `ثبت در ${lockedCategory.name} — ${targetMonthLabel}`
+      : `ثبت در ${targetMonthLabel}`;
 
   const canSave = title.trim() !== "" && amount !== null && !pending;
 
@@ -285,42 +299,58 @@ export function ExpenseSheet({
 
           <div className={FIELD_CLASS}>
             <span className={LABEL_CLASS}>دسته</span>
-            <div className="flex items-center gap-2.5">
-              <span className={`${CHIP_CLASS} border-rule bg-paper`}>
-                {activeCategory && <CategoryDot color={activeCategory.color} />}
-                <span>{activeCategory?.name ?? "—"}</span>
-                {!manual && <Tag>پیشنهاد</Tag>}
-              </span>
-              <button
-                type="button"
-                onClick={() => setOptsOpen((wasOpen) => !wasOpen)}
-                className="text-[12.5px] text-accent hover:underline"
-              >
-                تغییر
-              </button>
-            </div>
-            {optsOpen && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    type="button"
-                    aria-pressed={category.id === activeCategoryId}
-                    onClick={() => {
-                      setPickedId(category.id);
-                      setManual(true);
-                    }}
-                    className={`${OPTION_CLASS} ${
-                      category.id === activeCategoryId
-                        ? "border-accent bg-accent-soft"
-                        : "border-rule bg-panel"
-                    }`}
-                  >
-                    <CategoryDot color={category.color} />
-                    {category.name}
-                  </button>
-                ))}
+            {lockedCategory ? (
+              <div className="flex items-center gap-2.5">
+                <span className={`${CHIP_CLASS} border-rule bg-paper`}>
+                  <CategoryDot color={lockedCategory.color} />
+                  <span>{lockedCategory.name}</span>
+                </span>
+                <span className="text-[12px] text-ink-muted">
+                  دستهٔ این صفحه
+                </span>
               </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2.5">
+                  <span className={`${CHIP_CLASS} border-rule bg-paper`}>
+                    {activeCategory && (
+                      <CategoryDot color={activeCategory.color} />
+                    )}
+                    <span>{activeCategory?.name ?? "—"}</span>
+                    {!manual && <Tag>پیشنهاد</Tag>}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setOptsOpen((wasOpen) => !wasOpen)}
+                    className="text-[12.5px] text-accent hover:underline"
+                  >
+                    تغییر
+                  </button>
+                </div>
+                {optsOpen && (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {categories.map((category) => (
+                      <button
+                        key={category.id}
+                        type="button"
+                        aria-pressed={category.id === activeCategoryId}
+                        onClick={() => {
+                          setPickedId(category.id);
+                          setManual(true);
+                        }}
+                        className={`${OPTION_CLASS} ${
+                          category.id === activeCategoryId
+                            ? "border-accent bg-accent-soft"
+                            : "border-rule bg-panel"
+                        }`}
+                      >
+                        <CategoryDot color={category.color} />
+                        {category.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
 

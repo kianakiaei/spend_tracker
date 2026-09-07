@@ -37,10 +37,15 @@ export interface SheetExpense {
 
 export type SheetOpen =
   | { mode: "create" }
+  /** The drilldown's «افزودن به این دسته» (ticket 28): record with the
+   * category fixed — no picker, no suggestion engine. */
+  | { mode: "create"; lockedCategoryId: string }
   | { mode: "edit"; expense: SheetExpense };
 
 interface ExpenseSheetContextValue {
-  openCreate: () => void;
+  /** Without an id: the dashboard's suggestion-driven record flow. With
+   * one: the locked create of a category drilldown. */
+  openCreate: (lockedCategoryId?: string) => void;
   openEdit: (expense: SheetExpense) => void;
 }
 
@@ -87,7 +92,12 @@ export function ExpenseSheetProvider({
 
   const value = useMemo<ExpenseSheetContextValue>(
     () => ({
-      openCreate: () => setOpen({ mode: "create" }),
+      openCreate: (lockedCategoryId?: string) =>
+        setOpen(
+          lockedCategoryId === undefined
+            ? { mode: "create" }
+            : { mode: "create", lockedCategoryId },
+        ),
       openEdit: (expense) => setOpen({ mode: "edit", expense }),
     }),
     [],

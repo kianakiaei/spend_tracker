@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen, waitFor } from "@testing-library/react"
 import {
   AddExpenseFab,
   ExpenseSheetProvider,
+  useExpenseSheet,
 } from "@/components/expense-sheet/provider";
 import { Ledger } from "@/components/ledger";
 import {
@@ -330,5 +331,83 @@ describe("edit sheet from a ledger row", () => {
     );
     await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
+describe("locked create from a category (ticket 28 handoff)", () => {
+  /** The drilldown's «افزودن به این دسته» — a plain trigger calling
+   * openCreate with the page's category id. */
+  function renderLockedCreate(monthKey: string) {
+    function Trigger() {
+      const { openCreate } = useExpenseSheet();
+      return (
+        <button type="button" onClick={() => openCreate(INSTALLMENT.id)}>
+          افزودن به این دسته
+        </button>
+      );
+    }
+    return render(
+      <ExpenseSheetProvider
+        monthKey={monthKey}
+        categories={CATEGORIES}
+        learnedKeys={[]}
+        fallbackCategoryId={GROCERIES.id}
+      >
+        <Trigger />
+      </ExpenseSheetProvider>,
+    );
+  }
+
+  it("opens on the locked category — no picker, no badge, engine silent", async () => {
+    vi.useFakeTimers();
+    renderLockedCreate(otherMonth);
+    fireEvent.click(
+      screen.getByRole("button", { name: "افزودن به این دسته" }),
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    expect(screen.getByText("قسط")).toBeInTheDocument();
+    expect(screen.queryByText("پیشنهاد")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "تغییر" }),
+    ).not.toBeInTheDocument();
+
+    // a lexicon-heavy title cannot move the chip off the locked category
+    fireEvent.change(screen.getByLabelText("عنوان"), {
+      target: { value: "تاکسی فرودگاه" },
+    });
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
+    expect(screen.getByText("قسط")).toBeInTheDocument();
+    expect(screen.queryByText("حمل‌ونقل")).not.toBeInTheDocument();
+  });
+
+  it("saves with the locked category and the page's month", async () => {
+    api.expenses.create.mockResolvedValue({});
+    renderLockedCreate(otherMonth);
+    fireEvent.click(
+      screen.getByRole("button", { name: "افزودن به این دسته" }),
+    );
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText("عنوان"), {
+      target: { value: "قسط وام" },
+    });
+    fireEvent.change(screen.getByLabelText("مبلغ"), {
+      target: { value: "1500000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "ثبت" }));
+
+    await waitFor(() =>
+      expect(api.expenses.create).toHaveBeenCalledWith({
+        amountToman: 1500000,
+        title: "قسط وام",
+        categoryId: INSTALLMENT.id,
+        occurredAt: null,
+        entryMonthKey: otherMonth,
+      }),
+    );
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 });
