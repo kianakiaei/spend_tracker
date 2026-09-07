@@ -126,7 +126,7 @@ export function AddExpenseFab() {
   return (
     <button
       type="button"
-      onClick={openCreate}
+      onClick={() => openCreate()}
       aria-label="ثبت خرج"
       className="fixed bottom-6 end-6 z-30 grid size-14 place-items-center rounded-full bg-accent text-[27px] font-light leading-none text-white shadow-[0_12px_26px_rgba(26,122,92,0.35)] hover:brightness-110"
     >
