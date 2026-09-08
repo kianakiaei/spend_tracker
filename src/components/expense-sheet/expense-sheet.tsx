@@ -10,6 +10,7 @@ import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
 import { CategoryDot } from "@/components/category-color";
 import { Tag } from "@/components/tag";
+import { SheetPanel } from "@/components/ui/sheet-panel";
 import type { SuggestionAnswer } from "@/lib/categorization/suggestion-engine";
 import type { ClientSuggestionEngine } from "@/lib/categorization/suggestion-engine";
 import { api } from "@/lib/api/client";
@@ -125,20 +126,6 @@ export function ExpenseSheet({
     return () => clearTimeout(timer);
   }, [engine, manual, title]);
 
-  // Escape closes; the page behind the sheet never scrolls.
-  useEffect(() => {
-    function onKey(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-    document.addEventListener("keydown", onKey);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [onClose]);
-
   const amount = parseAmountInput(amountRaw);
   const activeCategoryId =
     manual && pickedId !== null
@@ -210,21 +197,10 @@ export function ExpenseSheet({
   }
 
   return (
-    <>
-      <div
-        aria-hidden
-        onClick={onClose}
-        className="animate-scrim-in fixed inset-0 z-40 bg-ink/30"
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="expense-sheet-title"
-        className="animate-sheet-in fixed inset-x-0 bottom-0 z-50 mx-auto max-h-[84dvh] w-full max-w-[680px] overflow-auto rounded-t-[20px] bg-panel px-6 pb-7 pt-5 shadow-[0_-14px_44px_rgba(32,36,31,0.2)]"
-      >
-        <h2 id="expense-sheet-title" className="text-[17px] font-bold">
-          {isEdit ? "ویرایش خرج" : "ثبت خرج"}
-        </h2>
+    <SheetPanel onClose={onClose} labelledBy="expense-sheet-title">
+      <h2 id="expense-sheet-title" className="text-[17px] font-bold">
+        {isEdit ? "ویرایش خرج" : "ثبت خرج"}
+      </h2>
         <p aria-live="polite" className="mt-0.5 text-[13px] text-ink-muted">
           {targetMonth}
         </p>
@@ -412,7 +388,6 @@ export function ExpenseSheet({
             </div>
           )}
         </form>
-      </div>
-    </>
+    </SheetPanel>
   );
 }
