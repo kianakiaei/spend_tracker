@@ -94,6 +94,10 @@ export const monthQuerySchema = z.object({
 /** An ISO timestamp as JSON.stringify writes a Date. */
 const isoTimestampSchema = z.iso.datetime();
 
+/** better-auth mints opaque string ids (never UUIDs) — response `userId`s
+ * are strings; only domain ids (id/categoryId/templateId/…) are UUIDv7. */
+const authUserIdSchema = z.string();
+
 export const categoryResponseSchema = z.object({
   id: uuidv7Schema,
   name: z.string(),
@@ -102,7 +106,7 @@ export const categoryResponseSchema = z.object({
   kind: categoryKindSchema,
   order: z.number().int(),
   slug: z.string().nullable(),
-  userId: uuidv7Schema,
+  userId: authUserIdSchema,
   createdAt: isoTimestampSchema,
   updatedAt: isoTimestampSchema,
 });
@@ -116,7 +120,7 @@ export const expenseResponseSchema = z.object({
   occurredAt: dateOnlySchema.nullable(),
   monthKey: jalaliMonthKeySchema,
   sourceRecurringId: uuidv7Schema.nullable(),
-  userId: uuidv7Schema,
+  userId: authUserIdSchema,
   createdAt: isoTimestampSchema,
   updatedAt: isoTimestampSchema,
   category: categoryResponseSchema,
@@ -131,7 +135,7 @@ export const recurringTemplateResponseSchema = z.object({
   startDate: dateOnlySchema,
   endDate: dateOnlySchema.nullable(),
   active: z.boolean(),
-  userId: uuidv7Schema,
+  userId: authUserIdSchema,
   createdAt: isoTimestampSchema,
   updatedAt: isoTimestampSchema,
 });

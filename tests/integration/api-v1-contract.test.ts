@@ -713,10 +713,117 @@ describe("POST /classify — the side-effect-free suggestion", () => {
     const res = await classifyRoute.POST(
       v1Request("/classify", {
         method: "POST",
-        session: sessionA,
+        session: sessionB,
         body: { title: "   " },
       }),
     );
     await expectProblem(res, 400, "validation_failed");
+  });
+});
+
+describe("mutation response bodies match the shared schemas (ticket 30)", () => {
+  // The typed v1 client validates every success body with these same
+  // schemas — a handler returning a row the schema rejects breaks every UI
+  // mutation (the sheet's generic «ذخیره نشد») even though the server
+  // persisted. These tests pin the bodies with REAL better-auth user ids
+  // (opaque strings, never UUIDs).
+  it("POST /expenses returns a full expense row with its category", async () => {
+    const { expenseResponseSchema } = await import("@/lib/schemas");
+    const groceries = await systemCategoryBySlug(
+      db,
+      sessionA.userId,
+      "groceries",
+    );
+    const res = await expensesRoute.POST(
+      v1Request("/expenses", {
+        method: "POST",
+        session: sessionA,
+        body: {
+          amountToman: 42000,
+          title: "قرارداد رگرسیون",
+          categoryId: groceries.id,
+          entryMonthKey: CURRENT,
+        },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const parsed = expenseResponseSchema.safeParse(await res.json());
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.category.id).toBe(groceries.id);
+      expect(parsed.data.userId).toBe(sessionA.userId);
+    }
+  });
+
+  it("PATCH /expenses/[id] returns a full expense row with its category", async () => {
+    const { expenseResponseSchema } = await import("@/lib/schemas");
+    const { createExpenseService } = await import("@/lib/services");
+    const groceries = await systemCategoryBySlug(
+      db,
+      sessionA.userId,
+      "groceries",
+    );
+    const expense = await createExpenseService(db).create(
+      sessionA.userId,
+      { amountToman: 5000, title: "پیش از پچ", categoryId: groceries.id },
+      CURRENT,
+    );
+    const res = await expenseIdRoute.PATCH(
+      v1Request(`/expenses/${expense.id}`, {
+        method: "PATCH",
+        session: sessionA,
+        body: { amountToman: 9000 },
+      }),
+      idCtx(expense.id),
+    );
+    expect(res.status).toBe(200);
+    const parsed = expenseResponseSchema.safeParse(await res.json());
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.amountToman).toBe(9000);
+      expect(parsed.data.category.id).toBe(groceries.id);
+    }
+  });
+
+  it("POST /categories returns a category row", async () => {
+    const { categoryResponseSchema } = await import("@/lib/schemas");
+    const res = await categoriesRoute.POST(
+      v1Request("/categories", {
+        method: "POST",
+        session: sessionA,
+        body: { name: "دسته رگرسیون" },
+      }),
+    );
+    expect(res.status).toBe(201);
+    expect(categoryResponseSchema.safeParse(await res.json()).success).toBe(
+      true,
+    );
+  });
+
+  it("POST /recurring-templates returns a template row", async () => {
+    const { recurringTemplateResponseSchema } = await import("@/lib/schemas");
+    const { currentTehranISODate } = await import("@/lib/jalali");
+    const groceries = await systemCategoryBySlug(
+      db,
+      sessionA.userId,
+      "groceries",
+    );
+    const res = await templatesRoute.POST(
+      v1Request("/recurring-templates", {
+        method: "POST",
+        session: sessionA,
+        body: {
+          amountToman: 100000,
+          title: "الگوی رگرسیون",
+          categoryId: groceries.id,
+          dayOfMonth: 1,
+          startDate: currentTehranISODate(),
+        },
+      }),
+    );
+    expect(res.status).toBe(201);
+    expect(
+      recurringTemplateResponseSchema.safeParse(await res.json()).success,
+    ).toBe(true);
   });
 });

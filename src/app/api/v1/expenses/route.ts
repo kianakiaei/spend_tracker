@@ -21,7 +21,9 @@ export const POST = withRoute(async (request: Request) => {
     createExpenseRequestSchema,
   );
   const expense = await expenseService.create(userId, input, entryMonthKey);
-  return jsonResponse(expense, 201);
+  // The contract shape is the full row WITH its category (expenseResponseSchema)
+  // — the bare insert row would fail the typed client's validation.
+  return jsonResponse(await expenseService.get(userId, expense.id), 201);
 });
 
 export const GET = withRoute(async (request: Request) => {

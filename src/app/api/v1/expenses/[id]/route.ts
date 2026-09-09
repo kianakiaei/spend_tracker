@@ -22,8 +22,9 @@ export const PATCH = withRoute(async (request: Request, ctx: IdCtx) => {
   const userId = await requireUserId(request);
   const { id } = await ctx.params;
   const input = await parseJson(request, updateExpenseRequestSchema);
-  const expense = await expenseService.update(userId, id, input);
-  return jsonResponse(expense);
+  const updated = await expenseService.update(userId, id, input);
+  // Same full-row contract as POST and GET (expenseResponseSchema).
+  return jsonResponse(await expenseService.get(userId, updated.id));
 });
 
 export const DELETE = withRoute(async (request: Request, ctx: IdCtx) => {
