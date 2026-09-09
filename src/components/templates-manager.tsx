@@ -402,6 +402,9 @@ function TemplateSheet({
               editable={false}
               placeholder="انتخاب تاریخ"
               calendarPosition="top-start"
+              // Portal out of the sheet: SheetPanel's overflow-auto would
+              // otherwise clip the calendar.
+              portal
               zIndex={60}
               inputClass={PICKER_INPUT_CLASS}
               onChange={(value) => {
@@ -431,6 +434,9 @@ function TemplateSheet({
               editable={false}
               placeholder="انتخاب تاریخ"
               calendarPosition="top-start"
+              // Portal out of the sheet: SheetPanel's overflow-auto would
+              // otherwise clip the calendar.
+              portal
               zIndex={60}
               inputClass={PICKER_INPUT_CLASS}
               onChange={(value) => {
