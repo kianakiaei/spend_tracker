@@ -10,6 +10,9 @@ const { createClient } = await import("@libsql/client");
 const { drizzle } = await import("drizzle-orm/libsql");
 const { migrate } = await import("drizzle-orm/libsql/migrator");
 const { auth } = await import("@/lib/auth");
+const { captureConsoleLines, emailedUrl, verifyEmail } = await import(
+  "../helpers/verify-email"
+);
 
 const ORIGIN = "http://localhost:3000";
 const EMAIL = "reset@example.com";
@@ -32,14 +35,24 @@ describe("password reset (ticket 29)", () => {
 
   beforeAll(async () => {
     await migrate(drizzle(client), { migrationsFolder: "./drizzle" });
-    const res = await auth.handler(
-      jsonPost("/api/auth/sign-up/email", {
-        name: "کاربر ریست",
-        email: EMAIL,
-        password: PASSWORD,
-      }),
-    );
-    expect(res.status).toBe(200);
+    const { lines, restore } = captureConsoleLines();
+    try {
+      const res = await auth.handler(
+        jsonPost("/api/auth/sign-up/email", {
+          name: "کاربر ریست",
+          email: EMAIL,
+          password: PASSWORD,
+        }),
+      );
+      expect(res.status).toBe(200);
+      const { cookie } = await verifyEmail(
+        auth,
+        emailedUrl(lines, "verification"),
+      );
+      expect(cookie).toContain("session_token");
+    } finally {
+      restore();
+    }
   });
 
   afterAll(async () => {

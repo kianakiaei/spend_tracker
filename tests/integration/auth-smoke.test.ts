@@ -13,6 +13,9 @@ const { createClient } = await import("@libsql/client");
 const { drizzle } = await import("drizzle-orm/libsql");
 const { migrate } = await import("drizzle-orm/libsql/migrator");
 const { auth } = await import("@/lib/auth");
+const { captureConsoleLines, emailedUrl, verifyEmail } = await import(
+  "../helpers/verify-email"
+);
 
 const ORIGIN = "http://localhost:3000";
 const EMAIL = "smoke@example.com";
@@ -52,22 +55,57 @@ describe("better-auth smoke on local libSQL (ticket 18)", () => {
     await client.close();
   });
 
-  it("signs up a user and sets a session cookie", async () => {
-    const res = await auth.handler(
-      handlerRequest("/api/auth/sign-up/email", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          name: "کاربر آزمون",
-          email: EMAIL,
-          password: PASSWORD,
+  // Sign-up creates the account but signs NOBODY in: the session
+  // cookie only appears after the emailed link is opened (below).
+  let verifyUrl = "";
+
+  it("signs up a user with NO session until verified", async () => {
+    const { lines, restore } = captureConsoleLines();
+    try {
+      const res = await auth.handler(
+        handlerRequest("/api/auth/sign-up/email", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            name: "کاربر آزمون",
+            email: EMAIL,
+            password: PASSWORD,
+          }),
         }),
+      );
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { user?: { email?: string } };
+      expect(body.user?.email).toBe(EMAIL);
+      expect(res.headers.getSetCookie().join(";")).not.toContain(
+        "session_token",
+      );
+      verifyUrl = emailedUrl(lines, "verification");
+    } finally {
+      restore();
+    }
+  });
+
+  it("refuses sign-in before the email is verified", async () => {
+    const res = await auth.handler(signInRequest());
+    expect(res.status).not.toBe(200);
+    expect(res.headers.getSetCookie().join(";")).not.toContain(
+      "session_token",
+    );
+  });
+
+  it("the emailed link verifies AND signs the user in", async () => {
+    const { cookie, status } = await verifyEmail(auth, verifyUrl);
+    expect(status, "verify link redirects").toBe(302);
+    expect(cookie, "expected a session cookie").toContain("session_token");
+
+    const res = await auth.handler(
+      handlerRequest("/api/auth/get-session", {
+        headers: { cookie },
       }),
     );
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { user?: { email?: string } };
-    expect(body.user?.email).toBe(EMAIL);
-    assertSessionCookieFrom(res);
+    const session = (await res.json()) as { user?: { email?: string } };
+    expect(session.user?.email).toBe(EMAIL);
   });
 
   it("serves get-session to the cookie path", async () => {

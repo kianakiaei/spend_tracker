@@ -28,6 +28,9 @@ const categoriesRoute = await import("@/app/api/v1/categories/route");
 const { systemCategoryBySlug, relativeMonthKeys } = await import(
   "../helpers/fixtures"
 );
+const { captureConsoleLines, emailedUrl, verifyEmail } = await import(
+  "../helpers/verify-email"
+);
 const { CURRENT, PREV, NEXT } = relativeMonthKeys();
 
 const ORIGIN = "http://localhost:3000";
@@ -38,29 +41,49 @@ interface Session {
   cookie: string;
 }
 
-/** A real account through better-auth's own mount — session token (Bearer)
- * plus the session cookie, both ready for the handlers. */
+/** A real account through better-auth's own mount — sign-up, the emailed
+ * verification link, then sign-in: session token (Bearer) plus the
+ * session cookie, both ready for the handlers. */
 async function signUp(): Promise<Session> {
-  const res = await auth.handler(
-    new Request(`${ORIGIN}/api/auth/sign-up/email`, {
+  const email = `months-${randomUUID()}@example.com`;
+  const password = "test-password-123";
+  const { lines, restore } = captureConsoleLines();
+  let userId = "";
+  try {
+    const res = await auth.handler(
+      new Request(`${ORIGIN}/api/auth/sign-up/email`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ name: "کاربر ماه‌ها", email, password }),
+      }),
+    );
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { user?: { id?: string } };
+    expect(body.user?.id, "sign-up must return the user").toBeTruthy();
+    userId = body.user!.id!;
+    const { cookie } = await verifyEmail(
+      auth,
+      emailedUrl(lines, "verification"),
+    );
+    expect(cookie).toContain("session_token");
+  } finally {
+    restore();
+  }
+  const signIn = await auth.handler(
+    new Request(`${ORIGIN}/api/auth/sign-in/email`, {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        name: "کاربر ماه‌ها",
-        email: `months-${randomUUID()}@example.com`,
-        password: "test-password-123",
-      }),
+      body: JSON.stringify({ email, password }),
     }),
   );
-  expect(res.status).toBe(200);
-  const body = (await res.json()) as { user?: { id?: string } };
-  const token = res.headers.get("set-auth-token");
-  const cookie = res.headers
+  expect(signIn.status).toBe(200);
+  const token = signIn.headers.get("set-auth-token");
+  const cookie = signIn.headers
     .getSetCookie()
     .map((c) => c.split(";")[0])
     .join("; ");
   expect(token).toBeTruthy();
-  return { userId: body.user!.id!, token: token!, cookie };
+  return { userId, token: token!, cookie };
 }
 
 function v1Request(
