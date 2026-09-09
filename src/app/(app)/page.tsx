@@ -89,6 +89,9 @@ export default async function DashboardPage({
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <MonthNav monthKey={monthKey} label={label} />
           <nav className="flex gap-4 text-[13px] text-ink-muted">
+            <Link href="/insights" className="hover:text-accent">
+              بینش‌ها
+            </Link>
             <Link href="/categories" className="hover:text-accent">
               دسته‌ها
             </Link>
