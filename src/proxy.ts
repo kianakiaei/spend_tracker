@@ -7,8 +7,9 @@ import { NextResponse, type NextRequest } from "next/server";
 // browsers to /login.
 //
 // Deliberate exceptions (the matcher): /api/v1/* answers its own 401
-// problem+json, /api/auth/* is better-auth's own mount, and static assets
-// never gate.
+// problem+json, /api/auth/* is better-auth's own mount, the public auth
+// pages never gate (ticket 29 — otherwise /login loops on itself), and
+// static assets never gate.
 
 export function proxy(request: NextRequest) {
   if (!getSessionCookie(request)) {
@@ -19,6 +20,6 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!api/v1|api/auth|_next/static|_next/image|_next/data|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|mjs|map|txt|xml|woff|woff2|ttf)$).*)",
+    "/((?!api/v1|api/auth|login|forgot-password|reset-password|_next/static|_next/image|_next/data|favicon.ico|robots.txt|sitemap.xml|manifest.json|.*\\.(?:svg|png|jpg|jpeg|gif|webp|avif|ico|css|js|mjs|map|txt|xml|woff|woff2|ttf)$).*)",
   ],
 };

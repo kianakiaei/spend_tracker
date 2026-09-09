@@ -22,6 +22,30 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    // Ticket 08/29: 1-hour reset tokens; the callback prints the link in
+    // dev (zero external calls) and sends a Persian RTL email via Resend
+    // only in prod (provisioning: ticket 16).
+    resetPasswordTokenExpiresIn: 3600,
+    sendResetPassword: async ({ user, url }) => {
+      if (!process.env.RESEND_API_KEY) {
+        console.log(`[auth] password reset link for ${user.email}: ${url}`);
+        return;
+      }
+      const res = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: process.env.RESEND_FROM ?? "دفتر هزینه <no-reply@localhost>",
+          to: user.email,
+          subject: "بازیابی رمز دفتر هزینه",
+          html: `<div dir="rtl" lang="fa"><p>برای تعیین رمز تازه روی پیوند زیر بزنید (یک ساعت اعتبار دارد):</p><p><a href="${url}">تعیین رمز تازه</a></p></div>`,
+        }),
+      });
+      if (!res.ok) throw new Error(`Resend rejected the reset email (${res.status})`);
+    },
   },
   databaseHooks: {
     user: {

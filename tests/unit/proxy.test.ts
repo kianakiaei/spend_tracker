@@ -40,11 +40,14 @@ describe("proxy matcher — the deliberate exceptions", () => {
   const pattern = new RegExp(`^${config.matcher[0]!.slice(1)}$`);
   const proxied = (path: string) => pattern.test(path.replace(/^\//, ""));
 
-  it("gates pages but never the v1 API (handlers answer their own 401), better-auth's mount, or static assets", () => {
+  it("gates pages but never the v1 API (handlers answer their own 401), better-auth's mount, the public auth pages, or static assets", () => {
     const excluded = [
       "/api/v1/expenses",
       "/api/v1/categories/abc/move-expenses",
       "/api/auth/sign-in/email",
+      "/login",
+      "/forgot-password",
+      "/reset-password",
       "/_next/static/chunk.js",
       "/_next/image?q=80",
       "/favicon.ico",
@@ -54,7 +57,7 @@ describe("proxy matcher — the deliberate exceptions", () => {
       "/logo.svg",
       "/fonts/Vazirmatn.woff2",
     ];
-    const included = ["/", "/login", "/1405-07"];
+    const included = ["/", "/categories", "/templates", "/1405-07"];
 
     for (const path of excluded) {
       expect(proxied(path), `${path} must be excluded`).toBe(false);
