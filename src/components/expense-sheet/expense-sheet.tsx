@@ -33,7 +33,11 @@ import {
 } from "@/lib/jalali";
 import type { Category } from "@/lib/services";
 import type { SheetOpen } from "./provider";
-import { effectiveMonthKey, parseAmountInput } from "./sheet-helpers";
+import {
+  effectiveMonthKey,
+  parseAmountInput,
+  parseQuantityInput,
+} from "./sheet-helpers";
 
 // The record/edit bottom sheet (ticket 27), following the approved
 // prototype-v2 anatomy: ink-ruled fields on a paper panel rising over a
@@ -83,6 +87,9 @@ export function ExpenseSheet({
   const [amountRaw, setAmountRaw] = useState(
     expense ? String(expense.amountToman) : "",
   );
+  const [quantityRaw, setQuantityRaw] = useState(
+    expense ? String((expense as { quantity?: number }).quantity ?? 1) : "",
+  );
   // Create defaults: the date starts on today, always — one date field,
   // no undated path (the sheet stays user-friendly: a single picker the
   // user can change; a dated expense follows its own date).
@@ -117,6 +124,10 @@ export function ExpenseSheet({
   }, [engine, manual, title]);
 
   const amount = parseAmountInput(amountRaw);
+  const quantityParsed = parseQuantityInput(quantityRaw);
+  const quantity = quantityParsed ?? 1;
+  const unitPrice =
+    amount !== null ? Math.round(amount / quantity) : null;
   const activeCategoryId =
     manual && pickedId !== null
       ? pickedId
@@ -136,16 +147,24 @@ export function ExpenseSheet({
       ? `ثبت در ${lockedCategory.name} — ${targetMonthLabel}`
       : `ثبت در ${targetMonthLabel}`;
 
-  const canSave = title.trim() !== "" && amount !== null && !pending;
+  const quantityValid =
+    quantityRaw.trim() === "" || quantityParsed !== null;
+  const canSave =
+    title.trim() !== "" &&
+    amount !== null &&
+    quantityValid &&
+    !pending;
 
   async function save() {
-    if (pending || title.trim() === "" || amount === null) return;
+    if (pending || title.trim() === "" || amount === null || !quantityValid)
+      return;
     setPending(true);
     setError(null);
     try {
       if (expense) {
         await api.expenses.update(expense.id, {
           amountToman: amount,
+          quantity,
           title: title.trim(),
           categoryId: activeCategoryId,
           occurredAt: date,
@@ -153,6 +172,7 @@ export function ExpenseSheet({
       } else {
         await api.expenses.create({
           amountToman: amount,
+          quantity,
           title: title.trim(),
           categoryId: activeCategoryId,
           occurredAt: date,
@@ -231,6 +251,26 @@ export function ExpenseSheet({
             />
             <p aria-live="polite" className="mt-1.5 text-[12px] text-ink-muted">
               {amount !== null ? formatToman(amount) : ""}
+            </p>
+          </div>
+
+          <div className={FIELD_CLASS}>
+            <label htmlFor="expense-quantity" className={LABEL_CLASS}>
+              تعداد
+            </label>
+            <input
+              id="expense-quantity"
+              type="text"
+              inputMode="numeric"
+              value={quantityRaw}
+              onChange={(event) => setQuantityRaw(event.target.value)}
+              placeholder="۱"
+              className={INPUT_CLASS}
+            />
+            <p aria-live="polite" className="mt-1.5 text-[12px] text-ink-muted">
+              {amount !== null && quantity > 1 && unitPrice !== null
+                ? `هر عدد ${formatToman(unitPrice)}`
+                : ""}
             </p>
           </div>
 

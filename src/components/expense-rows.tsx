@@ -7,6 +7,7 @@ import { Tag } from "./tag";
 import { formatNumber } from "@/lib/format";
 import {
   formatJalali,
+  formatToman,
   fromISODate,
   fromJalaliMonthKey,
   jalaliDayOfMonth,
@@ -87,6 +88,7 @@ export function ExpenseRows({
                 color={expense.category.color}
                 tag={expense.sourceRecurringId !== null ? "از الگو" : null}
                 amountToman={expense.amountToman}
+                quantity={(expense as { quantity?: number }).quantity ?? 1}
               />
             </button>
           </li>
@@ -107,6 +109,9 @@ export function ExpenseRows({
                     color={entry.expense.category.color}
                     tag={entry.expense.sourceRecurringId !== null ? "از الگو" : null}
                     amountToman={entry.expense.amountToman}
+                    quantity={
+                      (entry.expense as { quantity?: number }).quantity ?? 1
+                    }
                   />
                 </button>
               </li>
@@ -140,20 +145,30 @@ export function LedgerRowBody({
   color,
   tag,
   amountToman,
+  quantity = 1,
 }: {
   day: string;
   title: string;
   color: string | null;
   tag: string | null;
   amountToman: number;
+  quantity?: number;
 }) {
+  const qty = quantity ?? 1;
   return (
     <>
       <span className={DAY_CLASS}>{day}</span>
-      <span className="flex min-w-0 flex-1 items-center gap-2 text-[13.5px] font-semibold">
-        <CategoryDot color={color} />
-        <span className="truncate">{title}</span>
-        {tag && <Tag>{tag}</Tag>}
+      <span className="flex min-w-0 flex-1 flex-col">
+        <span className="flex min-w-0 flex-1 items-center gap-2 text-[13.5px] font-semibold">
+          <CategoryDot color={color} />
+          <span className="truncate">{title}</span>
+          {tag && <Tag>{tag}</Tag>}
+        </span>
+        {qty > 1 && (
+          <span className="mt-0.5 text-[11.5px] text-ink-muted">
+            {`×${toPersianDigits(qty)} · هر عدد ${formatToman(Math.round(amountToman / qty))}`}
+          </span>
+        )}
       </span>
       <span className={AMOUNT_CLASS}>{formatNumber(amountToman)}</span>
     </>

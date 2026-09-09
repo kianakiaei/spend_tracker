@@ -15,6 +15,16 @@ export function parseAmountInput(raw: string): number | null {
   return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
+/** Raw quantity field text → integer ≥1, or null while empty/invalid.
+ * Empty means 1 (the default) at save time. */
+export function parseQuantityInput(raw: string): number | null {
+  const trimmed = toEnglishDigits(raw).trim().replace(/[٬,]/g, "");
+  if (trimmed === "") return null;
+  if (!/^\d+$/.test(trimmed)) return null;
+  const value = Number(trimmed);
+  return Number.isSafeInteger(value) && value >= 1 ? value : null;
+}
+
 /** The Jalali month a save will land in (ticket 15/27): a picked date always
  * wins — its own month, even when it differs from the form's month; an
  * undated create belongs to the form's month; an undated edit stays in the
