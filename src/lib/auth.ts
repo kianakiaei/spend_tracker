@@ -10,6 +10,39 @@ import { seedSystemCategories } from "@/lib/services/seed-system-categories";
 const SESSION_7_DAYS = 60 * 60 * 24 * 7;
 const SESSION_UPDATE_AGE_1_DAY = 60 * 60 * 24;
 
+/** Dev prints the link (zero external calls); prod sends a Persian RTL
+ * email via Resend. Shared by the reset and verification senders. */
+async function sendEmailOrLog({
+  to,
+  subject,
+  html,
+  logLine,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+  logLine: string;
+}): Promise<void> {
+  if (!process.env.RESEND_API_KEY) {
+    console.log(logLine);
+    return;
+  }
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: process.env.RESEND_FROM ?? "دفتر هزینه <no-reply@localhost>",
+      to,
+      subject,
+      html,
+    }),
+  });
+  if (!res.ok) throw new Error(`Resend rejected the email (${res.status})`);
+}
+
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
     provider: "sqlite",
@@ -22,30 +55,35 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    // Sign-up no longer signs in: the account stays unverified until the
+    // emailed link is opened (the login form says so; unverified sign-ins
+    // get 403 EMAIL_NOT_VERIFIED).
+    requireEmailVerification: true,
     // Ticket 08/29: 1-hour reset tokens; the callback prints the link in
     // dev (zero external calls) and sends a Persian RTL email via Resend
     // only in prod (provisioning: ticket 16).
     resetPasswordTokenExpiresIn: 3600,
-    sendResetPassword: async ({ user, url }) => {
-      if (!process.env.RESEND_API_KEY) {
-        console.log(`[auth] password reset link for ${user.email}: ${url}`);
-        return;
-      }
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: process.env.RESEND_FROM ?? "دفتر هزینه <no-reply@localhost>",
-          to: user.email,
-          subject: "بازیابی رمز دفتر هزینه",
-          html: `<div dir="rtl" lang="fa"><p>برای تعیین رمز تازه روی پیوند زیر بزنید (یک ساعت اعتبار دارد):</p><p><a href="${url}">تعیین رمز تازه</a></p></div>`,
-        }),
-      });
-      if (!res.ok) throw new Error(`Resend rejected the reset email (${res.status})`);
-    },
+    sendResetPassword: async ({ user, url }) =>
+      sendEmailOrLog({
+        to: user.email,
+        subject: "بازیابی رمز دفتر هزینه",
+        html: `<div dir="rtl" lang="fa"><p>برای تعیین رمز تازه روی پیوند زیر بزنید (یک ساعت اعتبار دارد):</p><p><a href="${url}">تعیین رمز تازه</a></p></div>`,
+        logLine: `[auth] password reset link for ${user.email}: ${url}`,
+      }),
+  },
+  emailVerification: {
+    // 1-hour tokens, same window as reset. The link signs the user in and
+    // lands on / (its callbackURL).
+    expiresIn: 3600,
+    sendOnSignUp: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }) =>
+      sendEmailOrLog({
+        to: user.email,
+        subject: "تأیید ایمیل دفتر هزینه",
+        html: `<div dir="rtl" lang="fa"><p>برای فعال شدن حسابت روی پیوند زیر بزن (یک ساعت اعتبار دارد):</p><p><a href="${url}">تأیید ایمیل</a></p></div>`,
+        logLine: `[auth] verification link for ${user.email}: ${url}`,
+      }),
   },
   databaseHooks: {
     user: {
