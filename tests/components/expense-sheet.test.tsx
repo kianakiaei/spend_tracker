@@ -201,44 +201,30 @@ describe("amount field", () => {
   });
 });
 
-describe("per-month date defaults and the target month", () => {
-  it("a non-current month opens undated and labels its own month", async () => {
+describe("date field (one picker, always dated)", () => {
+  it("any month opens on today — no undated chip anymore", async () => {
     await openCreate(otherMonth);
-    expect(screen.getByRole("button", { name: "بدون تاریخ" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
     expect(
-      screen.getByText(
-        `ثبت در ${jalaliMonthLabel(fromJalaliMonthKey(otherMonth))}`,
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("the current month opens on today", async () => {
-    await openCreate(currentJalaliMonthKey());
-    expect(screen.getByRole("button", { name: "بدون تاریخ" })).toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+      screen.queryByRole("button", { name: "بدون تاریخ" }),
+    ).not.toBeInTheDocument();
     // the picker really holds today, in Jalali/Persian digits
     expect(
       screen.getByDisplayValue(formatJalali(fromISODate(currentTehranISODate()))),
     ).toBeInTheDocument();
   });
 
-  it("pressing «بدون تاریخ» clears a picked date", async () => {
-    await openCreate(currentJalaliMonthKey());
-    fireEvent.click(screen.getByRole("button", { name: "بدون تاریخ" }));
-    expect(screen.getByRole("button", { name: "بدون تاریخ" })).toHaveAttribute(
-      "aria-pressed",
-      "true",
-    );
+  it("the target month follows today even from another month", async () => {
+    await openCreate(otherMonth);
+    expect(
+      screen.getByText(
+        `ثبت در ${jalaliMonthLabel(fromJalaliMonthKey(currentJalaliMonthKey()))}`,
+      ),
+    ).toBeInTheDocument();
   });
 });
 
 describe("save path (typed v1 client)", () => {
-  it("creates through the client with the form's month for an undated expense", async () => {
+  it("creates through the client, dated today", async () => {
     api.expenses.create.mockResolvedValue({});
     await openCreate(otherMonth);
 
@@ -255,7 +241,7 @@ describe("save path (typed v1 client)", () => {
         amountToman: 50000,
         title: "نان",
         categoryId: GROCERIES.id,
-        occurredAt: null,
+        occurredAt: currentTehranISODate(),
         entryMonthKey: otherMonth,
       }),
     );
@@ -306,7 +292,8 @@ describe("edit sheet from a ledger row", () => {
           amountToman: 200000,
           title: "شارژ تاکسی",
           categoryId: GROCERIES.id,
-          occurredAt: null,
+          // legacy undated rows open on today and save dated from here
+          occurredAt: currentTehranISODate(),
         },
       ),
     );
@@ -404,7 +391,7 @@ describe("locked create from a category (ticket 28 handoff)", () => {
         amountToman: 1500000,
         title: "قسط وام",
         categoryId: INSTALLMENT.id,
-        occurredAt: null,
+        occurredAt: currentTehranISODate(),
         entryMonthKey: otherMonth,
       }),
     );

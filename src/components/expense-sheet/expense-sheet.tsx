@@ -14,8 +14,6 @@ import { SheetPanel } from "@/components/ui/sheet-panel";
 import {
   BTN_GHOST,
   CHIP_CLASS,
-  CHIP_PRESSED,
-  CHIP_QUIET,
   FIELD_CLASS,
   INPUT_CLASS,
   LABEL_CLASS,
@@ -26,7 +24,6 @@ import type { SuggestionAnswer } from "@/lib/categorization/suggestion-engine";
 import type { ClientSuggestionEngine } from "@/lib/categorization/suggestion-engine";
 import { api } from "@/lib/api/client";
 import {
-  currentJalaliMonthKey,
   currentTehranISODate,
   formatToman,
   fromISODate,
@@ -86,15 +83,11 @@ export function ExpenseSheet({
   const [amountRaw, setAmountRaw] = useState(
     expense ? String(expense.amountToman) : "",
   );
-  // Create defaults (ticket 27): the current month starts on today; any
-  // other month starts undated — the undated expense then belongs to the
-  // form's month (decision 15).
-  const [date, setDate] = useState<string | null>(
-    expense
-      ? expense.occurredAt
-      : monthKey === currentJalaliMonthKey()
-        ? currentTehranISODate()
-        : null,
+  // Create defaults: the date starts on today, always — one date field,
+  // no undated path (the sheet stays user-friendly: a single picker the
+  // user can change; a dated expense follows its own date).
+  const [date, setDate] = useState<string>(
+    expense?.occurredAt ?? currentTehranISODate(),
   );
   // Manual from the start when the category is a fact — an edit row's own
   // category or the drilldown's locked one (ticket 28).
@@ -245,33 +238,23 @@ export function ExpenseSheet({
             <span id="expense-date-label" className={LABEL_CLASS}>
               تاریخ
             </span>
-            <div className="flex items-center gap-2.5">
-              <button
-                type="button"
-                aria-pressed={date === null}
-                onClick={() => setDate(null)}
-                className={`${CHIP_CLASS} ${date === null ? CHIP_PRESSED : CHIP_QUIET}`}
-              >
-                بدون تاریخ
-              </button>
-              <DatePicker
-                value={date ? fromISODate(date) : null}
-                calendar={persian}
-                locale={persian_fa}
-                editable={false}
-                placeholder="انتخاب تاریخ"
-                calendarPosition="top-start"
-                // Portal out of the sheet: SheetPanel's overflow-auto would
-                // otherwise clip the calendar (zIndex already tops the
-                // sheet's own layers).
-                portal
-                zIndex={60}
-                inputClass={PICKER_INPUT_CLASS}
-                onChange={(value) => {
-                  setDate(value ? toISODate(value.toDate()) : null);
-                }}
-              />
-            </div>
+            <DatePicker
+              value={fromISODate(date)}
+              calendar={persian}
+              locale={persian_fa}
+              editable={false}
+              placeholder="انتخاب تاریخ"
+              calendarPosition="top-start"
+              // Portal out of the sheet: SheetPanel's overflow-auto would
+              // otherwise clip the calendar (zIndex already tops the
+              // sheet's own layers).
+              portal
+              zIndex={60}
+              inputClass={PICKER_INPUT_CLASS}
+              onChange={(value) => {
+                if (value) setDate(toISODate(value.toDate()));
+              }}
+            />
           </div>
 
           <div className={FIELD_CLASS}>
