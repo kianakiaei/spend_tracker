@@ -88,4 +88,47 @@ describe("LoginForm (ticket 29)", () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith("/"));
     expect(refresh).toHaveBeenCalled();
   });
+
+  it("tells an unverified user to open the emailed link", async () => {
+    authClient.signIn.email.mockResolvedValueOnce({
+      data: null,
+      error: { code: "EMAIL_NOT_VERIFIED" },
+    });
+    const { container } = render(<LoginForm />);
+    fireEvent.change(screen.getByLabelText("ایمیل"), {
+      target: { value: "a@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("رمز"), {
+      target: { value: "correct-password-123" },
+    });
+    submit(container);
+    expect(
+      await screen.findByText(
+        "ایمیلت هنوز تأیید نشده؛ پیوندی که موقع ثبت‌نام فرستادیم را باز کن",
+      ),
+    ).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+  });
+
+  it("shows the check-your-email notice after sign-up (no auto-login)", async () => {
+    authClient.signUp.email.mockResolvedValueOnce({
+      data: { token: null, user: { email: "b@example.com" } },
+      error: null,
+    });
+    const { container } = render(<LoginForm />);
+    fireEvent.click(screen.getByRole("button", { name: "ثبت‌نام" }));
+    fireEvent.change(screen.getByLabelText("ایمیل"), {
+      target: { value: "b@example.com" },
+    });
+    fireEvent.change(screen.getByLabelText("رمز"), {
+      target: { value: "brand-new-123" },
+    });
+    submit(container);
+    expect(
+      await screen.findByText(
+        "حساب ساخته شد؛ پیوند تأیید را به ایمیلت فرستادیم — بازش کن تا وارد شوی",
+      ),
+    ).toBeInTheDocument();
+    expect(push).not.toHaveBeenCalled();
+  });
 });

@@ -8,6 +8,9 @@ import { authClient } from "@/lib/auth-client";
 type Mode = "sign-in" | "sign-up";
 
 const GENERIC = "ایمیل یا رمز اشتباه است";
+const UNVERIFIED = "ایمیلت هنوز تأیید نشده؛ پیوندی که موقع ثبت‌نام فرستادیم را باز کن";
+const VERIFY_SENT =
+  "حساب ساخته شد؛ پیوند تأیید را به ایمیلت فرستادیم — بازش کن تا وارد شوی";
 const NETWORK = "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید";
 
 export function LoginForm({ resetDone }: { resetDone?: boolean }) {
@@ -16,27 +19,40 @@ export function LoginForm({ resetDone }: { resetDone?: boolean }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
   async function onSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    setNotice(null);
     setPending(true);
     try {
       if (mode === "sign-in") {
         const { error } = await authClient.signIn.email({ email, password });
         if (error) {
-          setError(GENERIC);
+          setError(
+            (error as { code?: string }).code === "EMAIL_NOT_VERIFIED"
+              ? UNVERIFIED
+              : GENERIC,
+          );
           return;
         }
       } else {
-        const { error } = await authClient.signUp.email({
+        const { data, error } = await authClient.signUp.email({
           email,
           password,
           name: email.split("@")[0] || email,
         });
         if (error) {
           setError(GENERIC);
+          return;
+        }
+        // Signup never signs in now (verification required): a null token
+        // means "check your email" — including the duplicate-email case,
+        // which deliberately answers the same way (no enumeration).
+        if (!data?.token) {
+          setNotice(VERIFY_SENT);
           return;
         }
       }
@@ -59,12 +75,18 @@ export function LoginForm({ resetDone }: { resetDone?: boolean }) {
           رمز تازه ثبت شد؛ حالا وارد شو.
         </p>
       )}
+      {notice && (
+        <p role="status" className="mt-2 text-[13.5px] leading-7 text-accent">
+          {notice}
+        </p>
+      )}
       <div className="mt-4 flex gap-2" role="group" aria-label="نوع ورود">
         <button
           type="button"
           onClick={() => {
             setMode("sign-in");
             setError(null);
+            setNotice(null);
           }}
           aria-pressed={mode === "sign-in"}
           className={
@@ -80,6 +102,7 @@ export function LoginForm({ resetDone }: { resetDone?: boolean }) {
           onClick={() => {
             setMode("sign-up");
             setError(null);
+            setNotice(null);
           }}
           aria-pressed={mode === "sign-up"}
           className={
