@@ -1,16 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DatePicker from "react-multi-date-picker";
 // The OFFICIAL persian calendar + locale (research 04 — never `jalali`).
 import persian from "react-date-object/calendars/persian";
 import persian_fa from "react-date-object/locales/persian_fa";
-import { CategoryDot } from "./category-color";
+import { CategoryDot, categoryColorMap } from "./category-color";
 import { LedgerRowBody } from "./expense-rows";
 import { parseAmountInput } from "./expense-sheet/sheet-helpers";
 import { SheetPanel } from "./ui/sheet-panel";
+import { useRun } from "./ui/use-run";
+import { toTemplateRow } from "./ui/client-row";
+import {
+  BTN_GHOST,
+  BTN_PRIMARY,
+  CHIP_CLASS,
+  CHIP_PRESSED,
+  CHIP_QUIET,
+  FIELD_CLASS,
+  INPUT_CLASS,
+  LABEL_CLASS,
+  PICKER_INPUT_CLASS,
+} from "./ui/style";
 import { api } from "@/lib/api/client";
 import {
   currentTehranISODate,
@@ -23,42 +36,20 @@ import {
   toISODate,
   toPersianDigits,
 } from "@/lib/jalali";
-import type { RecurringTemplateDto } from "@/lib/schemas";
 import type { Category, RecurringTemplate } from "@/lib/services";
 import type { RecurringForecastRow } from "@/lib/recurring";
 
 // The templates page's island (ticket 28): the list of templates with
-// pause/resume (the service's `active`), the «خرج این ماه» link when this
-// month's expense was generated, the future-months preview with clamped
-// days (read server-side through preview, decision 15), and the create/
-// edit sheet — same anatomy as the expense sheet, one day-of-month field
-// instead of a free date. Creating or editing a template TEACHES the
-// engine (decision 06) — that is the server's business on save.
+// pause/resume (the service's `active`), the «خرج این ماه تولید شد» link
+// deep into the generated expense (the dashboard opens its edit sheet),
+// the future-months preview with clamped days (decision 15), and the
+// create/edit sheet — same anatomy as the expense sheet, one day-of-month
+// field instead of a free date. A ?edit= deep-link (a ledger forecast row
+// lands here, decision 15) opens that template's sheet once and strips
+// itself from the URL. Creating or editing a template TEACHES the engine
+// (decision 06) — that is the server's business on save.
 
-const CHIP_CLASS =
-  "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[13.5px]";
-const CHIP_QUIET = "border-rule bg-paper text-ink";
-const CHIP_PRESSED = "border-accent bg-accent-soft text-accent";
-const BTN_GHOST =
-  "rounded-full border border-rule px-5 py-2.5 text-[14px] font-semibold text-ink-muted hover:text-ink";
-const BTN_PRIMARY =
-  "rounded-full bg-accent px-6 py-2.5 text-[14px] font-semibold text-white hover:brightness-110 disabled:opacity-60";
-const FIELD_CLASS = "border-b border-rule py-3";
-const LABEL_CLASS = "mb-1.5 block text-[12px] text-ink-muted";
-const INPUT_CLASS =
-  "w-full border-0 bg-transparent p-0 text-[16px] outline-none placeholder:text-ink-muted/70";
-const PICKER_INPUT_CLASS =
-  "w-[128px] cursor-pointer rounded-lg border border-rule bg-paper px-3 py-1.5 text-[13.5px] outline-none";
-
-/** The v1 client answers with DTO rows (ISO string timestamps); the local
- * state keeps the service's Date shape — convert at this one edge. */
-function toRow(dto: RecurringTemplateDto): RecurringTemplate {
-  return {
-    ...dto,
-    createdAt: new Date(dto.createdAt),
-    updatedAt: new Date(dto.updatedAt),
-  };
-}
+const PAGE_PARAM = "edit";
 
 /** 1..31 as the sheet understands it — null while the field is not a
  * legal Jalali day. */
@@ -73,6 +64,7 @@ export function TemplatesManager({
   currentMonthKey,
   generatedThisMonth,
   previewMonths,
+  initialEditId,
 }: {
   initialTemplates: RecurringTemplate[];
   categories: Category[];
@@ -81,29 +73,32 @@ export function TemplatesManager({
    * expense (decision 14's lazy generation). */
   generatedThisMonth: Record<string, string>;
   previewMonths: { monthKey: string; rows: RecurringForecastRow[] }[];
+  /** The ?edit= deep-link's template — a ledger forecast row's
+   * «کلیک = ویرایش الگو» (decision 15). */
+  initialEditId?: string;
 }) {
   const router = useRouter();
   const [rows, setRows] = useState(initialTemplates);
   const [sheet, setSheet] = useState<
     { mode: "create" } | { mode: "edit"; template: RecurringTemplate } | null
-  >(null);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  >(() => {
+    const template = initialTemplates.find((t) => t.id === initialEditId);
+    return template ? { mode: "edit", template } : null;
+  });
+  const { run, pending, error } = useRun();
 
-  const colorOf = new Map(categories.map((c) => [c.id, c.color]));
+  // The deep-link is one-shot: strip it from the address so a later manual
+  // refresh doesn't resurrect the sheet.
+  useEffect(() => {
+    if (initialEditId === undefined) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete(PAGE_PARAM);
+    window.history.replaceState(null, "", url.toString());
+    // Once on mount — the sheet state owns it from here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  async function run(action: () => Promise<void>) {
-    if (pending) return;
-    setPending(true);
-    setError(null);
-    try {
-      await action();
-    } catch {
-      setError("انجام نشد؛ دوباره تلاش کنید.");
-    } finally {
-      setPending(false);
-    }
-  }
+  const colorOf = categoryColorMap(categories);
 
   const toggle = (template: RecurringTemplate) =>
     run(async () => {
@@ -111,10 +106,10 @@ export function TemplatesManager({
         active: !template.active,
       });
       setRows((prev) =>
-        prev.map((row) => (row.id === updated.id ? toRow(updated) : row)),
+        prev.map((row) => (row.id === updated.id ? toTemplateRow(updated) : row)),
       );
       router.refresh();
-    });
+    }, "انجام نشد؛ دوباره تلاش کنید.");
 
   return (
     <>
@@ -149,10 +144,10 @@ export function TemplatesManager({
                   <span className="flex shrink-0 items-center gap-3 text-[12.5px]">
                     {generatedId !== undefined && (
                       <Link
-                        href={`/categories/${template.categoryId}?month=${currentMonthKey}`}
+                        href={`/?month=${currentMonthKey}&expense=${generatedId}`}
                         className="text-accent hover:underline"
                       >
-                        خرج این ماه
+                        خرج این ماه تولید شد
                       </Link>
                     )}
                     <button
@@ -296,10 +291,11 @@ function TemplateSheet({
         startDate,
         endDate,
       };
-      const dto = isEdit
-        ? await api.recurringTemplates.update(template!.id, payload)
-        : await api.recurringTemplates.create(payload);
-      onSaved(toRow(dto));
+      const dto =
+        isEdit && template !== null
+          ? await api.recurringTemplates.update(template.id, payload)
+          : await api.recurringTemplates.create(payload);
+      onSaved(toTemplateRow(dto));
     } catch {
       // One generic voice; every field keeps what the user typed.
       setError("ذخیره نشد؛ دوباره تلاش کنید.");

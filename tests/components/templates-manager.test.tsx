@@ -155,17 +155,21 @@ describe("the list", () => {
     await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
-  it("links a template that generated this month to its category drilldown", () => {
+  it("deep-links a template that generated this month to that expense's edit sheet", () => {
     renderManager();
 
-    const link = within(rowOf("قسط وام")).getByRole("link", { name: "خرج این ماه" });
+    const link = within(rowOf("قسط وام")).getByRole("link", {
+      name: "خرج این ماه تولید شد",
+    });
     expect(link).toHaveAttribute(
       "href",
-      `/categories/${INSTALLMENT.id}?month=${CURRENT}`,
+      `/?month=${CURRENT}&expense=01900000-0000-7000-8000-000000000201`,
     );
     // the paused one generated nothing
     expect(
-      within(rowOf("اینترنت خانه")).queryByRole("link", { name: "خرج این ماه" }),
+      within(rowOf("اینترنت خانه")).queryByRole("link", {
+        name: "خرج این ماه تولید شد",
+      }),
     ).not.toBeInTheDocument();
   });
 
@@ -296,5 +300,45 @@ describe("edit sheet", () => {
     );
     expect(screen.getByLabelText("مبلغ")).toHaveValue("1600000");
     expect(refresh).not.toHaveBeenCalled();
+  });
+});
+
+describe("the ?edit= deep-link (decision 15: forecast row → edit sheet)", () => {
+  it("opens that template's edit sheet once, then strips itself", async () => {
+    render(
+      <TemplatesManager
+        initialTemplates={[LOAN, NET]}
+        categories={CATEGORIES}
+        currentMonthKey={CURRENT}
+        generatedThisMonth={{}}
+        previewMonths={[]}
+        initialEditId={LOAN.id}
+      />,
+    );
+
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText("عنوان")).toHaveValue("قسط وام");
+    // one-shot: the param is gone from the address
+    await waitFor(() =>
+      expect(window.location.search).not.toContain("edit="),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "انصراف" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("an unknown id opens nothing", () => {
+    render(
+      <TemplatesManager
+        initialTemplates={[LOAN, NET]}
+        categories={CATEGORIES}
+        currentMonthKey={CURRENT}
+        generatedThisMonth={{}}
+        previewMonths={[]}
+        initialEditId="not-a-template"
+      />,
+    );
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 });

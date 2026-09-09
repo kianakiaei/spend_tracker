@@ -9,7 +9,6 @@ import { ExpenseSheetProvider } from "@/components/expense-sheet/provider";
 import { formatNumber } from "@/lib/format";
 import {
   currentJalaliMonthKey,
-  formatToman,
   fromJalaliMonthKey,
   jalaliMonthLabel,
 } from "@/lib/jalali";
@@ -73,7 +72,6 @@ export default async function CategoryDrilldownPage({
   const hasForecast =
     myForecast.length > 0 &&
     monthPosition(monthKey, currentJalaliMonthKey()) === "future";
-
   return (
     <ExpenseSheetProvider
       monthKey={monthKey}
@@ -107,7 +105,7 @@ export default async function CategoryDrilldownPage({
           </p>
           <p className="mt-0.5 text-[12.5px] text-ink-muted">
             {jalaliMonthLabel(fromJalaliMonthKey(monthKey))}
-            {hasForecast && ` — شامل پیش‌بینی ${formatToman(summary.forecastToman ?? 0)}`}
+            {hasForecast && " — ثبت‌شده + پیش‌بینی"}
           </p>
         </header>
 

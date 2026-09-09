@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CategoryDot } from "./category-color";
+import { CategoryDot, categoryColorMap } from "./category-color";
 import { useExpenseSheet } from "./expense-sheet/provider";
 import { Tag } from "./tag";
 import { formatNumber } from "@/lib/format";
@@ -20,7 +20,8 @@ import type { RecurringForecastRow } from "@/lib/recurring";
 // marks the block), then dated rows and forecast rows interleaved on the
 // Jalali day scale, recorded before forecast on a tie (stable sort) — the
 // resolved ticket-22 service order. An expense row opens the edit sheet;
-// a forecast row walks to the templates page.
+// a forecast row walks to the templates page with that template's edit
+// sheet open (decision 15: «کلیک = ویرایش الگو»).
 
 const LI_CLASS = "border-b border-rule";
 const ROW_CLASS = "flex items-center gap-2.5 px-0.5 py-2.5";
@@ -47,7 +48,7 @@ export function ExpenseRows({
 }) {
   const { openEdit } = useExpenseSheet();
 
-  const colorOf = new Map(categories.map((c) => [c.id, c.color]));
+  const colorOf = categoryColorMap(categories);
   const monthName = formatJalali(fromJalaliMonthKey(monthKey), "MMMM");
   const undated = expenses.filter((e) => e.occurredAt === null);
   const dated: LedgerEntry[] = expenses
@@ -111,7 +112,10 @@ export function ExpenseRows({
               </li>
             ) : (
               <li key={entry.forecast.templateId} className={LI_CLASS}>
-                <Link href="/templates" className={`${ROW_CLASS} rounded-lg hover:bg-accent-soft`}>
+                <Link
+                  href={`/templates?edit=${entry.forecast.templateId}`}
+                  className={`${ROW_CLASS} rounded-lg hover:bg-accent-soft`}
+                >
                   <LedgerRowBody
                     day={`${toPersianDigits(entry.forecast.day)} ${monthName}`}
                     title={entry.forecast.title}

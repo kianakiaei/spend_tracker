@@ -39,7 +39,7 @@ export default async function CategoriesPage() {
       <h1 className="mt-2 text-[20px] font-bold">دسته‌ها</h1>
       <p className="mt-1 text-[13px] leading-7 text-ink-muted">
         دسته‌های سیستمی حذف نمی‌شوند؛ نام هر دسته آزادانه تغییر می‌کند. دستهٔ
-        پُر، اول منتقال خرج‌ها و بعد حذف.
+        پُر، اول انتقال خرج‌ها و بعد حذف.
       </p>
       <CategoriesManager
         initialCategories={categories}

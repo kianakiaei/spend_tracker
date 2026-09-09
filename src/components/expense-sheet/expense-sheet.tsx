@@ -11,6 +11,17 @@ import persian_fa from "react-date-object/locales/persian_fa";
 import { CategoryDot } from "@/components/category-color";
 import { Tag } from "@/components/tag";
 import { SheetPanel } from "@/components/ui/sheet-panel";
+import {
+  BTN_GHOST,
+  CHIP_CLASS,
+  CHIP_PRESSED,
+  CHIP_QUIET,
+  FIELD_CLASS,
+  INPUT_CLASS,
+  LABEL_CLASS,
+  OPTION_CLASS,
+  PICKER_INPUT_CLASS,
+} from "@/components/ui/style";
 import type { SuggestionAnswer } from "@/lib/categorization/suggestion-engine";
 import type { ClientSuggestionEngine } from "@/lib/categorization/suggestion-engine";
 import { api } from "@/lib/api/client";
@@ -44,22 +55,8 @@ import { effectiveMonthKey, parseAmountInput } from "./sheet-helpers";
 
 const DEBOUNCE_MS = 150;
 
-const CHIP_CLASS =
-  "inline-flex shrink-0 items-center gap-2 rounded-full border px-3 py-1.5 text-[13.5px]";
-
-const CHIP_QUIET = "border-rule bg-paper text-ink";
-const CHIP_PRESSED = "border-accent bg-accent-soft text-accent";
-
-const OPTION_CLASS =
-  "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[13px]";
-
-const BTN_GHOST =
-  "rounded-full border border-rule px-5 py-2.5 text-[14px] font-semibold text-ink-muted hover:text-ink";
-
-const FIELD_CLASS = "border-b border-rule py-3";
-const LABEL_CLASS = "mb-1.5 block text-[12px] text-ink-muted";
-const INPUT_CLASS =
-  "w-full border-0 bg-transparent p-0 text-[16px] outline-none placeholder:text-ink-muted/70";
+// Chip/button/field classes speak the shared ui/style vocabulary; the
+// sheet's own additions stay local.
 
 export function ExpenseSheet({
   open,
@@ -265,7 +262,7 @@ export function ExpenseSheet({
                 placeholder="انتخاب تاریخ"
                 calendarPosition="top-start"
                 zIndex={60}
-                inputClass="w-[128px] cursor-pointer rounded-lg border border-rule bg-paper px-3 py-1.5 text-[13.5px] outline-none"
+                inputClass={PICKER_INPUT_CLASS}
                 onChange={(value) => {
                   setDate(value ? toISODate(value.toDate()) : null);
                 }}

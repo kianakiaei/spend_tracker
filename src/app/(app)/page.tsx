@@ -10,7 +10,7 @@ import {
   fromJalaliMonthKey,
   jalaliMonthLabel,
 } from "@/lib/jalali";
-import { jalaliMonthKeySchema } from "@/lib/schemas";
+import { jalaliMonthKeySchema, uuidv7Schema } from "@/lib/schemas";
 import {
   createCategoryService,
   createExpenseService,
@@ -43,7 +43,7 @@ const categoryService = createCategoryService(db);
 export default async function DashboardPage({
   searchParams,
 }: PageProps<"/">) {
-  const { month } = await searchParams;
+  const { month, expense: expenseParam } = await searchParams;
   const parsed = jalaliMonthKeySchema.safeParse(month);
   if (month !== undefined && !parsed.success) redirect("/");
   const monthKey = parsed.success ? parsed.data : currentJalaliMonthKey();
@@ -65,6 +65,16 @@ export default async function DashboardPage({
       getFallbackCategory(db, userId),
     ]);
 
+  // The ?expense= deep-link (ticket 28: the templates page's «خرج این ماه
+  // تولید شد»): a valid id owned by this user opens its edit sheet; a stale
+  // or foreign one is quietly just a ledger visit.
+  let deepLinkedExpense = null;
+  if (typeof expenseParam === "string" && uuidv7Schema.safeParse(expenseParam).success) {
+    deepLinkedExpense = await expenseService
+      .get(userId, expenseParam)
+      .catch(() => null);
+  }
+
   const label = jalaliMonthLabel(fromJalaliMonthKey(monthKey));
 
   return (
@@ -73,6 +83,7 @@ export default async function DashboardPage({
       categories={categories}
       learnedKeys={learnedKeys}
       fallbackCategoryId={fallback.id}
+      initialExpense={deepLinkedExpense ?? undefined}
     >
       <div className="mx-auto w-full max-w-[680px] px-6 pb-10 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">

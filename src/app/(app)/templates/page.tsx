@@ -8,6 +8,7 @@ import {
   currentJalaliMonthKey,
   shiftJalaliMonthKey,
 } from "@/lib/jalali";
+import { uuidv7Schema } from "@/lib/schemas";
 import {
   createCategoryService,
   createExpenseService,
@@ -26,12 +27,15 @@ const recurringService = createRecurringService(db);
 /** The horizon the preview shows: the next three Jalali months. */
 const PREVIEW_MONTHS = 3;
 
-export default async function TemplatesPage() {
+export default async function TemplatesPage({
+  searchParams,
+}: PageProps<"/templates">) {
   const session = await auth.api.getSession({ headers: await headers() });
   if (!session) redirect("/login");
   const userId = session.user.id;
 
   const currentMonthKey = currentJalaliMonthKey();
+  const { edit } = await searchParams;
 
   const [templates, categories, expenses, ...previews] = await Promise.all([
     recurringService.list(userId),
@@ -73,6 +77,11 @@ export default async function TemplatesPage() {
             rows,
           }))
           .filter(({ rows }) => rows.length > 0)}
+        initialEditId={
+          typeof edit === "string" && uuidv7Schema.safeParse(edit).success
+            ? edit
+            : undefined
+        }
       />
     </div>
   );

@@ -3,6 +3,7 @@
 import {
   createContext,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -61,20 +62,39 @@ export function useExpenseSheet(): ExpenseSheetContextValue {
   return ctx;
 }
 
+/** The URL parameter of the dashboard's expense deep-link (ticket 28: the
+ * templates page's «خرج این ماه تولید شد» lands here). */
+const EXPENSE_PARAM = "expense";
+
 export function ExpenseSheetProvider({
   monthKey,
   categories,
   learnedKeys,
   fallbackCategoryId,
+  initialExpense,
   children,
 }: {
   monthKey: string;
   categories: Category[];
   learnedKeys: LearnedKeyRecord[];
   fallbackCategoryId: string;
+  /** A ?expense= deep-link opens that row's edit sheet once, then strips
+   * itself from the address so a refresh doesn't resurrect it. */
+  initialExpense?: SheetExpense;
   children: ReactNode;
 }) {
-  const [open, setOpen] = useState<SheetOpen | null>(null);
+  const [open, setOpen] = useState<SheetOpen | null>(() =>
+    initialExpense ? { mode: "edit", expense: initialExpense } : null,
+  );
+
+  useEffect(() => {
+    if (initialExpense === undefined) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete(EXPENSE_PARAM);
+    window.history.replaceState(null, "", url.toString());
+    // Once on mount — the sheet state owns it from here.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const engine = useMemo<ClientSuggestionEngine>(
     () =>

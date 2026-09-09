@@ -228,3 +228,69 @@ describe("move-all flow (decision 05/06)", () => {
     expect(refresh).not.toHaveBeenCalled();
   });
 });
+
+describe("reorder (ticket 28: ترتیب دسته‌ها)", () => {
+  it("swaps with the neighbor through two order PATCHes", async () => {
+    api.categories.update.mockResolvedValue(TRIPS);
+    renderManager();
+
+    // کتاب (index 1) moves up over خوراکی
+    fireEvent.click(
+      within(screen.getByText("کتاب").closest("li")!).getByRole("button", {
+        name: "کتاب به بالا",
+      }),
+    );
+
+    await waitFor(() =>
+      expect(api.categories.update).toHaveBeenCalledWith(BOOKS.id, {
+        order: GROCERIES.order,
+      }),
+    );
+    await waitFor(() =>
+      expect(api.categories.update).toHaveBeenCalledWith(GROCERIES.id, {
+        order: BOOKS.order,
+      }),
+    );
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+    // the optimistic swap already shows the new order
+    const list = screen.getAllByRole("list")[0]!;
+    expect(within(list).getAllByText(/خوراکی|کتاب|سفر|باشگاه/)[0]).toHaveTextContent("کتاب");
+  });
+
+  it("keeps the old order when the swap fails", async () => {
+    api.categories.update.mockRejectedValueOnce(new TypeError("network down"));
+    renderManager();
+
+    fireEvent.click(
+      within(screen.getByText("کتاب").closest("li")!).getByRole("button", {
+        name: "کتاب به بالا",
+      }),
+    );
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "ترتیب ذخیره نشد؛ دوباره تلاش می‌شود.",
+    );
+    const list = screen.getAllByRole("list")[0]!;
+    expect(within(list).getAllByText(/خوراکی|کتاب|سفر|باشگاه/)[0]).toHaveTextContent("خوراکی");
+  });
+
+  it("disables the arrows at the ends", () => {
+    renderManager();
+
+    const first = screen.getByText("خوراکی").closest("li")!;
+    expect(within(first).getByRole("button", { name: "خوراکی به بالا" })).toBeDisabled();
+    expect(within(first).getByRole("button", { name: "خوراکی به پایین" })).toBeEnabled();
+  });
+});
+
+describe("a template-pointing category (the move API carries expenses only)", () => {
+  it("offers no move shortcut — delete disabled with the template note", () => {
+    renderManager();
+
+    const row = screen.getByText("باشگاه").closest("li")!;
+    expect(within(row).getByRole("button", { name: "حذف" })).toBeDisabled();
+    expect(
+      within(row).queryByRole("button", { name: "انتقال همهٔ خرج‌ها" }),
+    ).not.toBeInTheDocument();
+  });
+});

@@ -2,6 +2,7 @@
 // own color as the dot, that color washed 85% toward the paper as the tile
 // tint. Categories with no color yet (custom ones until ticket 28 brings
 // the swatches) fall back to the muted ink gray.
+import type { Category } from "@/lib/services";
 
 export const FALLBACK_CATEGORY_COLOR = "#82887e";
 
@@ -29,4 +30,10 @@ export function CategoryDot({ color }: { color: string | null | undefined }) {
       aria-hidden
     />
   );
+}
+
+/** The id→color lookup every row list needs for forecast rows (which carry
+ * only a categoryId) — one Map per render, shared by the ledger anatomy. */
+export function categoryColorMap(categories: Category[]): Map<string, string | null> {
+  return new Map(categories.map((c) => [c.id, c.color]));
 }
