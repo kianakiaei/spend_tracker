@@ -98,6 +98,9 @@ export const expenses = sqliteTable(
     id: text("id").primaryKey(),
     // Integer tomans, always > 0 — amountTomanSchema (src/lib/schemas).
     amountToman: integer("amountToman").notNull(),
+    // Unit count of the product in this expense — quantitySchema. Total
+    // stays in amountToman; unit price = amountToman / quantity.
+    quantity: integer("quantity").notNull().default(1),
     title: text("title").notNull(),
     note: text("note"),
     // NOT NULL: there is no "uncategorized" group (ticket 05).

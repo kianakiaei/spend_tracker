@@ -8,6 +8,7 @@ import {
   amountTomanSchema,
   dateOnlySchema,
   jalaliMonthKeySchema,
+  quantitySchema,
   titleSchema,
   uuidv7Schema,
 } from "@/lib/schemas";
@@ -27,6 +28,7 @@ import type { DomainDb, Expense, ExpenseWithCategory } from "./types";
 
 const createExpenseInputSchema = z.object({
   amountToman: amountTomanSchema,
+  quantity: quantitySchema.optional(),
   title: titleSchema,
   note: z.string().nullish(),
   categoryId: uuidv7Schema,
@@ -35,6 +37,7 @@ const createExpenseInputSchema = z.object({
 
 const updateExpenseInputSchema = z.object({
   amountToman: amountTomanSchema.optional(),
+  quantity: quantitySchema.optional(),
   title: titleSchema.optional(),
   note: z.string().nullish(),
   categoryId: uuidv7Schema.optional(),
@@ -53,6 +56,7 @@ function monthKeyOf(occurredAt: string): string {
 
 export interface CreateExpenseInput {
   amountToman: number;
+  quantity?: number;
   title: string;
   note?: string | null;
   categoryId: string;
@@ -61,6 +65,7 @@ export interface CreateExpenseInput {
 
 export interface UpdateExpenseInput {
   amountToman?: number;
+  quantity?: number;
   title?: string;
   note?: string | null;
   categoryId?: string;
@@ -135,6 +140,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         .values({
           id: newId(),
           amountToman: data.amountToman,
+          quantity: data.quantity ?? 1,
           title: data.title,
           note: data.note ?? null,
           categoryId: data.categoryId,
@@ -170,12 +176,14 @@ export function createExpenseService(db: DomainDb): ExpenseService {
 
       const set: {
         amountToman?: number;
+        quantity?: number;
         title?: string;
         note?: string | null;
         categoryId?: string;
         updatedAt: Date;
       } = { updatedAt: new Date() };
       if (data.amountToman !== undefined) set.amountToman = data.amountToman;
+      if (data.quantity !== undefined) set.quantity = data.quantity;
       if (data.title !== undefined) set.title = data.title;
       if (data.note !== undefined) set.note = data.note;
       if (data.categoryId !== undefined) set.categoryId = data.categoryId;

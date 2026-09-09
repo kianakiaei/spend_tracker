@@ -7,6 +7,7 @@ import {
   dateOnlySchema,
   dayOfMonthSchema,
   jalaliMonthKeySchema,
+  quantitySchema,
   titleSchema,
   uuidv7Schema,
 } from "./domain";
@@ -23,6 +24,7 @@ import {
  * in, used only when the expense is undated (ticket 15). */
 export const createExpenseRequestSchema = z.object({
   amountToman: amountTomanSchema,
+  quantity: quantitySchema.optional(),
   title: titleSchema,
   note: z.string().nullish(),
   categoryId: uuidv7Schema,
@@ -32,6 +34,7 @@ export const createExpenseRequestSchema = z.object({
 
 export const updateExpenseRequestSchema = z.object({
   amountToman: amountTomanSchema.optional(),
+  quantity: quantitySchema.optional(),
   title: titleSchema.optional(),
   note: z.string().nullish(),
   categoryId: uuidv7Schema.optional(),
@@ -114,6 +117,7 @@ export const categoryResponseSchema = z.object({
 export const expenseResponseSchema = z.object({
   id: uuidv7Schema,
   amountToman: z.number().int().positive(),
+  quantity: z.number().int().min(1),
   title: z.string(),
   note: z.string().nullable(),
   categoryId: uuidv7Schema,

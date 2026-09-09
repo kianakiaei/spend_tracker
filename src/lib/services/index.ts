@@ -9,6 +9,14 @@ export {
   ensureRecurringExpensesGenerated,
 } from "./recurring-service";
 export { createSummaryService } from "./summary-service";
+export { createInsightsService } from "./insights-service";
+export type {
+  ProductInsight,
+  AllTimeProductInsight,
+  ProductYearStat,
+  InsightsMonthAvg,
+  InsightsPoint,
+} from "./insights-service";
 export { learnOnSave } from "./learning";
 export { listLearnedKeys, loadCategorizerState } from "./categorizer-state";
 export {

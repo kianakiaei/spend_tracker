@@ -7,6 +7,7 @@ export {
   dayOfMonthSchema,
   jalaliMonthKeySchema,
   learnedKeySourceSchema,
+  quantitySchema,
   titleSchema,
   uuidv7Schema,
 } from "./domain";

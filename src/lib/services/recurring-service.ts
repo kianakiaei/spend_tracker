@@ -316,6 +316,7 @@ export async function ensureRecurringExpensesGenerated(
         .values({
           id: newId(),
           amountToman: template.amountToman,
+          quantity: 1,
           title: template.title,
           note: null,
           categoryId: template.categoryId,

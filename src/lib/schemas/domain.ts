@@ -6,6 +6,9 @@ import { z } from "zod";
 /** Integer toman amounts — tomans are the smallest unit, always positive. */
 export const amountTomanSchema = z.number().int().positive();
 
+/** Unit count of a product in one expense — integer ≥1, defaults to 1. */
+export const quantitySchema = z.number().int().min(1);
+
 /** Gregorian date-only string stored as-is ('2026-09-06'). Format-level only
  * (month 01-12, day 01-31): real-calendar validity is the date picker's job. */
 export const dateOnlySchema = z.string().regex(
