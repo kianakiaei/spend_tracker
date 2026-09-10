@@ -6,6 +6,7 @@ import {
   categoryOrderSchema,
   dateOnlySchema,
   dayOfMonthSchema,
+  eventTitleSchema,
   jalaliMonthKeySchema,
   quantitySchema,
   refineUnitQuantity,
@@ -33,6 +34,7 @@ export const createExpenseRequestSchema = z
     note: z.string().nullish(),
     categoryId: uuidv7Schema,
     occurredAt: dateOnlySchema.nullish(),
+    eventId: uuidv7Schema.nullish(),
     entryMonthKey: jalaliMonthKeySchema,
   })
   .superRefine(refineUnitQuantity);
@@ -46,6 +48,7 @@ export const updateExpenseRequestSchema = z
     note: z.string().nullish(),
     categoryId: uuidv7Schema.optional(),
     occurredAt: dateOnlySchema.nullish(),
+    eventId: uuidv7Schema.nullish(),
   })
   .superRefine(refineUnitQuantity);
 
@@ -133,6 +136,7 @@ export const expenseResponseSchema = z.object({
   occurredAt: dateOnlySchema.nullable(),
   monthKey: jalaliMonthKeySchema,
   sourceRecurringId: uuidv7Schema.nullable(),
+  eventId: uuidv7Schema.nullable(),
   userId: authUserIdSchema,
   createdAt: isoTimestampSchema,
   updatedAt: isoTimestampSchema,
@@ -192,6 +196,61 @@ export const moveExpensesResponseSchema = z.object({
   moved: z.number().int().nonnegative(),
 });
 
+/** POST /api/v1/events — title unique per user; dates display-only. */
+export const createEventRequestSchema = z
+  .object({
+    title: eventTitleSchema,
+    note: z.string().nullish(),
+    startDate: dateOnlySchema.nullish(),
+    endDate: dateOnlySchema.nullish(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.startDate != null &&
+      data.endDate != null &&
+      data.endDate < data.startDate
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["endDate"],
+        message: "end date must not be before start date",
+      });
+    }
+  });
+
+/** PATCH /api/v1/events/[id] — rename freely; dates display-only. */
+export const updateEventRequestSchema = z
+  .object({
+    title: eventTitleSchema.optional(),
+    note: z.string().nullish(),
+    startDate: dateOnlySchema.nullish(),
+    endDate: dateOnlySchema.nullish(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.startDate != null &&
+      data.endDate != null &&
+      data.endDate < data.startDate
+    ) {
+      ctx.addIssue({
+        code: "custom",
+        path: ["endDate"],
+        message: "end date must not be before start date",
+      });
+    }
+  });
+
+export const eventResponseSchema = z.object({
+  id: uuidv7Schema,
+  title: z.string(),
+  note: z.string().nullable(),
+  startDate: dateOnlySchema.nullable(),
+  endDate: dateOnlySchema.nullable(),
+  userId: authUserIdSchema,
+  createdAt: isoTimestampSchema,
+  updatedAt: isoTimestampSchema,
+});
+
 // --- z.infer types shared by handler and client ---
 
 export type CreateExpenseRequest = z.infer<typeof createExpenseRequestSchema>;
@@ -201,6 +260,8 @@ export type UpdateCategoryRequest = z.infer<typeof updateCategoryRequestSchema>;
 export type MoveExpensesRequest = z.infer<typeof moveExpensesRequestSchema>;
 export type CreateTemplateRequest = z.infer<typeof createTemplateRequestSchema>;
 export type UpdateTemplateRequest = z.infer<typeof updateTemplateRequestSchema>;
+export type CreateEventRequest = z.infer<typeof createEventRequestSchema>;
+export type UpdateEventRequest = z.infer<typeof updateEventRequestSchema>;
 export type ClassifyRequest = z.infer<typeof classifyRequestSchema>;
 export type MonthQuery = z.infer<typeof monthQuerySchema>;
 
@@ -209,6 +270,7 @@ export type ExpenseDto = z.infer<typeof expenseResponseSchema>;
 export type RecurringTemplateDto = z.infer<
   typeof recurringTemplateResponseSchema
 >;
+export type EventDto = z.infer<typeof eventResponseSchema>;
 export type ForecastRowDto = z.infer<typeof forecastRowResponseSchema>;
 export type MonthSummaryDto = z.infer<typeof monthSummaryResponseSchema>;
 export type ClassifyDto = z.infer<typeof classifyResponseSchema>;

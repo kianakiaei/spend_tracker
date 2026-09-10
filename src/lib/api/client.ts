@@ -4,6 +4,7 @@ import type { ProblemBody, ProblemErrorEntry } from "./problem-body";
 import {
   categoryResponseSchema,
   classifyResponseSchema,
+  eventResponseSchema,
   expenseResponseSchema,
   forecastRowResponseSchema,
   monthSummaryResponseSchema,
@@ -11,10 +12,12 @@ import {
   recurringTemplateResponseSchema,
   type ClassifyRequest,
   type CreateCategoryRequest,
+  type CreateEventRequest,
   type CreateExpenseRequest,
   type CreateTemplateRequest,
   type MoveExpensesRequest,
   type UpdateCategoryRequest,
+  type UpdateEventRequest,
   type UpdateExpenseRequest,
   type UpdateTemplateRequest,
 } from "@/lib/schemas";
@@ -205,6 +208,19 @@ export function createV1Client(options: V1ClientOptions = {}) {
         readValidated("GET", "/summaries", monthSummaryResponseSchema, {
           query: { month },
         }),
+    },
+    events: {
+      list: () =>
+        readValidated("GET", "/events", z.array(eventResponseSchema)),
+      create: (input: CreateEventRequest) =>
+        readValidated("POST", "/events", eventResponseSchema, { body: input }),
+      get: (id: string) =>
+        readValidated("GET", `/events${idPath(id)}`, eventResponseSchema),
+      update: (id: string, patch: UpdateEventRequest) =>
+        readValidated("PATCH", `/events${idPath(id)}`, eventResponseSchema, {
+          body: patch,
+        }),
+      remove: (id: string) => expectNoBody("DELETE", `/events${idPath(id)}`),
     },
     classify: (input: ClassifyRequest) =>
       readValidated("POST", "/classify", classifyResponseSchema, { body: input }),

@@ -23,6 +23,12 @@ export const unitSchema = z.enum(["piece", "kg"]);
 
 export type ExpenseUnit = z.infer<typeof unitSchema>;
 
+/** Event (رویداد) names: trimmed, never empty, unique per user. */
+export const eventTitleSchema = z
+  .string()
+  .trim()
+  .min(1, "event title is required");
+
 /** Piece quantities are whole numbers; kilos may be fractional. The unit
  * defaults to piece wherever it is omitted. */
 export function refineUnitQuantity(

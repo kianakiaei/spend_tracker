@@ -8,6 +8,7 @@ export {
   createRecurringService,
   ensureRecurringExpensesGenerated,
 } from "./recurring-service";
+export { createEventService, getOwnedEvent } from "./event-service";
 export { createSummaryService } from "./summary-service";
 export { createInsightsService } from "./insights-service";
 export type {
@@ -47,3 +48,10 @@ export type {
   ExpenseWithCategory,
   RecurringTemplate,
 } from "./types";
+export type {
+  CreateEventInput,
+  EventRow,
+  EventService,
+  EventSummary,
+  UpdateEventInput,
+} from "./event-service";

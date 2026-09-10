@@ -1,5 +1,5 @@
-import type { CategoryDto, RecurringTemplateDto } from "@/lib/schemas";
-import type { Category, RecurringTemplate } from "@/lib/services";
+import type { CategoryDto, EventDto, RecurringTemplateDto } from "@/lib/schemas";
+import type { Category, EventRow, RecurringTemplate } from "@/lib/services";
 
 // The client edge of the typed v1 client (tickets 22/28): handlers answer
 // with DTO rows whose timestamps are ISO strings, while the UI keeps the
@@ -15,6 +15,14 @@ export function toCategoryRow(dto: CategoryDto): Category {
 }
 
 export function toTemplateRow(dto: RecurringTemplateDto): RecurringTemplate {
+  return {
+    ...dto,
+    createdAt: new Date(dto.createdAt),
+    updatedAt: new Date(dto.updatedAt),
+  };
+}
+
+export function toEventRow(dto: EventDto): EventRow {
   return {
     ...dto,
     createdAt: new Date(dto.createdAt),

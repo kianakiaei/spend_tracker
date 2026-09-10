@@ -1,6 +1,6 @@
 import { and, asc, count, eq } from "drizzle-orm";
 import { z } from "zod";
-import { categories, expenses } from "@/db/schema";
+import { categories, events, expenses } from "@/db/schema";
 import { newId } from "@/lib/id";
 import { currentJalaliMonthKey, fromISODate, jalaliMonthKey } from "@/lib/jalali";
 import { monthPosition } from "@/lib/recurring";
@@ -38,6 +38,7 @@ const createExpenseInputSchema = z
     note: z.string().nullish(),
     categoryId: uuidv7Schema,
     occurredAt: dateOnlySchema.nullish(),
+    eventId: uuidv7Schema.nullish(),
   })
   .superRefine(refineUnitQuantity);
 
@@ -50,6 +51,7 @@ const updateExpenseInputSchema = z
     note: z.string().nullish(),
     categoryId: uuidv7Schema.optional(),
     occurredAt: dateOnlySchema.nullish(),
+    eventId: uuidv7Schema.nullish(),
   })
   .superRefine(refineUnitQuantity);
 
@@ -71,6 +73,7 @@ export interface CreateExpenseInput {
   note?: string | null;
   categoryId: string;
   occurredAt?: string | null;
+  eventId?: string | null;
 }
 
 export interface UpdateExpenseInput {
@@ -81,6 +84,7 @@ export interface UpdateExpenseInput {
   note?: string | null;
   categoryId?: string;
   occurredAt?: string | null;
+  eventId?: string | null;
 }
 
 export interface ExpenseService {
@@ -115,6 +119,22 @@ export interface ExpenseService {
 }
 
 export function createExpenseService(db: DomainDb): ExpenseService {
+  /** null/undefined = no event; otherwise the event must exist + belong here. */
+  async function resolveEventId(
+    userId: string,
+    eventId: string | null | undefined,
+  ): Promise<string | null> {
+    if (eventId === undefined || eventId === null) return null;
+    parseOrThrow(uuidv7Schema, eventId, "event id");
+    const [row] = await db
+      .select({ id: events.id })
+      .from(events)
+      .where(and(eq(events.id, eventId), eq(events.userId, userId)))
+      .limit(1);
+    if (!row) throw new NotFoundError(`event ${eventId} not found`);
+    return row.id;
+  }
+
   async function getOwned(userId: string, id: string): Promise<Expense> {
     parseOrThrow(uuidv7Schema, id, "expense id");
     const [expense] = await db
@@ -143,6 +163,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       const data = parseOrThrow(createExpenseInputSchema, input, "expense input");
       parseOrThrow(jalaliMonthKeySchema, entryMonthKey, "entry month");
       await getOwnedCategory(db, userId, data.categoryId);
+      const eventId = await resolveEventId(userId, data.eventId);
 
       const occurredAt = data.occurredAt ?? null;
       const now = new Date();
@@ -160,6 +181,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
           // dated → derived from the date; undated → the form's month
           monthKey: occurredAt === null ? entryMonthKey : monthKeyOf(occurredAt),
           sourceRecurringId: null,
+          eventId,
           userId,
           createdAt: now,
           updatedAt: now,
@@ -179,6 +201,8 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       if (data.categoryId !== undefined) {
         await getOwnedCategory(db, userId, data.categoryId);
       }
+      const eventId =
+        data.eventId !== undefined ? await resolveEventId(userId, data.eventId) : undefined;
       // The input schema guards the incoming pair; the stored row supplies
       // the other half when only one side changes (fractional kilos must
       // not become fractional pieces through a unit-only edit).
@@ -201,6 +225,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         title?: string;
         note?: string | null;
         categoryId?: string;
+        eventId?: string | null;
         updatedAt: Date;
       } = { updatedAt: new Date() };
       if (data.amountToman !== undefined) set.amountToman = data.amountToman;
@@ -209,6 +234,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       if (data.title !== undefined) set.title = data.title;
       if (data.note !== undefined) set.note = data.note;
       if (data.categoryId !== undefined) set.categoryId = data.categoryId;
+      if (eventId !== undefined) set.eventId = eventId;
 
       const [expense] = await db
         .update(expenses)
