@@ -5,11 +5,12 @@ import { useMemo, useState } from "react";
 import { canonical } from "@/lib/categorization/normalize";
 import { formatNumber } from "@/lib/format";
 import {
-  formatJalali,
+  formatJalaliISODate,
   formatToman,
-  fromISODate,
+  jalaliMonthKeyLabel,
+  jalaliMonthNameFromKey,
+  toISODate,
   fromJalaliMonthKey,
-  jalaliMonthLabel,
   toPersianDigits,
 } from "@/lib/jalali";
 import type { AllTimeProductInsight } from "@/lib/services";
@@ -20,8 +21,11 @@ interface MonthBucket {
   avgUnitPrice: number;
 }
 
-function shortMonth(monthKey: string) {
-  return formatJalali(fromJalaliMonthKey(monthKey), "MMMM");
+function purchaseSortKey(pt: { occurredAt: string | null; monthKey: string }): string {
+  // Dated rows use the stored Gregorian day; undated ones sit on the first
+  // day of their Jalali month so they still interleave by time (newest first).
+  if (pt.occurredAt) return pt.occurredAt;
+  return toISODate(fromJalaliMonthKey(pt.monthKey));
 }
 
 function MonthlyChart({
@@ -85,7 +89,7 @@ function MonthlyChart({
         className="h-6 text-[13px] text-ink-muted"
       >
         {readout
-          ? `${jalaliMonthLabel(fromJalaliMonthKey(readout.monthKey))} · ${formatToman(readout.avgUnitPrice)} · ${toPersianDigits(readout.count)} خرید`
+          ? `${jalaliMonthKeyLabel(readout.monthKey)} · ${formatToman(readout.avgUnitPrice)} · ${toPersianDigits(readout.count)} خرید`
           : "میانگین هر ماه روی نمودار نوشته شده؛ نشانگر را روی نقطه‌ها ببر"}
       </p>
       <svg
@@ -115,7 +119,7 @@ function MonthlyChart({
           return (
             <g key={b.monthKey}>
               <title>
-                {jalaliMonthLabel(fromJalaliMonthKey(b.monthKey))}:{" "}
+                {jalaliMonthKeyLabel(b.monthKey)}:{" "}
                 {formatToman(b.avgUnitPrice)}
               </title>
               <text
@@ -135,7 +139,7 @@ function MonthlyChart({
                 fontSize={10.5}
                 className="fill-ink-muted"
               >
-                {shortMonth(b.monthKey)}
+                {jalaliMonthNameFromKey(b.monthKey)}
               </text>
               <circle
                 cx={X(i)}
@@ -146,7 +150,7 @@ function MonthlyChart({
                 onMouseEnter={() => setHover(i)}
                 onFocus={() => setHover(i)}
                 tabIndex={0}
-                aria-label={`${jalaliMonthLabel(fromJalaliMonthKey(b.monthKey))}: ${formatToman(b.avgUnitPrice)}`}
+                aria-label={`${jalaliMonthKeyLabel(b.monthKey)}: ${formatToman(b.avgUnitPrice)}`}
               />
               <circle
                 cx={X(i)}
@@ -199,7 +203,7 @@ function MonthlyChart({
                     className="fill-paper"
                     opacity={0.75}
                   >
-                    {jalaliMonthLabel(fromJalaliMonthKey(readout.monthKey))} ·{" "}
+                    {jalaliMonthKeyLabel(readout.monthKey)} ·{" "}
                     {toPersianDigits(readout.count)} خرید
                   </text>
                 </>
@@ -239,9 +243,9 @@ export function InsightsBoard({
   const history = useMemo(() => {
     if (!active) return [];
     return [...active.points].sort((a, b) => {
-      const da = a.occurredAt ?? "";
-      const dbb = b.occurredAt ?? "";
-      if (da !== dbb) return da < dbb ? 1 : -1;
+      const ka = purchaseSortKey(a);
+      const kb = purchaseSortKey(b);
+      if (ka !== kb) return ka < kb ? 1 : -1;
       return a.expenseId < b.expenseId ? 1 : -1;
     });
   }, [active]);
@@ -364,7 +368,7 @@ export function InsightsBoard({
               <h3 className="mt-5 text-[14px] font-bold">تاریخچه خریدها</h3>
               <ul aria-label="تاریخچه خریدها" className="mt-2">
                 {history.map((pt) => {
-                  const label = jalaliMonthLabel(fromJalaliMonthKey(pt.monthKey));
+                  const label = jalaliMonthKeyLabel(pt.monthKey);
                   return (
                     <li
                       key={pt.expenseId}
@@ -373,7 +377,7 @@ export function InsightsBoard({
                       <span className="flex min-w-0 flex-col gap-0.5">
                         <span className="text-[13px] font-semibold">
                           {pt.occurredAt
-                            ? formatJalali(fromISODate(pt.occurredAt), "d MMMM yyyy")
+                            ? formatJalaliISODate(pt.occurredAt)
                             : label}
                         </span>
                         <span className="text-[11.5px] text-ink-muted">

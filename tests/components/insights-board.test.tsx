@@ -83,4 +83,14 @@ describe("InsightsBoard search + purchase history", () => {
     // undated purchase keeps its month with the «بدون تاریخ» chip
     expect(history).toHaveTextContent("بدون تاریخ");
   });
+
+  it("orders purchases newest first and keeps Jalali month labels on the key", () => {
+    render(<InsightsBoard products={PRODUCTS} />);
+    const items = [...screen.getByRole("list", { name: "تاریخچه خریدها" }).querySelectorAll("li")];
+    expect(items.map((li) => li.textContent)).toEqual([
+      "۳ شهریور ۱۴۰۵شهریور ۱۴۰۵۳۰٬۰۰۰ تومان",
+      "شهریور ۱۴۰۵بدون تاریخ۳۵٬۰۰۰ تومان",
+      "۲ مرداد ۱۴۰۵مرداد ۱۴۰۵۲۵٬۰۰۰ تومان",
+    ]);
+  });
 });

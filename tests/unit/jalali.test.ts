@@ -5,6 +5,7 @@ import {
   currentTehranISODate,
   endOfJalaliMonth,
   formatJalali,
+  formatJalaliISODate,
   formatToman,
   fromISODate,
   fromJalaliMonthKey,
@@ -15,6 +16,7 @@ import {
   jalaliMonthKey,
   jalaliMonthKeyLabel,
   jalaliMonthLabel,
+  jalaliMonthNameFromKey,
   startOfJalaliMonth,
   shiftJalaliMonthKey,
   toEnglishDigits,
@@ -168,6 +170,9 @@ describe("jalali display (fa-IR)", () => {
     expect(jalaliMonthKeyLabel("1405-06")).toBe("شهریور ۱۴۰۵");
     expect(jalaliMonthKeyLabel("1405-02")).toBe("اردیبهشت ۱۴۰۵");
     expect(jalaliMonthKeyLabel("1405-01")).toBe("فروردین ۱۴۰۵");
+    expect(jalaliMonthNameFromKey("1405-06")).toBe("شهریور");
+    expect(formatJalaliISODate("2026-09-06")).toBe("۱۵ شهریور ۱۴۰۵");
+    expect(formatJalaliISODate("2026-08-23")).toBe("۱ شهریور ۱۴۰۵");
     expect(jalaliDayLabel(shahrivar15)).toBe("یک‌شنبه ۱۵ شهریور");
   });
 

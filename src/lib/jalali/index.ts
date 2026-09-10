@@ -171,6 +171,19 @@ export function jalaliMonthKeyLabel(monthKey: string): string {
   return `${JALALI_MONTH_NAMES[month - 1]} ${toPersianDigits(year)}`;
 }
 
+/** 'شهریور' from a month key — chart ticks, same Date-free path. */
+export function jalaliMonthNameFromKey(monthKey: string): string {
+  const [, month] = parseJalaliMonthKey(monthKey);
+  return JALALI_MONTH_NAMES[month - 1]!;
+}
+
+/** '۱۵ شهریور ۱۴۰۵' from a stored Gregorian date-only string. Built from
+ * the civil Y-M-D parts (parseISO → local midnight), matching formatJalali
+ * with 'd MMMM yyyy'. */
+export function formatJalaliISODate(iso: string): string {
+  return toPersianDigits(format(fromISODate(iso), "d MMMM yyyy"));
+}
+
 /** 'یک‌شنبه ۱۵ شهریور' — list-row date. */
 export function jalaliDayLabel(d: Date): string {
   return toPersianDigits(format(d, "EEEE d MMMM"));
