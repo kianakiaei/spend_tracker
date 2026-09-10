@@ -23,7 +23,7 @@ async function seedExpense(
   input: {
     title: string;
     amountToman: number;
-    occurredAt?: string | null;
+    occurredAt?: string;
     quantity?: number;
   },
 ): Promise<string> {
@@ -35,7 +35,7 @@ async function seedExpense(
       amountToman: input.amountToman,
       quantity: input.quantity,
       categoryId: groceries.id,
-      occurredAt: input.occurredAt ?? undefined,
+      occurredAt: input.occurredAt ?? "2026-08-23",
     },
     "1405-06",
   );
@@ -63,6 +63,9 @@ describe("expenseService.searchByTitle", () => {
     expect(hits[0]!.monthKey).toBe("1405-05");
     expect(hits[0]!.occurredAt).toBe("2026-07-24");
     expect(hits[0]!.categoryName).toBe("خوراکی");
+    expect(hits[0]!.unit).toBe("piece");
+    expect(hits[0]!.eventId).toBe(null);
+    expect(hits[0]!.sourceRecurringId).toBe(null);
 
     const all = await expensesService.searchByTitle(userId, "نان");
     expect(all.map((h) => h.monthKey).sort()).toEqual(["1405-05", "1405-06"]);
@@ -111,12 +114,12 @@ describe("expenseService.searchByTitle", () => {
     expect(await expensesService.searchByTitle(userId, "")).toHaveLength(0);
   });
 
-  it("includes undated expenses with their month and no date", async () => {
+  it("includes expenses with their month and date", async () => {
     const userId = await fx.signUp();
     await seedExpense(userId, { title: "نان", amountToman: 15_000 });
 
     const [hit] = await expensesService.searchByTitle(userId, "نان");
-    expect(hit!.occurredAt).toBeNull();
+    expect(hit!.occurredAt).toBe("2026-08-23");
     expect(hit!.monthKey).toBe("1405-06");
   });
 

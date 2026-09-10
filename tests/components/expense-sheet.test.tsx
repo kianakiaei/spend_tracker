@@ -8,13 +8,14 @@ import {
 import { Ledger } from "@/components/ledger";
 import {
   currentJalaliMonthKey,
-  currentTehranISODate,
   formatJalali,
   fromISODate,
   fromJalaliMonthKey,
   jalaliMonthLabel,
   shiftJalaliMonthKey,
+  toISODate,
 } from "@/lib/jalali";
+import { defaultCreateDate } from "@/components/expense-sheet/sheet-helpers";
 import type { Category, ExpenseWithCategory } from "@/lib/services";
 
 // Ticket 27 — the expense sheet's behavior contract: the debounced live
@@ -59,7 +60,7 @@ const UNDATED: ExpenseWithCategory = {
   title: "شارژ تاکسی",
   note: null,
   categoryId: GROCERIES.id,
-  occurredAt: null,
+  occurredAt: "2026-07-23",
   monthKey: "1405-05",
   sourceRecurringId: null,
   userId: GROCERIES.userId,
@@ -206,23 +207,24 @@ describe("amount field", () => {
   });
 });
 
-describe("date field (one picker, clearable)", () => {
-  it("any month opens on today — no undated chip anymore", async () => {
+describe("date field (required picker)", () => {
+  it("another month opens on that month's first Jalali day", async () => {
     await openCreate(otherMonth);
     expect(
-      screen.queryByRole("button", { name: "بدون تاریخ" }),
+      screen.queryByRole("button", { name: "حذف تاریخ" }),
     ).not.toBeInTheDocument();
-    // the picker really holds today, in Jalali/Persian digits
     expect(
-      screen.getByDisplayValue(formatJalali(fromISODate(currentTehranISODate()))),
+      screen.getByDisplayValue(
+        formatJalali(fromISODate(toISODate(fromJalaliMonthKey(otherMonth)))),
+      ),
     ).toBeInTheDocument();
   });
 
-  it("the target month follows today even from another month", async () => {
+  it("the target month follows the default date of the form's month", async () => {
     await openCreate(otherMonth);
     expect(
       screen.getByText(
-        `ثبت در ${jalaliMonthLabel(fromJalaliMonthKey(currentJalaliMonthKey()))}`,
+        `ثبت در ${jalaliMonthLabel(fromJalaliMonthKey(otherMonth))}`,
       ),
     ).toBeInTheDocument();
   });
@@ -248,9 +250,8 @@ describe("save path (typed v1 client)", () => {
         unit: "piece",
         title: "نان",
         categoryId: GROCERIES.id,
-        occurredAt: currentTehranISODate(),
+        occurredAt: defaultCreateDate(otherMonth),
         eventId: null,
-        entryMonthKey: otherMonth,
       }),
     );
     await waitFor(() => expect(refresh).toHaveBeenCalled());
@@ -302,8 +303,7 @@ describe("edit sheet from a ledger row", () => {
           unit: "piece",
           title: "شارژ تاکسی",
           categoryId: GROCERIES.id,
-          // the dateless row stays dateless — the edit never moves months
-          occurredAt: null,
+          occurredAt: UNDATED.occurredAt,
           eventId: null,
         },
       ),
@@ -311,16 +311,15 @@ describe("edit sheet from a ledger row", () => {
     await waitFor(() => expect(refresh).toHaveBeenCalled());
   });
 
-  it("an undated row opens dateless and keeps its own month subtitle", async () => {
+  it("opens with the row's date and that date's month subtitle", async () => {
     renderEdit(UNDATED);
 
     fireEvent.click(screen.getByRole("button", { name: /شارژ تاکسی/ }));
     expect(await screen.findByRole("dialog")).toBeInTheDocument();
 
-    // no date adopted: the picker is empty with the dateless placeholder,
-    // and the subtitle still names the row's own month (1405-05 = مرداد)
-    expect(screen.getByPlaceholderText("بدون تاریخ")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "حذف تاریخ" })).not.toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue(formatJalali(fromISODate(UNDATED.occurredAt))),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(
         `ذخیره در ${jalaliMonthLabel(fromJalaliMonthKey(UNDATED.monthKey))}`,
@@ -422,9 +421,8 @@ describe("locked create from a category (ticket 28 handoff)", () => {
         unit: "piece",
         title: "قسط وام",
         categoryId: INSTALLMENT.id,
-        occurredAt: currentTehranISODate(),
+        occurredAt: defaultCreateDate(otherMonth),
         eventId: null,
-        entryMonthKey: otherMonth,
       }),
     );
     await waitFor(() => expect(refresh).toHaveBeenCalled());

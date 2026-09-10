@@ -81,7 +81,7 @@ export interface EventService {
   remove(userId: string, id: string): Promise<void>;
   /** Event totals overlay: recorded sum + count; month math is untouched. */
   summary(userId: string, id: string): Promise<EventSummary>;
-  /** The event's expenses, newest first (dated desc, undated last). */
+  /** The event's expenses, newest first. */
   listExpenses(userId: string, id: string): Promise<ExpenseWithCategory[]>;
 }
 
@@ -223,14 +223,6 @@ export function createEventService(db: DomainDb): EventService {
       return rows
         .map((row) => ({ ...row.expense, category: row.category }))
         .sort((a, b) => {
-          if (a.occurredAt === null && b.occurredAt === null) {
-            return (
-              b.createdAt.getTime() - a.createdAt.getTime() ||
-              (a.id < b.id ? -1 : 1)
-            );
-          }
-          if (a.occurredAt === null) return 1;
-          if (b.occurredAt === null) return -1;
           if (a.occurredAt !== b.occurredAt)
             return a.occurredAt < b.occurredAt ? 1 : -1;
           return (

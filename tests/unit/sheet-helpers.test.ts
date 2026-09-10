@@ -1,10 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { effectiveMonthKey, parseAmountInput, parseQuantityInput } from "@/components/expense-sheet/sheet-helpers";
-
-// Ticket 27 — the pure edges of the expense sheet: parsing the amount field
-// (any digit script, separators typed freely) and the month a save will land
-// in (ticket 15/27: a picked date always wins; undated follows the form's
-// month on create and the expense's own month on edit).
+import {
+  defaultCreateDate,
+  effectiveMonthKey,
+  parseAmountInput,
+  parseQuantityInput,
+} from "@/components/expense-sheet/sheet-helpers";
+import {
+  currentJalaliMonthKey,
+  currentTehranISODate,
+  fromJalaliMonthKey,
+  toISODate,
+  shiftJalaliMonthKey,
+} from "@/lib/jalali";
 
 describe("parseAmountInput", () => {
   it("reads Latin digits", () => {
@@ -50,16 +57,18 @@ describe("parseQuantityInput", () => {
 });
 
 describe("effectiveMonthKey", () => {
-  it("a picked date always wins — even when it leaves the form's month", () => {
-    // 2026-08-25 = 1405-06-03 (شهریور), form opened in مرداد
-    expect(effectiveMonthKey("2026-08-25", "1405-05")).toBe("1405-06");
+  it("is the Jalali month of the picked date", () => {
+    expect(effectiveMonthKey("2026-08-25")).toBe("1405-06");
+  });
+});
+
+describe("defaultCreateDate", () => {
+  it("uses today in the current Jalali month", () => {
+    expect(defaultCreateDate(currentJalaliMonthKey())).toBe(currentTehranISODate());
   });
 
-  it("an undated create belongs to the form's month", () => {
-    expect(effectiveMonthKey(null, "1405-05")).toBe("1405-05");
-  });
-
-  it("an undated edit stays in the month the expense already belongs to", () => {
-    expect(effectiveMonthKey(null, "1405-05", "1405-03")).toBe("1405-03");
+  it("uses the first day of another Jalali month", () => {
+    const other = shiftJalaliMonthKey(currentJalaliMonthKey(), -1);
+    expect(defaultCreateDate(other)).toBe(toISODate(fromJalaliMonthKey(other)));
   });
 });

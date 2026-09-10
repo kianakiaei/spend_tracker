@@ -33,6 +33,7 @@ function insertExpense(userId: string, categoryId: string, monthKey = "1405-06")
     title: "نان بربری",
     categoryId,
     monthKey,
+    occurredAt: "2026-08-23",
     userId,
     createdAt: now,
     updatedAt: now,

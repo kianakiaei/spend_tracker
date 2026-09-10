@@ -16,11 +16,8 @@ const expenseService = createExpenseService(db);
 
 export const POST = withRoute(async (request: Request) => {
   const userId = await requireUserId(request);
-  const { entryMonthKey, ...input } = await parseJson(
-    request,
-    createExpenseRequestSchema,
-  );
-  const expense = await expenseService.create(userId, input, entryMonthKey);
+  const input = await parseJson(request, createExpenseRequestSchema);
+  const expense = await expenseService.create(userId, input);
   // The contract shape is the full row WITH its category (expenseResponseSchema)
   // — the bare insert row would fail the typed client's validation.
   return jsonResponse(await expenseService.get(userId, expense.id), 201);

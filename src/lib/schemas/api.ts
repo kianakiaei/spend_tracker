@@ -23,8 +23,7 @@ import {
 
 // --- Requests ---
 
-/** POST /api/v1/expenses — `entryMonthKey` is the month the form was opened
- * in, used only when the expense is undated (ticket 15). */
+/** POST /api/v1/expenses — monthKey is derived from occurredAt. */
 export const createExpenseRequestSchema = z
   .object({
     amountToman: amountTomanSchema,
@@ -33,9 +32,8 @@ export const createExpenseRequestSchema = z
     title: titleSchema,
     note: z.string().nullish(),
     categoryId: uuidv7Schema,
-    occurredAt: dateOnlySchema.nullish(),
+    occurredAt: dateOnlySchema,
     eventId: uuidv7Schema.nullish(),
-    entryMonthKey: jalaliMonthKeySchema,
   })
   .superRefine(refineUnitQuantity);
 
@@ -47,7 +45,7 @@ export const updateExpenseRequestSchema = z
     title: titleSchema.optional(),
     note: z.string().nullish(),
     categoryId: uuidv7Schema.optional(),
-    occurredAt: dateOnlySchema.nullish(),
+    occurredAt: dateOnlySchema.optional(),
     eventId: uuidv7Schema.nullish(),
   })
   .superRefine(refineUnitQuantity);
@@ -139,7 +137,7 @@ export const expenseResponseSchema = z.object({
   title: z.string(),
   note: z.string().nullable(),
   categoryId: uuidv7Schema,
-  occurredAt: dateOnlySchema.nullable(),
+  occurredAt: dateOnlySchema,
   monthKey: jalaliMonthKeySchema,
   sourceRecurringId: uuidv7Schema.nullable(),
   eventId: uuidv7Schema.nullable(),
@@ -194,12 +192,15 @@ export const searchResultResponseSchema = z.object({
   title: z.string(),
   amountToman: z.number().int().positive(),
   quantity: z.number().positive(),
+  unit: unitSchema,
   monthKey: jalaliMonthKeySchema,
-  occurredAt: dateOnlySchema.nullable(),
+  occurredAt: dateOnlySchema,
   categoryName: z.string(),
   categoryId: uuidv7Schema,
   /** The رویداد the expense belongs to — null when unattached. */
   eventTitle: z.string().nullable(),
+  eventId: uuidv7Schema.nullable(),
+  sourceRecurringId: uuidv7Schema.nullable(),
 });
 
 /** POST /api/v1/classify — always 200 on a valid title; the fallback answer

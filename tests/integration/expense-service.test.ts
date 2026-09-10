@@ -8,10 +8,8 @@ import { NotFoundError, ValidationError } from "@/lib/services/errors";
 import { jalaliMonthKey, fromISODate } from "@/lib/jalali";
 import { setupIntegrationDb } from "../helpers/integration";
 
-// Expense service rules on a real temp libSQL file (ticket 22): NO date
-// constraints — past/future/undated all allowed (ticket 15) — but the
-// monthKey contract is strict: dated → derived from occurredAt, undated →
-// the explicit form month; a dated expense always lands in its own month.
+// Expense service rules on a real temp libSQL file (ticket 22): past and
+// future dates are allowed; monthKey is always derived from occurredAt.
 
 const fx = await setupIntegrationDb("expense-service");
 const categories = createCategoryService(fx.db);
@@ -45,18 +43,17 @@ describe("expenseService.create — the monthKey rule (ticket 22)", () => {
     expect(expense.sourceRecurringId).toBeNull();
   });
 
-  it("uses the form month for an undated expense (the explicit service parameter)", async () => {
+  it("rejects a missing occurrence date", async () => {
     const userId = await fx.signUp();
     const categoryId = await systemCategory(userId, "installment");
 
-    const expense = await expensesService.create(
-      userId,
-      { amountToman: 1_500_000, title: "قسط وام", categoryId, occurredAt: null },
-      "1404-12",
-    );
-
-    expect(expense.occurredAt).toBeNull();
-    expect(expense.monthKey).toBe("1404-12");
+    await expect(
+      expensesService.create(userId, {
+        amountToman: 1_500_000,
+        title: "قسط وام",
+        categoryId,
+      } as never),
+    ).rejects.toThrow(ValidationError);
   });
 
   it("a dated expense always lands in its own month — even against the form month", async () => {
@@ -95,7 +92,7 @@ describe("expenseService.create — the monthKey rule (ticket 22)", () => {
   it("rejects invalid inputs with typed validation errors", async () => {
     const userId = await fx.signUp();
     const categoryId = await systemCategory(userId, "groceries");
-    const base = { amountToman: 1, title: "نان", categoryId };
+    const base = { amountToman: 1, title: "نان", categoryId, occurredAt: "2026-08-23" };
 
     await expect(
       expensesService.create(userId, { ...base, amountToman: 0 }, "1405-06"),
@@ -114,7 +111,7 @@ describe("expenseService.create — the monthKey rule (ticket 22)", () => {
       expensesService.create(userId, { ...base, occurredAt: "2026/09/06" }, "1405-06"),
     ).rejects.toThrow(ValidationError);
     await expect(
-      expensesService.create(userId, base, "140506"),
+      expensesService.create(userId, { ...base, occurredAt: undefined as never }),
     ).rejects.toThrow(ValidationError);
     await expect(
       expensesService.create(userId, { ...base, categoryId: newId() }, "1405-06"),
@@ -129,7 +126,7 @@ describe("expenseService quantity + unit (kilo support)", () => {
 
     const expense = await expensesService.create(
       userId,
-      { amountToman: 270_000, quantity: 0.5, unit: "kg", title: "بستنی", categoryId },
+      { amountToman: 270_000, quantity: 0.5, unit: "kg", title: "بستنی", categoryId, occurredAt: "2026-08-23" },
       "1405-06",
     );
 
@@ -146,7 +143,7 @@ describe("expenseService quantity + unit (kilo support)", () => {
 
     const expense = await expensesService.create(
       userId,
-      { amountToman: 30_000, title: "نان", categoryId },
+      { amountToman: 30_000, title: "نان", categoryId, occurredAt: "2026-08-23" },
       "1405-06",
     );
 
@@ -157,7 +154,7 @@ describe("expenseService quantity + unit (kilo support)", () => {
   it("rejects fractional pieces and bad units", async () => {
     const userId = await fx.signUp();
     const categoryId = await systemCategory(userId, "groceries");
-    const base = { amountToman: 100_000, title: "سیب", categoryId };
+    const base = { amountToman: 100_000, title: "سیب", categoryId, occurredAt: "2026-08-23" };
 
     await expect(
       expensesService.create(userId, { ...base, quantity: 2.5 }, "1405-06"),
@@ -190,7 +187,7 @@ describe("expenseService quantity + unit (kilo support)", () => {
     const categoryId = await systemCategory(userId, "groceries");
     const expense = await expensesService.create(
       userId,
-      { amountToman: 132_000, quantity: 2.5, unit: "kg", title: "آلو", categoryId },
+      { amountToman: 132_000, quantity: 2.5, unit: "kg", title: "آلو", categoryId, occurredAt: "2026-08-23" },
       "1405-06",
     );
 
@@ -208,12 +205,12 @@ describe("expenseService quantity + unit (kilo support)", () => {
 });
 
 describe("expenseService.update — monthKey moves (ticket 22)", () => {
-  it("giving a date to an undated expense moves it to that date's month", async () => {
+  it("changing the date re-derives the month", async () => {
     const userId = await fx.signUp();
     const categoryId = await systemCategory(userId, "bills-internet");
     const expense = await expensesService.create(
       userId,
-      { amountToman: 300_000, title: "قبض برق", categoryId, occurredAt: null },
+      { amountToman: 300_000, title: "قبض برق", categoryId, occurredAt: "2025-03-20" },
       "1404-12",
     );
 
@@ -225,7 +222,7 @@ describe("expenseService.update — monthKey moves (ticket 22)", () => {
     expect(updated.monthKey).toBe(monthKeyOf("2026-01-10"));
   });
 
-  it("clearing the date keeps the expense in the month it currently belongs to", async () => {
+  it("rejects clearing the occurrence date", async () => {
     const userId = await fx.signUp();
     const categoryId = await systemCategory(userId, "cafe-restaurant");
     const expense = await expensesService.create(
@@ -234,12 +231,12 @@ describe("expenseService.update — monthKey moves (ticket 22)", () => {
       "1405-06",
     );
 
-    const updated = await expensesService.update(userId, expense.id, {
-      occurredAt: null,
-    });
-
-    expect(updated.occurredAt).toBeNull();
-    expect(updated.monthKey).toBe(expense.monthKey);
+    await expect(
+      expensesService.update(userId, expense.id, { occurredAt: null as never }),
+    ).rejects.toThrow(ValidationError);
+    expect((await expensesService.get(userId, expense.id)).occurredAt).toBe(
+      "2026-09-06",
+    );
   });
 
   it("changing the date re-derives the month", async () => {
@@ -263,7 +260,7 @@ describe("expenseService.update — monthKey moves (ticket 22)", () => {
     const categoryId = await systemCategory(userId, "groceries");
     const expense = await expensesService.create(
       userId,
-      { amountToman: 1, title: "نان", categoryId },
+      { amountToman: 1, title: "نان", categoryId, occurredAt: "2026-08-23" },
       "1405-06",
     );
 
@@ -288,7 +285,7 @@ describe("expenseService.remove + listByMonth (ticket 22)", () => {
     const categoryId = await systemCategory(userId, "groceries");
     const expense = await expensesService.create(
       userId,
-      { amountToman: 5_000, title: "نان", categoryId },
+      { amountToman: 5_000, title: "نان", categoryId, occurredAt: "2026-08-23" },
       "1405-06",
     );
     const learnedBefore = await fx.db
@@ -311,7 +308,7 @@ describe("expenseService.remove + listByMonth (ticket 22)", () => {
     expect(remaining).toHaveLength(0);
   });
 
-  it("lists one month's ledger: undated first, then by date, each with its category", async () => {
+  it("lists one month's ledger by occurrence date, each with its category", async () => {
     const userId = await fx.signUp();
     const groceries = await systemCategory(userId, "groceries");
     const cafe = await systemCategory(userId, "cafe-restaurant");
@@ -321,9 +318,9 @@ describe("expenseService.remove + listByMonth (ticket 22)", () => {
       { amountToman: 10_000, title: "نان", categoryId: groceries, occurredAt: "2026-09-05" },
       "1405-06",
     );
-    const undated = await expensesService.create(
+    const firstOfMonth = await expensesService.create(
       userId,
-      { amountToman: 20_000, title: "خرج جاافتاده", categoryId: groceries, occurredAt: null },
+      { amountToman: 20_000, title: "خرج جاافتاده", categoryId: groceries, occurredAt: "2026-08-23" },
       "1405-06",
     );
     const datedEarly = await expensesService.create(
@@ -339,8 +336,8 @@ describe("expenseService.remove + listByMonth (ticket 22)", () => {
 
     const rows = await expensesService.listByMonth(userId, "1405-06");
 
-    expect(rows.map((r) => r.id)).toEqual([undated.id, datedEarly.id, datedLate.id]);
-    expect(rows[0]!.occurredAt).toBeNull();
+    expect(rows.map((r) => r.id)).toEqual([firstOfMonth.id, datedEarly.id, datedLate.id]);
+    expect(rows[0]!.occurredAt).toBe("2026-08-23");
     expect(rows[0]!.category.id).toBe(groceries);
     expect(rows[1]!.category.name).toBeTruthy();
     expect(rows.map((r) => r.monthKey)).toEqual(["1405-06", "1405-06", "1405-06"]);
@@ -353,7 +350,7 @@ describe("expenseService.remove + listByMonth (ticket 22)", () => {
     const categoryId = await systemCategory(otherUser, "groceries");
     await expensesService.create(
       otherUser,
-      { amountToman: 1, title: "نان", categoryId },
+      { amountToman: 1, title: "نان", categoryId, occurredAt: "2026-08-23" },
       "1405-06",
     );
 
@@ -370,17 +367,17 @@ describe("expenseService.remove + listByMonth (ticket 22)", () => {
 });
 
 describe("expenseService.countByCategory (ticket 28: the delete guard's counter)", () => {
-  it("counts every expense per category across all months, dated or not", async () => {
+  it("counts every expense per category across all months", async () => {
     const userId = await fx.signUp();
     const groceries = await systemCategory(userId, "groceries");
     const transport = await systemCategory(userId, "transport");
     const custom = await categories.create(userId, { name: "کتاب" });
 
     await expensesService.create(
-      userId, { amountToman: 10_000, title: "نان", categoryId: groceries }, "1405-05",
+      userId, { amountToman: 10_000, title: "نان", categoryId: groceries, occurredAt: "2026-07-24" }, "1405-05",
     );
     await expensesService.create(
-      userId, { amountToman: 20_000, title: "شیر", categoryId: groceries }, "1405-06",
+      userId, { amountToman: 20_000, title: "شیر", categoryId: groceries, occurredAt: "2026-08-23" }, "1405-06",
     );
     await expensesService.create(
       userId,
@@ -388,7 +385,7 @@ describe("expenseService.countByCategory (ticket 28: the delete guard's counter)
       "1405-05",
     );
     await expensesService.create(
-      userId, { amountToman: 1_000, title: "کتاب", categoryId: custom.id }, "1405-06",
+      userId, { amountToman: 1_000, title: "کتاب", categoryId: custom.id, occurredAt: "2026-08-23" }, "1405-06",
     );
 
     const counts = await expensesService.countByCategory(userId);
@@ -404,7 +401,7 @@ describe("expenseService.countByCategory (ticket 28: the delete guard's counter)
     const other = await fx.signUp();
     const groceries = await systemCategory(other, "groceries");
     await expensesService.create(
-      other, { amountToman: 3_000, title: "نان", categoryId: groceries }, "1405-06",
+      other, { amountToman: 3_000, title: "نان", categoryId: groceries, occurredAt: "2026-08-23" }, "1405-06",
     );
 
     expect(await expensesService.countByCategory(userId)).toEqual({});

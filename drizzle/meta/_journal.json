@@ -43,6 +43,13 @@
       "when": 1789063220254,
       "tag": "0005_events",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1789078982420,
+      "tag": "0006_sharp_old_lace",
+      "breakpoints": true
     }
   ]
 }

@@ -110,11 +110,11 @@ export const expenses = sqliteTable(
     note: text("note"),
     // NOT NULL: there is no "uncategorized" group (ticket 05).
     categoryId: text("categoryId").notNull(),
-    // Gregorian date-only 'YYYY-MM-DD'; null = undated expense, a member of
-    // the month it was entered in (ticket 15).
-    occurredAt: text("occurredAt"),
+    // Gregorian date-only 'YYYY-MM-DD'. Always set — monthKey is derived
+    // from this date on write.
+    occurredAt: text("occurredAt").notNull(),
     // Jalali month key '1405-06', always set — derived on write from
-    // occurredAt when dated, otherwise the entry month.
+    // occurredAt.
     monthKey: text("monthKey").notNull(),
     // Set only on expenses generated from a recurring template.
     sourceRecurringId: text("sourceRecurringId"),

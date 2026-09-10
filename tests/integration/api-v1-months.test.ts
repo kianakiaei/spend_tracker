@@ -28,6 +28,7 @@ const categoriesRoute = await import("@/app/api/v1/categories/route");
 const { systemCategoryBySlug, relativeMonthKeys } = await import(
   "../helpers/fixtures"
 );
+const { jalaliMonthBounds } = await import("@/lib/recurring");
 const { captureConsoleLines, emailedUrl, verifyEmail } = await import(
   "../helpers/verify-email"
 );
@@ -358,8 +359,7 @@ describe("GET /expenses?month= across months", () => {
           amountToman: 4000,
           title: "بی تاریخ",
           categoryId: groceries.id,
-          occurredAt: null,
-          entryMonthKey: PREV,
+          occurredAt: jalaliMonthBounds(PREV).startISO,
         },
       }),
     );
@@ -401,7 +401,7 @@ describe("GET /summaries?month= — the dashboard composite (tickets 12/15/24)",
           amountToman: 30000,
           title: "سبزی",
           categoryId: groceries.id,
-          entryMonthKey: CURRENT,
+          occurredAt: jalaliMonthBounds(CURRENT).startISO,
         },
       }),
     );

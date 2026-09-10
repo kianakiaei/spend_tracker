@@ -1,4 +1,4 @@
-import { fromISODate, jalaliMonthKey, toEnglishDigits } from "@/lib/jalali";
+import { fromISODate, jalaliMonthKey, toEnglishDigits, toISODate, fromJalaliMonthKey, currentJalaliMonthKey, currentTehranISODate } from "@/lib/jalali";
 
 // Pure edges of the expense sheet (ticket 27) — no React, no `next/*`, so
 // they unit-test without a DOM. The sheet owns the stateful parts around
@@ -29,21 +29,24 @@ export function parseQuantityInput(raw: string): number | null {
   const dotted = normalized.replace(/٫/g, ".");
   if (!/^\d+(\.\d{1,3})?$/.test(dotted)) return null;
   const value = Number(dotted);
-  if (!Number.isFinite(value) || value <= 0 || value > 1_000_000)
+  if (!Number.isFinite(value) || value > 1_000_000 || value <= 0)
     return null;
   return value;
 }
 
-/** The Jalali month a save will land in (ticket 15/27): a picked date always
- * wins — its own month, even when it differs from the form's month; an
- * undated create belongs to the form's month; an undated edit stays in the
- * month the expense already belongs to (clearing never moves it — the
- * expense service's rule). */
-export function effectiveMonthKey(
-  date: string | null,
-  entryMonthKey: string,
-  existingMonthKey?: string,
+/** The Jalali month a save will land in: always the picked date's month. */
+export function effectiveMonthKey(date: string): string {
+  return jalaliMonthKey(fromISODate(date));
+}
+
+/** Create-form date default: today in the current Jalali month, otherwise
+ * the first day of the month the form was opened in. */
+export function defaultCreateDate(
+  formMonthKey: string,
+  now: Date = new Date(),
 ): string {
-  if (date !== null) return jalaliMonthKey(fromISODate(date));
-  return existingMonthKey ?? entryMonthKey;
+  if (formMonthKey === currentJalaliMonthKey(now)) {
+    return currentTehranISODate(now);
+  }
+  return toISODate(fromJalaliMonthKey(formMonthKey));
 }

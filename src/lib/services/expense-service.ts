@@ -28,12 +28,11 @@ import type {
   ExpenseWithEventTitle,
 } from "./types";
 
-// Expense service (ticket 22): create/update/delete are free — NO date
-// constraints at all, past/future/undated all allowed (ticket 15). The only
-// rule is the monthKey on write: dated expenses derive it from occurredAt
-// via the jalali module; an UNDATED expense is a member of the month the
-// form was opened in — the explicit `entryMonthKey` parameter. Every save
-// (create/update) fires the learning pipeline with the final category.
+// Expense service (ticket 22): create/update/delete are free — past and
+// future dates are allowed. Every expense has an occurrence date;
+// monthKey is always derived from occurredAt via the jalali module.
+// Every save (create/update) fires the learning pipeline with the final
+// category.
 
 /** The search page's cap — one screen, the query stays cheap on big ledgers. */
 const SEARCH_LIMIT = 100;
@@ -45,12 +44,15 @@ export interface SearchResult {
   title: string;
   amountToman: number;
   quantity: number;
+  unit: ExpenseUnit;
   monthKey: string;
-  occurredAt: string | null;
+  occurredAt: string;
   categoryName: string;
   categoryId: string;
   /** The رویداد the expense belongs to — null when unattached. */
   eventTitle: string | null;
+  eventId: string | null;
+  sourceRecurringId: string | null;
 }
 
 function toSearchResult(row: {
@@ -63,11 +65,14 @@ function toSearchResult(row: {
     title: row.expense.title,
     amountToman: row.expense.amountToman,
     quantity: row.expense.quantity,
+    unit: row.expense.unit,
     monthKey: row.expense.monthKey,
     occurredAt: row.expense.occurredAt,
     categoryName: row.category.name,
     categoryId: row.category.id,
     eventTitle: row.event?.title ?? null,
+    eventId: row.expense.eventId,
+    sourceRecurringId: row.expense.sourceRecurringId,
   };
 }
 
@@ -79,7 +84,7 @@ const createExpenseInputSchema = z
     title: titleSchema,
     note: z.string().nullish(),
     categoryId: uuidv7Schema,
-    occurredAt: dateOnlySchema.nullish(),
+    occurredAt: dateOnlySchema,
     eventId: uuidv7Schema.nullish(),
   })
   .superRefine(refineUnitQuantity);
@@ -92,7 +97,7 @@ const updateExpenseInputSchema = z
     title: titleSchema.optional(),
     note: z.string().nullish(),
     categoryId: uuidv7Schema.optional(),
-    occurredAt: dateOnlySchema.nullish(),
+    occurredAt: dateOnlySchema.optional(),
     eventId: uuidv7Schema.nullish(),
   })
   .superRefine(refineUnitQuantity);
@@ -114,7 +119,7 @@ export interface CreateExpenseInput {
   title: string;
   note?: string | null;
   categoryId: string;
-  occurredAt?: string | null;
+  occurredAt: string;
   eventId?: string | null;
 }
 
@@ -125,49 +130,32 @@ export interface UpdateExpenseInput {
   title?: string;
   note?: string | null;
   categoryId?: string;
-  occurredAt?: string | null;
+  occurredAt?: string;
   eventId?: string | null;
-}
-
-/** One row of the whole-ledger search (تیکت جست‌وجو): everything the
- * «جست‌وجو در همه ماه‌ها» page needs to render a hit. */
-
-export interface SearchResult {
-  expenseId: string;
-  title: string;
-  amountToman: number;
-  quantity: number;
-  monthKey: string;
-  occurredAt: string | null;
-  categoryName: string;
-  categoryId: string;
 }
 
 export interface ExpenseService {
   /** One expense with its category — the v1 API's GET [id] (ticket 25). */
   get(userId: string, id: string): Promise<ExpenseWithCategory>;
   /**
-   * `entryMonthKey` is the month the form was opened in ("ماه فرم") — used
-   * only for undated expenses; a dated expense always lands in its own
-   * date's month, even when it differs from the form's month (ticket 15).
-   * Fires learning with the final category.
+   * monthKey is always derived from occurredAt. Fires learning with the
+   * final category.
    */
   create(
     userId: string,
     input: CreateExpenseInput,
-    entryMonthKey: string,
+    /** Ignored; kept so existing callers that passed the form month still typecheck. */
+    _entryMonthKey?: string,
   ): Promise<Expense>;
   /**
-   * Giving a date to an undated expense moves it to that date's month.
-   * Clearing the date keeps the expense in the month it currently belongs
-   * to (the undated↔undated month move is deliberately not a thing —
-   * ticket 15). Fires learning with the final title/category.
+   * Changing the date re-derives monthKey from the new date. Fires
+   * learning with the final title/category.
    */
   update(userId: string, id: string, input: UpdateExpenseInput): Promise<Expense>;
   /** Free delete; learning is never rolled back (ticket 06). */
   remove(userId: string, id: string): Promise<void>;
-  /** A month's ledger: undated expenses first (the «بدون تاریخ» chip is the
-   * UI's), then by occurrence date, insertion order as the tie-break. */
+  /** A month's ledger, chronological by occurrence date, insertion order
+   * as the tie-break. */
   listByMonth(userId: string, monthKey: string): Promise<ExpenseWithEventTitle[]>;
   /** All-time expense count per category (the categories page's delete
    * guard, ticket 28): missing key = zero. Aggregation lives in SQL. */
@@ -223,13 +211,11 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       return { ...row.expense, category: row.category };
     },
 
-    async create(userId, input, entryMonthKey) {
+    async create(userId, input) {
       const data = parseOrThrow(createExpenseInputSchema, input, "expense input");
-      parseOrThrow(jalaliMonthKeySchema, entryMonthKey, "entry month");
       await getOwnedCategory(db, userId, data.categoryId);
       const eventId = await resolveEventId(userId, data.eventId);
 
-      const occurredAt = data.occurredAt ?? null;
       const now = new Date();
       const [expense] = await db
         .insert(expenses)
@@ -241,9 +227,8 @@ export function createExpenseService(db: DomainDb): ExpenseService {
           title: data.title,
           note: data.note ?? null,
           categoryId: data.categoryId,
-          occurredAt,
-          // dated → derived from the date; undated → the form's month
-          monthKey: occurredAt === null ? entryMonthKey : monthKeyOf(occurredAt),
+          occurredAt: data.occurredAt,
+          monthKey: monthKeyOf(data.occurredAt),
           sourceRecurringId: null,
           eventId,
           userId,
@@ -276,11 +261,8 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         throw new ValidationError("piece quantity must be an integer");
       }
 
-      const occurredAt =
-        data.occurredAt !== undefined ? (data.occurredAt ?? null) : existing.occurredAt;
-      // Undated keeps the month it is in; dated always follows its date.
-      const monthKey =
-        occurredAt === null ? existing.monthKey : monthKeyOf(occurredAt);
+      const occurredAt = data.occurredAt ?? existing.occurredAt;
+      const monthKey = monthKeyOf(occurredAt);
 
       const set: {
         amountToman?: number;
@@ -335,8 +317,6 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         .innerJoin(categories, eq(categories.id, expenses.categoryId))
         .leftJoin(events, eq(events.id, expenses.eventId))
         .where(and(eq(expenses.userId, userId), eq(expenses.monthKey, monthKey)))
-        // SQLite ASC sorts NULL first — undated on top of the ledger, then
-        // chronological (ticket 15's display order).
         .orderBy(asc(expenses.occurredAt), asc(expenses.createdAt), asc(expenses.id));
 
       return rows.map((row) => ({

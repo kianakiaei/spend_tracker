@@ -6,7 +6,7 @@ import type { DomainDb } from "./types";
 export interface InsightsPoint {
   expenseId: string;
   monthKey: string;
-  occurredAt: string | null;
+  occurredAt: string;
   unitPrice: number;
   quantity: number;
   amountToman: number;
@@ -80,8 +80,8 @@ export function createInsightsService(db: DomainDb) {
     for (const [key, list] of groups) {
       if (list.length < 2) continue;
       const sorted = [...list].sort((a, b) => {
-        const da = a.occurredAt ?? "";
-        const dbb = b.occurredAt ?? "";
+        const da = a.occurredAt;
+        const dbb = b.occurredAt;
         if (da !== dbb) return da < dbb ? -1 : 1;
         return (
           a.createdAt.getTime() - b.createdAt.getTime() ||
@@ -166,8 +166,8 @@ export function createInsightsService(db: DomainDb) {
     for (const [key, list] of groups) {
       if (list.length < 2) continue;
       const sorted = [...list].sort((a, b) => {
-        const da = a.occurredAt ?? "";
-        const dbb = b.occurredAt ?? "";
+        const da = a.occurredAt;
+        const dbb = b.occurredAt;
         if (da !== dbb) return da < dbb ? -1 : 1;
         return (
           a.createdAt.getTime() - b.createdAt.getTime() ||

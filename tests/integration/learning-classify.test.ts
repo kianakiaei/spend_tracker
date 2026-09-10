@@ -44,7 +44,7 @@ async function create(
 ) {
   return expensesService.create(
     userId,
-    { amountToman, title, categoryId: await systemCategory(userId, slug) },
+    { amountToman, title, categoryId: await systemCategory(userId, slug), occurredAt: "2026-08-23" },
     "1405-06",
   );
 }

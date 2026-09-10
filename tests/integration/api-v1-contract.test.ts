@@ -41,6 +41,7 @@ const classifyRoute = await import("@/app/api/v1/classify/route");
 const { systemCategoryBySlug, relativeMonthKeys } = await import(
   "../helpers/fixtures"
 );
+const { jalaliMonthBounds } = await import("@/lib/recurring");
 const { captureConsoleLines, emailedUrl, verifyEmail } = await import(
   "../helpers/verify-email"
 );
@@ -249,7 +250,7 @@ describe("problem+json validation errors", () => {
           amountToman: -5,
           title: "  ",
           categoryId: "nope",
-          entryMonthKey: "1405-13",
+          occurredAt: "1405-13",
         },
       }),
     );
@@ -258,7 +259,7 @@ describe("problem+json validation errors", () => {
     expect(paths).toContain("amountToman");
     expect(paths).toContain("title");
     expect(paths).toContain("categoryId");
-    expect(paths).toContain("entryMonthKey");
+    expect(paths).toContain("occurredAt");
     for (const entry of problem.errors ?? []) {
       expect(typeof entry.code).toBe("string");
       expect(typeof entry.message).toBe("string");
@@ -297,7 +298,6 @@ describe("expenses resource", () => {
           title: "نان سنگک",
           categoryId: groceries.id,
           occurredAt: "2026-01-15",
-          entryMonthKey: CURRENT,
         },
       }),
     );
@@ -316,8 +316,9 @@ describe("expenses resource", () => {
     // GET [id]'s and listByMonth's (asserted below).
   });
 
-  it("POST creates an undated expense as a member of the form's month (ticket 15)", async () => {
+  it("POST creates an expense in the month of its occurrence date", async () => {
     const groceries = await systemCategoryBySlug(db, sessionA.userId, "groceries");
+    const occurredAt = jalaliMonthBounds(PREV).startISO;
     const res = await expensesRoute.POST(
       v1Request("/expenses", {
         method: "POST",
@@ -326,15 +327,14 @@ describe("expenses resource", () => {
           amountToman: 10000,
           title: "خرید سر کوچه",
           categoryId: groceries.id,
-          occurredAt: null,
-          entryMonthKey: PREV,
+          occurredAt,
         },
       }),
     );
     expect(res.status).toBe(201);
-    const expense = (await res.json()) as { monthKey: string; occurredAt: string | null };
+    const expense = (await res.json()) as { monthKey: string; occurredAt: string };
     expect(expense.monthKey).toBe(PREV);
-    expect(expense.occurredAt).toBeNull();
+    expect(expense.occurredAt).toBe(occurredAt);
   });
 
   it("GET ?month= lists the month's ledger with each expense's category", async () => {
@@ -364,6 +364,7 @@ describe("expenses resource", () => {
         amountToman: 1000,
         title: "تنها برای خواندن id",
         categoryId: (await systemCategoryBySlug(db, sessionA.userId, "bills-internet")).id,
+        occurredAt: jalaliMonthBounds(CURRENT).startISO,
       },
       CURRENT,
     );
@@ -397,7 +398,7 @@ describe("expenses resource", () => {
     const { createExpenseService } = await import("@/lib/services");
     const expense = await createExpenseService(db).create(
       sessionA.userId,
-      { amountToman: 5000, title: "پیش از ویرایش", categoryId: groceries.id },
+      { amountToman: 5000, title: "پیش از ویرایش", categoryId: groceries.id, occurredAt: jalaliMonthBounds(CURRENT).startISO },
       CURRENT,
     );
 
@@ -430,7 +431,7 @@ describe("expenses resource", () => {
     const { createExpenseService } = await import("@/lib/services");
     const expense = await createExpenseService(db).create(
       sessionA.userId,
-      { amountToman: 2000, title: "برای حذف", categoryId: groceries.id },
+      { amountToman: 2000, title: "برای حذف", categoryId: groceries.id, occurredAt: jalaliMonthBounds(CURRENT).startISO },
       CURRENT,
     );
 
@@ -540,7 +541,7 @@ describe("categories resource", () => {
           amountToman: 3000,
           title: "ساکن دسته",
           categoryId: busy.id,
-          entryMonthKey: CURRENT,
+          occurredAt: jalaliMonthBounds(CURRENT).startISO,
         },
       }),
     );
@@ -630,7 +631,7 @@ describe("categories resource", () => {
             amountToman: amount,
             title: "ساکن انتقال",
             categoryId: from.id,
-            entryMonthKey: CURRENT,
+            occurredAt: jalaliMonthBounds(CURRENT).startISO,
           },
         }),
       );
@@ -752,7 +753,7 @@ describe("events resource", () => {
           title: "زیر سفر",
           categoryId: groceries.id,
           eventId: event.id,
-          entryMonthKey: CURRENT,
+          occurredAt: jalaliMonthBounds(CURRENT).startISO,
         },
       }),
     );
@@ -800,7 +801,6 @@ describe("GET /search — the whole-ledger title search", () => {
           title: "نان سنگک",
           categoryId: groceries.id,
           occurredAt: "2026-08-25",
-          entryMonthKey: CURRENT,
         },
       }),
     );
@@ -883,7 +883,7 @@ describe("POST /classify — the side-effect-free suggestion", () => {
           amountToman: 65000,
           title: "کافه لاته",
           categoryId: cafe.id,
-          entryMonthKey: CURRENT,
+          occurredAt: jalaliMonthBounds(CURRENT).startISO,
         },
       }),
     );
@@ -943,7 +943,7 @@ describe("mutation response bodies match the shared schemas (ticket 30)", () => 
           amountToman: 42000,
           title: "قرارداد رگرسیون",
           categoryId: groceries.id,
-          entryMonthKey: CURRENT,
+          occurredAt: jalaliMonthBounds(CURRENT).startISO,
         },
       }),
     );
@@ -966,7 +966,7 @@ describe("mutation response bodies match the shared schemas (ticket 30)", () => 
     );
     const expense = await createExpenseService(db).create(
       sessionA.userId,
-      { amountToman: 5000, title: "پیش از پچ", categoryId: groceries.id },
+      { amountToman: 5000, title: "پیش از پچ", categoryId: groceries.id, occurredAt: jalaliMonthBounds(CURRENT).startISO },
       CURRENT,
     );
     const res = await expenseIdRoute.PATCH(

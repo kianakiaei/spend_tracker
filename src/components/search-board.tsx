@@ -12,15 +12,34 @@ import {
   toPersianDigits,
 } from "@/lib/jalali";
 import type { SearchResultDto } from "@/lib/schemas";
+import type { SheetExpense } from "./expense-sheet/provider";
+import { useExpenseSheet } from "./expense-sheet/provider";
 import { TAG_EVENT_CLASS } from "./tag";
 
 // The search results list (تیکت جست‌وجو): the user types an item and sees
 // every purchase of it across ALL months — which Jalali month it landed in
 // and for how much. The query filter runs client-side against the canonical
 // form so «شير» still matches «شیر»; the server already applied the same
-// rule to the fetched page.
+// rule to the fetched page. A click opens the same edit sheet as the home
+// ledger.
+
+function toSheetExpense(hit: SearchResultDto): SheetExpense {
+  return {
+    id: hit.expenseId,
+    title: hit.title,
+    amountToman: hit.amountToman,
+    quantity: hit.quantity,
+    unit: hit.unit,
+    occurredAt: hit.occurredAt,
+    monthKey: hit.monthKey,
+    categoryId: hit.categoryId,
+    eventId: hit.eventId,
+    sourceRecurringId: hit.sourceRecurringId,
+  };
+}
 
 export function SearchBoard({ results }: { results: SearchResultDto[] }) {
+  const { openEdit } = useExpenseSheet();
   const [query, setQuery] = useState("");
 
   const hits = useMemo(() => {
@@ -73,35 +92,34 @@ export function SearchBoard({ results }: { results: SearchResultDto[] }) {
           {hits.map((hit) => {
             const label = jalaliMonthLabel(fromJalaliMonthKey(hit.monthKey));
             return (
-              <li
-                key={hit.expenseId}
-                className="flex items-center justify-between gap-3 border-b border-rule py-2.5"
-              >
-                <span className="flex min-w-0 flex-col gap-0.5">
-                  <span className="truncate text-[13.5px] font-semibold">
-                    {hit.title}
-                  </span>
-                  <span className="flex flex-wrap items-center gap-2 text-[11.5px] text-ink-muted">
-                    <span className="inline-flex items-center rounded-full border border-rule bg-panel px-2 py-0.5 text-[11px]">
-                      {hit.categoryName}
+              <li key={hit.expenseId} className="border-b border-rule">
+                <button
+                  type="button"
+                  onClick={() => openEdit(toSheetExpense(hit))}
+                  className="flex w-full items-center justify-between gap-3 rounded-lg py-2.5 text-start hover:bg-accent-soft"
+                >
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className="truncate text-[13.5px] font-semibold">
+                      {hit.title}
                     </span>
-                    {hit.eventTitle !== null && (
-                      <span className={TAG_EVENT_CLASS}>{hit.eventTitle}</span>
-                    )}
-                    {label}
-                    {hit.occurredAt !== null && (
-                      <span>
-                        {formatJalali(fromISODate(hit.occurredAt), "d MMMM")}
+                    <span className="flex flex-wrap items-center gap-2 text-[11.5px] text-ink-muted">
+                      <span className="inline-flex items-center rounded-full border border-rule bg-panel px-2 py-0.5 text-[11px]">
+                        {hit.categoryName}
                       </span>
-                    )}
+                      {hit.eventTitle !== null && (
+                        <span className={TAG_EVENT_CLASS}>{hit.eventTitle}</span>
+                      )}
+                      {label}
+                      {formatJalali(fromISODate(hit.occurredAt), "d MMMM")}
+                    </span>
                   </span>
-                </span>
-                <span className="whitespace-nowrap text-[13.5px] font-bold">
-                  {formatToman(hit.amountToman)}
-                  <span className="ms-1 text-[11.5px] font-medium text-ink-muted">
-                    · {toPersianDigits(hit.quantity)} عدد
+                  <span className="whitespace-nowrap text-[13.5px] font-bold">
+                    {formatToman(hit.amountToman)}
+                    <span className="ms-1 text-[11.5px] font-medium text-ink-muted">
+                      · {toPersianDigits(hit.quantity)} عدد
+                    </span>
                   </span>
-                </span>
+                </button>
               </li>
             );
           })}

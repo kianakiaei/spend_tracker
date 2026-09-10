@@ -9,8 +9,6 @@ import {
   formatToman,
   jalaliMonthKeyLabel,
   jalaliMonthNameFromKey,
-  toISODate,
-  fromJalaliMonthKey,
   toPersianDigits,
 } from "@/lib/jalali";
 import type { AllTimeProductInsight } from "@/lib/services";
@@ -21,11 +19,8 @@ interface MonthBucket {
   avgUnitPrice: number;
 }
 
-function purchaseSortKey(pt: { occurredAt: string | null; monthKey: string }): string {
-  // Dated rows use the stored Gregorian day; undated ones sit on the first
-  // day of their Jalali month so they still interleave by time (newest first).
-  if (pt.occurredAt) return pt.occurredAt;
-  return toISODate(fromJalaliMonthKey(pt.monthKey));
+function purchaseSortKey(pt: { occurredAt: string }): string {
+  return pt.occurredAt;
 }
 
 function MonthlyChart({
@@ -376,18 +371,10 @@ export function InsightsBoard({
                     >
                       <span className="flex min-w-0 flex-col gap-0.5">
                         <span className="text-[13px] font-semibold">
-                          {pt.occurredAt
-                            ? formatJalaliISODate(pt.occurredAt)
-                            : label}
+                          {formatJalaliISODate(pt.occurredAt)}
                         </span>
                         <span className="text-[11.5px] text-ink-muted">
-                          {pt.occurredAt ? (
-                            label
-                          ) : (
-                            <span className="inline-flex items-center rounded-full border border-rule bg-panel px-2 py-0.5 text-[11px]">
-                              بدون تاریخ
-                            </span>
-                          )}
+                          {label}
                         </span>
                       </span>
                       <span className="whitespace-nowrap text-[13.5px] font-bold">

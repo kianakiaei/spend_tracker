@@ -95,6 +95,7 @@ describe("domain schema on local libSQL (ticket 19)", () => {
       title: "قسط وام",
       categoryId: category.id,
       monthKey: "1405-06",
+      occurredAt: "2026-08-23",
       sourceRecurringId,
       userId,
       createdAt: now,

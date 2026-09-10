@@ -51,7 +51,7 @@ const EXPENSE: ExpenseWithCategory = {
   title: "شارژ تاکسی",
   note: null,
   categoryId: CATEGORY.id,
-  occurredAt: null,
+  occurredAt: "2026-08-23",
   monthKey: "1405-06",
   sourceRecurringId: null,
   eventId: EVENT.id,

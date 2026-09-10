@@ -24,16 +24,12 @@ import type { SuggestionAnswer } from "@/lib/categorization/suggestion-engine";
 import type { ClientSuggestionEngine } from "@/lib/categorization/suggestion-engine";
 import type { ExpenseUnit } from "@/lib/schemas";
 import { api } from "@/lib/api/client";
-import {
-  currentTehranISODate,
-  formatToman,
-  fromISODate,
-  jalaliMonthKeyLabel,
-} from "@/lib/jalali";
+import { formatToman, fromISODate, jalaliMonthKeyLabel } from "@/lib/jalali";
 import { isoDateFromPicker } from "./picker-iso";
 import type { Category } from "@/lib/services";
 import type { SheetEventOption, SheetOpen } from "./provider";
 import {
+  defaultCreateDate,
   effectiveMonthKey,
   parseAmountInput,
   parseQuantityInput,
@@ -100,12 +96,8 @@ export function ExpenseSheet({
   // Quantity unit (عدد | کیلو) — weighed goods take decimals, pieces stay
   // whole (enforced below, mirroring the server's unit rule).
   const [unit, setUnit] = useState<ExpenseUnit>(expense?.unit ?? "piece");
-  // The date starts on today for a fresh record — but an edit opens
-  // exactly what the row has: a dateless (undated) row opens dateless, so
-  // saving its title/amount never drags it into another month (ticket 15:
-  // clearing never moves — only picking a date does).
-  const [date, setDate] = useState<string | null>(
-    expense?.occurredAt ?? (isEdit ? null : currentTehranISODate()),
+  const [date, setDate] = useState<string>(
+    expense?.occurredAt ?? defaultCreateDate(monthKey),
   );
   // Manual from the start when the category is a fact — an edit row's own
   // category or the drilldown's locked one (ticket 28).
@@ -154,9 +146,7 @@ export function ExpenseSheet({
     categories.find((c) => c.id === activeCategoryId) ?? categories[0];
   // The month this save will land in — the sheet's honest subtitle (a dated
   // expense always follows its own date, ticket 15).
-  const targetMonthLabel = jalaliMonthKeyLabel(
-    effectiveMonthKey(date, monthKey, expense?.monthKey),
-  );
+  const targetMonthLabel = jalaliMonthKeyLabel(effectiveMonthKey(date));
   const targetMonth = isEdit
     ? `ذخیره در ${targetMonthLabel}`
     : lockedCategory && lockedEvent
@@ -201,7 +191,6 @@ export function ExpenseSheet({
           categoryId: activeCategoryId,
           occurredAt: date,
           eventId: lockedEvent ? lockedEvent.id : eventId,
-          entryMonthKey: monthKey,
         });
       }
       onClose();
@@ -334,11 +323,11 @@ export function ExpenseSheet({
               تاریخ
             </span>
             <DatePicker
-              value={date ? fromISODate(date) : null}
+              value={fromISODate(date)}
               calendar={persian}
               locale={persian_fa}
               editable={false}
-              placeholder="بدون تاریخ"
+              placeholder="تاریخ"
               calendarPosition="top-start"
               // Portal out of the sheet: SheetPanel's overflow-auto would
               // otherwise clip the calendar (zIndex already tops the
@@ -350,15 +339,6 @@ export function ExpenseSheet({
                 if (value) setDate(isoDateFromPicker(value));
               }}
             />
-            {date !== null && (
-              <button
-                type="button"
-                onClick={() => setDate(null)}
-                className="mt-2 text-[12.5px] text-accent hover:underline"
-              >
-                حذف تاریخ
-              </button>
-            )}
           </div>
 
           <div className={FIELD_CLASS}>

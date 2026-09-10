@@ -21,8 +21,7 @@ import type { ExpenseUnit } from "@/lib/schemas";
 import type { RecurringForecastRow } from "@/lib/recurring";
 
 // The month's chronological rows (ticket 26's ledger, shared with ticket
-// 28's category drilldown): undated expenses on top (the «بدون تاریخ» chip
-// marks the block), then dated rows and forecast rows interleaved on the
+// 28's category drilldown): dated rows and forecast rows interleaved on the
 // Jalali day scale, recorded before forecast on a tie (stable sort) — the
 // resolved ticket-22 service order. An expense row opens the edit sheet;
 // a forecast row walks to the templates page with that template's edit
@@ -40,7 +39,7 @@ type LedgerEntry =
   | {
     kind: "expense";
     day: number;
-    expense: ExpenseWithEventTitle & { occurredAt: string };
+    expense: ExpenseWithEventTitle;
   }
   | { kind: "forecast"; day: number; forecast: RecurringForecastRow };
 
@@ -59,17 +58,11 @@ export function ExpenseRows({
 
   const colorOf = categoryColorMap(categories);
   const monthName = formatJalali(fromJalaliMonthKey(monthKey), "MMMM");
-  const undated = expenses.filter((e) => e.occurredAt === null);
-  const dated: LedgerEntry[] = expenses
-    .filter(
-      (e): e is ExpenseWithEventTitle & { occurredAt: string } =>
-        e.occurredAt !== null,
-    )
-    .map((expense) => ({
-      kind: "expense" as const,
-      day: jalaliDayOfMonth(fromISODate(expense.occurredAt)),
-      expense,
-    }));
+  const dated: LedgerEntry[] = expenses.map((expense) => ({
+    kind: "expense" as const,
+    day: jalaliDayOfMonth(fromISODate(expense.occurredAt)),
+    expense,
+  }));
   const forecastEntries: LedgerEntry[] = forecast.map((row) => ({
     kind: "forecast" as const,
     day: row.day,
@@ -77,82 +70,53 @@ export function ExpenseRows({
   }));
 
   return (
-    <>
-      {undated.length > 0 && (
-        <p className="mt-3">
-          <span className="inline-flex items-center rounded-full border border-rule bg-panel px-3 py-1 text-[13px]">
-            بدون تاریخ
-          </span>
-        </p>
-      )}
-      <ul>
-        {undated.map((expense) => (
-          <li key={expense.id} className={LI_CLASS}>
-            <button
-              type="button"
-              onClick={() => openEdit(expense)}
-              className={ROW_BUTTON_CLASS}
-            >
-              <LedgerRowBody
-                day="—"
-                title={expense.title}
-                color={expense.category.color}
-                tag={expense.sourceRecurringId !== null ? "از الگو" : null}
-                eventTitle={expense.eventTitle ?? null}
-                amountToman={expense.amountToman}
-                quantity={expense.quantity}
-                unit={expense.unit}
-              />
-            </button>
-          </li>
-        ))}
-        {[...dated, ...forecastEntries]
-          .sort((a, b) => a.day - b.day)
-          .map((entry) =>
-            entry.kind === "expense" ? (
-              <li key={entry.expense.id} className={LI_CLASS}>
-                <button
-                  type="button"
-                  onClick={() => openEdit(entry.expense)}
-                  className={ROW_BUTTON_CLASS}
-                >
-                  <LedgerRowBody
-                    day={formatJalali(fromISODate(entry.expense.occurredAt), "d MMMM")}
-                    title={entry.expense.title}
-                    color={entry.expense.category.color}
-                    tag={entry.expense.sourceRecurringId !== null ? "از الگو" : null}
-                    eventTitle={entry.expense.eventTitle ?? null}
-                    amountToman={entry.expense.amountToman}
-                    quantity={entry.expense.quantity}
-                    unit={entry.expense.unit}
-                  />
-                </button>
-              </li>
-            ) : (
-              <li key={entry.forecast.templateId} className={LI_CLASS}>
-                <Link
-                  href={`/templates?edit=${entry.forecast.templateId}`}
-                  className={`${ROW_CLASS} rounded-lg hover:bg-accent-soft`}
-                >
-                  <LedgerRowBody
-                    day={`${toPersianDigits(entry.forecast.day)} ${monthName}`}
-                    title={entry.forecast.title}
-                    color={colorOf.get(entry.forecast.categoryId) ?? null}
-                    tag="پیش‌بینی"
-                    amountToman={entry.forecast.amountToman}
-                  />
-                </Link>
-              </li>
-            ),
-          )}
-      </ul>
-    </>
+    <ul>
+      {[...dated, ...forecastEntries]
+        .sort((a, b) => a.day - b.day)
+        .map((entry) =>
+          entry.kind === "expense" ? (
+            <li key={entry.expense.id} className={LI_CLASS}>
+              <button
+                type="button"
+                onClick={() => openEdit(entry.expense)}
+                className={ROW_BUTTON_CLASS}
+              >
+                <LedgerRowBody
+                  day={formatJalali(fromISODate(entry.expense.occurredAt), "d MMMM")}
+                  title={entry.expense.title}
+                  color={entry.expense.category.color}
+                  tag={entry.expense.sourceRecurringId !== null ? "از الگو" : null}
+                  eventTitle={entry.expense.eventTitle ?? null}
+                  amountToman={entry.expense.amountToman}
+                  quantity={entry.expense.quantity}
+                  unit={entry.expense.unit}
+                />
+              </button>
+            </li>
+          ) : (
+            <li key={entry.forecast.templateId} className={LI_CLASS}>
+              <Link
+                href={`/templates?edit=${entry.forecast.templateId}`}
+                className={`${ROW_CLASS} rounded-lg hover:bg-accent-soft`}
+              >
+                <LedgerRowBody
+                  day={`${toPersianDigits(entry.forecast.day)} ${monthName}`}
+                  title={entry.forecast.title}
+                  color={colorOf.get(entry.forecast.categoryId) ?? null}
+                  tag="پیش‌بینی"
+                  amountToman={entry.forecast.amountToman}
+                />
+              </Link>
+            </li>
+          ),
+        )}
+    </ul>
   );
 }
 
 /** One shared row anatomy (ticket 26: «روز، عنوان + نقطهٔ دسته، از الگو،
- * مبلغ») — undated, dated and forecast rows all render through it. An
- * expense attached to a رویداد carries the event's name as a badge. */
+ * مبلغ») — recorded and forecast rows all render through it. An expense
+ * attached to a رویداد carries the event's name as a badge. */
 export function LedgerRowBody({
   day,
   title,

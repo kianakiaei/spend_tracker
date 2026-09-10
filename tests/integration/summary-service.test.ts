@@ -51,7 +51,7 @@ async function createExpense(
       amountToman: 250_000,
       title: "خرید هفتگی",
       categoryId: (await systemCategoryBySlug(fx.db, userId, "groceries")).id,
-      // dated inside the entry month; undated via the `over` escape hatch
+      // dated inside the month the helper is targeting
       occurredAt: jalaliMonthBounds(entryMonthKey).startISO,
       ...over,
     },
@@ -250,16 +250,16 @@ describe("summaryService.getSummary — future month: composite (decision 15)", 
     expect(summary.byCategory).toHaveLength(1);
   });
 
-  it("an undated expense is a member of its entry month (decision 15)", async () => {
+  it("an expense dated on a month's first day is a member of that month", async () => {
     const userId = await fx.signUp();
     const groceriesId = (await systemCategoryBySlug(fx.db, userId, "groceries")).id;
     await expensesService.create(
       userId,
       {
         amountToman: 75_000,
-        title: "خرج بی‌تاریخ",
+        title: "خرج اول ماه",
         categoryId: groceriesId,
-        occurredAt: null,
+        occurredAt: jalaliMonthBounds(NEXT).startISO,
       },
       NEXT,
     );

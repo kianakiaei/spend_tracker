@@ -17,7 +17,7 @@ function product(
     points: [
       { expenseId: "e1", monthKey: "1405-05", occurredAt: "2026-07-24", unitPrice: 25_000, quantity: 1, amountToman: 25_000 },
       { expenseId: "e2", monthKey: "1405-06", occurredAt: "2026-08-25", unitPrice: 30_000, quantity: 1, amountToman: 30_000 },
-      { expenseId: "e3", monthKey: "1405-06", occurredAt: null, unitPrice: 35_000, quantity: 1, amountToman: 35_000 },
+      { expenseId: "e3", monthKey: "1405-06", occurredAt: "2026-08-23", unitPrice: 35_000, quantity: 1, amountToman: 35_000 },
     ],
     ...overrides,
   };
@@ -80,8 +80,6 @@ describe("InsightsBoard search + purchase history", () => {
     // month label + amount of a dated purchase
     expect(history).toHaveTextContent("شهریور ۱۴۰۵");
     expect(history).toHaveTextContent("۲۵٬۰۰۰ تومان");
-    // undated purchase keeps its month with the «بدون تاریخ» chip
-    expect(history).toHaveTextContent("بدون تاریخ");
   });
 
   it("orders purchases newest first and keeps Jalali month labels on the key", () => {
@@ -89,7 +87,7 @@ describe("InsightsBoard search + purchase history", () => {
     const items = [...screen.getByRole("list", { name: "تاریخچه خریدها" }).querySelectorAll("li")];
     expect(items.map((li) => li.textContent)).toEqual([
       "۳ شهریور ۱۴۰۵شهریور ۱۴۰۵۳۰٬۰۰۰ تومان",
-      "شهریور ۱۴۰۵بدون تاریخ۳۵٬۰۰۰ تومان",
+      "۱ شهریور ۱۴۰۵شهریور ۱۴۰۵۳۵٬۰۰۰ تومان",
       "۲ مرداد ۱۴۰۵مرداد ۱۴۰۵۲۵٬۰۰۰ تومان",
     ]);
   });

@@ -33,7 +33,7 @@ export interface SheetExpense {
   amountToman: number;
   quantity: number;
   unit: ExpenseUnit;
-  occurredAt: string | null;
+  occurredAt: string;
   monthKey: string;
   categoryId: string;
   eventId: string | null;

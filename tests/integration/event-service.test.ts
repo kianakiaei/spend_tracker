@@ -99,12 +99,12 @@ describe("eventService CRUD", () => {
 
     const e1 = await expensesService.create(
       userId,
-      { amountToman: 10_000, title: "نان", categoryId: groceries, eventId: event.id },
+      { amountToman: 10_000, title: "نان", categoryId: groceries, occurredAt: "2026-08-23", eventId: event.id },
       "1405-06",
     );
     const e2 = await expensesService.create(
       userId,
-      { amountToman: 5_000, title: "شیر", categoryId: groceries },
+      { amountToman: 5_000, title: "شیر", categoryId: groceries, occurredAt: "2026-08-23" },
       "1405-06",
     );
 
@@ -144,7 +144,7 @@ describe("expense event membership", () => {
     await expect(
       expensesService.create(
         userId,
-        { amountToman: 1, title: "x", categoryId: groceries, eventId: newId() },
+        { amountToman: 1, title: "x", categoryId: groceries, occurredAt: "2026-08-23", eventId: newId() },
         "1405-06",
       ),
     ).rejects.toThrow(NotFoundError);
@@ -154,7 +154,7 @@ describe("expense event membership", () => {
     await expect(
       expensesService.create(
         userId,
-        { amountToman: 1, title: "x", categoryId: groceries, eventId: foreign.id },
+        { amountToman: 1, title: "x", categoryId: groceries, occurredAt: "2026-08-23", eventId: foreign.id },
         "1405-06",
       ),
     ).rejects.toThrow(NotFoundError);
@@ -168,7 +168,7 @@ describe("expense event membership", () => {
 
     const expense = await expensesService.create(
       userId,
-      { amountToman: 5_000, title: "شیر", categoryId: groceries, eventId: a.id },
+      { amountToman: 5_000, title: "شیر", categoryId: groceries, occurredAt: "2026-08-23", eventId: a.id },
       "1405-06",
     );
 
@@ -189,17 +189,17 @@ describe("event summary + expenses", () => {
 
     await expensesService.create(
       userId,
-      { amountToman: 100_000, title: "بنزین", categoryId: transport, eventId: event.id },
+      { amountToman: 100_000, title: "بنزین", categoryId: transport, occurredAt: "2026-08-23", eventId: event.id },
       "1405-06",
     );
     await expensesService.create(
       userId,
-      { amountToman: 50_000, title: "غذا", categoryId: groceries, eventId: event.id },
+      { amountToman: 50_000, title: "غذا", categoryId: groceries, occurredAt: "2026-08-23", eventId: event.id },
       "1405-06",
     );
     await expensesService.create(
       userId,
-      { amountToman: 9_000, title: "نان", categoryId: groceries },
+      { amountToman: 9_000, title: "نان", categoryId: groceries, occurredAt: "2026-08-23" },
       "1405-06",
     );
 
@@ -210,7 +210,7 @@ describe("event summary + expenses", () => {
     expect(rows).toHaveLength(2);
   });
 
-  it("listExpenses is newest first with undated last", async () => {
+  it("listExpenses is newest first", async () => {
     const userId = await fx.signUp();
     const groceries = await systemCategory(userId, "groceries");
     const event = await eventService.create(userId, { title: "سفر یزد" });
@@ -220,9 +220,9 @@ describe("event summary + expenses", () => {
       { amountToman: 1_000, title: "قدیم", categoryId: groceries, occurredAt: "2026-08-01", eventId: event.id },
       "1405-05",
     );
-    const undated = await expensesService.create(
+    const mid = await expensesService.create(
       userId,
-      { amountToman: 2_000, title: "بی‌تاریخ", categoryId: groceries, eventId: event.id },
+      { amountToman: 2_000, title: "میانه", categoryId: groceries, occurredAt: "2026-08-23", eventId: event.id },
       "1405-06",
     );
     const recent = await expensesService.create(
@@ -232,6 +232,6 @@ describe("event summary + expenses", () => {
     );
 
     const rows = await eventService.listExpenses(userId, event.id);
-    expect(rows.map((r) => r.id)).toEqual([recent.id, old.id, undated.id]);
+    expect(rows.map((r) => r.id)).toEqual([recent.id, mid.id, old.id]);
   });
 });
