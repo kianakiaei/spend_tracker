@@ -94,11 +94,12 @@ export function ExpenseSheet({
   // Quantity unit (عدد | کیلو) — weighed goods take decimals, pieces stay
   // whole (enforced below, mirroring the server's unit rule).
   const [unit, setUnit] = useState<ExpenseUnit>(expense?.unit ?? "piece");
-  // Create defaults: the date starts on today, always — one date field,
-  // no undated path (the sheet stays user-friendly: a single picker the
-  // user can change; a dated expense follows its own date).
-  const [date, setDate] = useState<string>(
-    expense?.occurredAt ?? currentTehranISODate(),
+  // The date starts on today for a fresh record — but an edit opens
+  // exactly what the row has: a dateless (undated) row opens dateless, so
+  // saving its title/amount never drags it into another month (ticket 15:
+  // clearing never moves — only picking a date does).
+  const [date, setDate] = useState<string | null>(
+    expense?.occurredAt ?? (isEdit ? null : currentTehranISODate()),
   );
   // Manual from the start when the category is a fact — an edit row's own
   // category or the drilldown's locked one (ticket 28).
@@ -316,11 +317,11 @@ export function ExpenseSheet({
               تاریخ
             </span>
             <DatePicker
-              value={fromISODate(date)}
+              value={date ? fromISODate(date) : null}
               calendar={persian}
               locale={persian_fa}
               editable={false}
-              placeholder="انتخاب تاریخ"
+              placeholder="بدون تاریخ"
               calendarPosition="top-start"
               // Portal out of the sheet: SheetPanel's overflow-auto would
               // otherwise clip the calendar (zIndex already tops the
@@ -332,6 +333,15 @@ export function ExpenseSheet({
                 if (value) setDate(toISODate(value.toDate()));
               }}
             />
+            {date !== null && (
+              <button
+                type="button"
+                onClick={() => setDate(null)}
+                className="mt-2 text-[12.5px] text-accent hover:underline"
+              >
+                حذف تاریخ
+              </button>
+            )}
           </div>
 
           <div className={FIELD_CLASS}>

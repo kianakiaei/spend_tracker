@@ -203,7 +203,7 @@ describe("amount field", () => {
   });
 });
 
-describe("date field (one picker, always dated)", () => {
+describe("date field (one picker, clearable)", () => {
   it("any month opens on today — no undated chip anymore", async () => {
     await openCreate(otherMonth);
     expect(
@@ -298,12 +298,29 @@ describe("edit sheet from a ledger row", () => {
           unit: "piece",
           title: "شارژ تاکسی",
           categoryId: GROCERIES.id,
-          // legacy undated rows open on today and save dated from here
-          occurredAt: currentTehranISODate(),
+          // the dateless row stays dateless — the edit never moves months
+          occurredAt: null,
         },
       ),
     );
     await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
+  it("an undated row opens dateless and keeps its own month subtitle", async () => {
+    renderEdit(UNDATED);
+
+    fireEvent.click(screen.getByRole("button", { name: /شارژ تاکسی/ }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+
+    // no date adopted: the picker is empty with the dateless placeholder,
+    // and the subtitle still names the row's own month (1405-05 = مرداد)
+    expect(screen.getByPlaceholderText("بدون تاریخ")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "حذف تاریخ" })).not.toBeInTheDocument();
+    expect(
+      screen.getByText(
+        `ذخیره در ${jalaliMonthLabel(fromJalaliMonthKey(UNDATED.monthKey))}`,
+      ),
+    ).toBeInTheDocument();
   });
 
   it("deletes behind an inline confirm", async () => {
