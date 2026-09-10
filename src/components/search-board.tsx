@@ -7,8 +7,7 @@ import {
   formatJalali,
   formatToman,
   fromISODate,
-  fromJalaliMonthKey,
-  jalaliMonthLabel,
+  jalaliMonthKeyLabel,
   toPersianDigits,
 } from "@/lib/jalali";
 import type { SearchResultDto } from "@/lib/schemas";
@@ -90,7 +89,10 @@ export function SearchBoard({ results }: { results: SearchResultDto[] }) {
       ) : (
         <ul aria-label="نتایج جست‌وجو" className="mt-4">
           {hits.map((hit) => {
-            const label = jalaliMonthLabel(fromJalaliMonthKey(hit.monthKey));
+            // Date-free month label: jalaliMonthLabel(fromJalaliMonthKey(key))
+            // routes through local midnight, which can slip a month when the
+            // server and browser timezones disagree (hydration mismatch).
+            const label = jalaliMonthKeyLabel(hit.monthKey);
             return (
               <li key={hit.expenseId} className="border-b border-rule">
                 <button
