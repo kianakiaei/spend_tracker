@@ -44,7 +44,12 @@ export function EventDetailPanel({
         >
           <ExpenseRows
             monthKey={monthKey}
-            expenses={expenses}
+            expenses={expenses.map((e) => ({
+              ...e,
+              // Every row here already belongs to this page's event — a
+              // رویداد badge would be redundant noise, so it stays off.
+              eventTitle: null,
+            }))}
             forecast={[]}
             categories={categories}
           />

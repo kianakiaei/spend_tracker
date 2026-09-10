@@ -1,5 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { newId } from "@/lib/id";
+import { createEventService } from "@/lib/services/event-service";
 import { createExpenseService } from "@/lib/services/expense-service";
 import { systemCategoryBySlug } from "../helpers/fixtures";
 import { setupIntegrationDb } from "../helpers/integration";
@@ -150,5 +151,35 @@ describe("expenseService.searchByTitle", () => {
     // IDs are unique per hit
     expect(new Set(hits.map((h) => h.expenseId)).size).toBe(hits.length);
     expect(newId()).toBeTruthy();
+  });
+
+  it("carries the event name for expenses attached to a رویداد", async () => {
+    const userId = await fx.signUp();
+    const groceries = await systemCategoryBySlug(fx.db, userId, "groceries");
+    const event = await createEventService(fx.db).create(userId, {
+      title: "سفر شمال",
+    });
+    await expensesService.create(
+      userId,
+      {
+        title: "بلیط قطار",
+        amountToman: 850_000,
+        categoryId: groceries.id,
+        occurredAt: "2026-08-25", // 1405-06
+        eventId: event.id,
+      },
+      "1405-06",
+    );
+    await seedExpense(userId, { title: "بلیط هواپیما", amountToman: 900_000 });
+
+    const hits = await expensesService.searchByTitle(userId, "بلیط");
+    expect(
+      Object.fromEntries(hits.map((h) => [h.title, h.eventTitle])),
+    ).toEqual({ "بلیط قطار": "سفر شمال", "بلیط هواپیما": null });
+
+    const ledger = await expensesService.listByMonth(userId, "1405-06");
+    expect(
+      Object.fromEntries(ledger.map((e) => [e.title, e.eventTitle])),
+    ).toEqual({ "بلیط قطار": "سفر شمال", "بلیط هواپیما": null });
   });
 });

@@ -98,7 +98,7 @@ function renderEdit(expense: ExpenseWithCategory) {
     >
       <Ledger
         monthKey={expense.monthKey}
-        expenses={[expense]}
+        expenses={[{ ...expense, eventTitle: null }]}
         forecast={[]}
         categories={CATEGORIES}
       />

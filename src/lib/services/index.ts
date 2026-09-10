@@ -46,6 +46,7 @@ export type {
   DomainDb,
   Expense,
   ExpenseWithCategory,
+  ExpenseWithEventTitle,
   RecurringTemplate,
 } from "./types";
 export type {

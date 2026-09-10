@@ -3,13 +3,14 @@
 import { ExpenseRows } from "./expense-rows";
 import { useExpenseSheet } from "./expense-sheet/provider";
 import { jalaliMonthLabel, fromJalaliMonthKey } from "@/lib/jalali";
-import type { Category, ExpenseWithCategory } from "@/lib/services";
+import type { Category, ExpenseWithEventTitle } from "@/lib/services";
 import type { RecurringForecastRow } from "@/lib/recurring";
 
 // The drilldown's interactive half (ticket 28): the «افزودن به این دسته»
 // row opens the sheet with the category LOCKED (the ticket-27 handoff),
 // and below it the same ledger anatomy the dashboard uses — an expense
 // row opens the edit sheet, a forecast row walks to the templates page.
+// A row attached to a رویداد wears its name as a badge.
 
 export function CategoryDrilldownPanel({
   monthKey,
@@ -21,7 +22,7 @@ export function CategoryDrilldownPanel({
 }: {
   monthKey: string;
   category: Category;
-  expenses: ExpenseWithCategory[];
+  expenses: ExpenseWithEventTitle[];
   forecast: RecurringForecastRow[];
   categories: Category[];
   eventId?: string;

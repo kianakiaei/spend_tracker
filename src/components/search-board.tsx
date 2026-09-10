@@ -12,6 +12,7 @@ import {
   toPersianDigits,
 } from "@/lib/jalali";
 import type { SearchResultDto } from "@/lib/schemas";
+import { TAG_EVENT_CLASS } from "./tag";
 
 // The search results list (تیکت جست‌وجو): the user types an item and sees
 // every purchase of it across ALL months — which Jalali month it landed in
@@ -84,6 +85,9 @@ export function SearchBoard({ results }: { results: SearchResultDto[] }) {
                     <span className="inline-flex items-center rounded-full border border-rule bg-panel px-2 py-0.5 text-[11px]">
                       {hit.categoryName}
                     </span>
+                    {hit.eventTitle !== null && (
+                      <span className={TAG_EVENT_CLASS}>{hit.eventTitle}</span>
+                    )}
                     {label}
                     {hit.occurredAt !== null && (
                       <span>

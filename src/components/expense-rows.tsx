@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { CategoryDot, categoryColorMap } from "./category-color";
 import { useExpenseSheet } from "./expense-sheet/provider";
-import { Tag } from "./tag";
+import { Tag, TAG_EVENT_CLASS } from "./tag";
 import { formatNumber } from "@/lib/format";
 import {
   formatJalali,
@@ -13,7 +13,10 @@ import {
   jalaliDayOfMonth,
   toPersianDigits,
 } from "@/lib/jalali";
-import type { Category, ExpenseWithCategory } from "@/lib/services";
+import type {
+  Category,
+  ExpenseWithEventTitle,
+} from "@/lib/services";
 import type { ExpenseUnit } from "@/lib/schemas";
 import type { RecurringForecastRow } from "@/lib/recurring";
 
@@ -34,7 +37,11 @@ const AMOUNT_CLASS = "whitespace-nowrap text-[13.5px] font-bold tabular-nums";
 /** Chronological entries: dated recorded rows and forecast rows on the same
  * Jalali day scale. */
 type LedgerEntry =
-  | { kind: "expense"; day: number; expense: ExpenseWithCategory & { occurredAt: string } }
+  | {
+    kind: "expense";
+    day: number;
+    expense: ExpenseWithEventTitle & { occurredAt: string };
+  }
   | { kind: "forecast"; day: number; forecast: RecurringForecastRow };
 
 export function ExpenseRows({
@@ -44,7 +51,7 @@ export function ExpenseRows({
   categories,
 }: {
   monthKey: string;
-  expenses: ExpenseWithCategory[];
+  expenses: ExpenseWithEventTitle[];
   forecast: RecurringForecastRow[];
   categories: Category[];
 }) {
@@ -54,7 +61,10 @@ export function ExpenseRows({
   const monthName = formatJalali(fromJalaliMonthKey(monthKey), "MMMM");
   const undated = expenses.filter((e) => e.occurredAt === null);
   const dated: LedgerEntry[] = expenses
-    .filter((e): e is ExpenseWithCategory & { occurredAt: string } => e.occurredAt !== null)
+    .filter(
+      (e): e is ExpenseWithEventTitle & { occurredAt: string } =>
+        e.occurredAt !== null,
+    )
     .map((expense) => ({
       kind: "expense" as const,
       day: jalaliDayOfMonth(fromISODate(expense.occurredAt)),
@@ -88,6 +98,7 @@ export function ExpenseRows({
                 title={expense.title}
                 color={expense.category.color}
                 tag={expense.sourceRecurringId !== null ? "از الگو" : null}
+                eventTitle={expense.eventTitle ?? null}
                 amountToman={expense.amountToman}
                 quantity={expense.quantity}
                 unit={expense.unit}
@@ -110,6 +121,7 @@ export function ExpenseRows({
                     title={entry.expense.title}
                     color={entry.expense.category.color}
                     tag={entry.expense.sourceRecurringId !== null ? "از الگو" : null}
+                    eventTitle={entry.expense.eventTitle ?? null}
                     amountToman={entry.expense.amountToman}
                     quantity={entry.expense.quantity}
                     unit={entry.expense.unit}
@@ -139,12 +151,14 @@ export function ExpenseRows({
 }
 
 /** One shared row anatomy (ticket 26: «روز، عنوان + نقطهٔ دسته، از الگو،
- * مبلغ») — undated, dated and forecast rows all render through it. */
+ * مبلغ») — undated, dated and forecast rows all render through it. An
+ * expense attached to a رویداد carries the event's name as a badge. */
 export function LedgerRowBody({
   day,
   title,
   color,
   tag,
+  eventTitle = null,
   amountToman,
   quantity = 1,
   unit = "piece",
@@ -153,6 +167,7 @@ export function LedgerRowBody({
   title: string;
   color: string | null;
   tag: string | null;
+  eventTitle?: string | null;
   amountToman: number;
   quantity?: number;
   unit?: ExpenseUnit;
@@ -167,6 +182,9 @@ export function LedgerRowBody({
           <CategoryDot color={color} />
           <span className="truncate">{title}</span>
           {tag && <Tag>{tag}</Tag>}
+          {eventTitle && (
+            <span className={TAG_EVENT_CLASS}>{eventTitle}</span>
+          )}
         </span>
         {(qty !== 1 || isKg) && (
           <span className="mt-0.5 text-[11.5px] text-ink-muted">

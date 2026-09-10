@@ -21,7 +21,12 @@ import { NotFoundError, ValidationError } from "./errors";
 import { learnOnSave } from "./learning";
 import { parseOrThrow } from "./parse";
 import { ensureRecurringExpensesGenerated } from "./recurring-service";
-import type { DomainDb, Expense, ExpenseWithCategory } from "./types";
+import type {
+  DomainDb,
+  Expense,
+  ExpenseWithCategory,
+  ExpenseWithEventTitle,
+} from "./types";
 
 // Expense service (ticket 22): create/update/delete are free — NO date
 // constraints at all, past/future/undated all allowed (ticket 15). The only
@@ -44,11 +49,14 @@ export interface SearchResult {
   occurredAt: string | null;
   categoryName: string;
   categoryId: string;
+  /** The رویداد the expense belongs to — null when unattached. */
+  eventTitle: string | null;
 }
 
 function toSearchResult(row: {
   expense: Expense;
   category: { id: string; name: string };
+  event: { title: string } | null;
 }): SearchResult {
   return {
     expenseId: row.expense.id,
@@ -59,6 +67,7 @@ function toSearchResult(row: {
     occurredAt: row.expense.occurredAt,
     categoryName: row.category.name,
     categoryId: row.category.id,
+    eventTitle: row.event?.title ?? null,
   };
 }
 
@@ -159,7 +168,7 @@ export interface ExpenseService {
   remove(userId: string, id: string): Promise<void>;
   /** A month's ledger: undated expenses first (the «بدون تاریخ» chip is the
    * UI's), then by occurrence date, insertion order as the tie-break. */
-  listByMonth(userId: string, monthKey: string): Promise<ExpenseWithCategory[]>;
+  listByMonth(userId: string, monthKey: string): Promise<ExpenseWithEventTitle[]>;
   /** All-time expense count per category (the categories page's delete
    * guard, ticket 28): missing key = zero. Aggregation lives in SQL. */
   countByCategory(userId: string): Promise<Record<string, number>>;
@@ -321,15 +330,20 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       }
 
       const rows = await db
-        .select({ expense: expenses, category: categories })
+        .select({ expense: expenses, category: categories, event: events })
         .from(expenses)
         .innerJoin(categories, eq(categories.id, expenses.categoryId))
+        .leftJoin(events, eq(events.id, expenses.eventId))
         .where(and(eq(expenses.userId, userId), eq(expenses.monthKey, monthKey)))
         // SQLite ASC sorts NULL first — undated on top of the ledger, then
         // chronological (ticket 15's display order).
         .orderBy(asc(expenses.occurredAt), asc(expenses.createdAt), asc(expenses.id));
 
-      return rows.map((row) => ({ ...row.expense, category: row.category }));
+      return rows.map((row) => ({
+        ...row.expense,
+        category: row.category,
+        eventTitle: row.event?.title ?? null,
+      }));
     },
 
     async countByCategory(userId) {
@@ -349,9 +363,10 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       // mobile search's q="" case). One screen's worth is returned — same cap
       // as a search.
       const rows = await db
-        .select({ expense: expenses, category: categories })
+        .select({ expense: expenses, category: categories, event: events })
         .from(expenses)
         .innerJoin(categories, eq(categories.id, expenses.categoryId))
+        .leftJoin(events, eq(events.id, expenses.eventId))
         .where(eq(expenses.userId, userId))
         .orderBy(
           desc(expenses.monthKey),

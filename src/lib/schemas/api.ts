@@ -198,6 +198,8 @@ export const searchResultResponseSchema = z.object({
   occurredAt: dateOnlySchema.nullable(),
   categoryName: z.string(),
   categoryId: uuidv7Schema,
+  /** The رویداد the expense belongs to — null when unattached. */
+  eventTitle: z.string().nullable(),
 });
 
 /** POST /api/v1/classify — always 200 on a valid title; the fallback answer

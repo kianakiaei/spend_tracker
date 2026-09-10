@@ -20,6 +20,7 @@ function hit(
     occurredAt: "2026-07-24",
     categoryName: "خوراکی",
     categoryId: "c1",
+    eventTitle: null,
     ...overrides,
   };
 }
@@ -41,6 +42,7 @@ const RESULTS: SearchResultDto[] = [
     monthKey: "1405-06",
     occurredAt: "2026-08-26",
     categoryName: "خوراکی",
+    eventTitle: "سفر شمال",
   }),
 ];
 
@@ -56,6 +58,13 @@ describe("SearchBoard", () => {
     expect(list.querySelectorAll("li")).toHaveLength(3);
     expect(list).toHaveTextContent("۲۵٬۰۰۰ تومان");
     expect(list).toHaveTextContent("مرداد ۱۴۰۵");
+  });
+
+  it("marks a hit attached to a رویداد with the event's name badge", () => {
+    render(<SearchBoard results={RESULTS} />);
+    expect(screen.getByText("سفر شمال")).toBeInTheDocument();
+    // The unattached hits render no badge text of their own.
+    expect(screen.getAllByText("نان سنگک")).toHaveLength(1);
   });
 
   it("narrows hits as the user types", () => {
