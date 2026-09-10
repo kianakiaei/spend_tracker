@@ -13,6 +13,7 @@ import {
   jalaliDaysInMonth,
   jalaliIntlDate,
   jalaliMonthKey,
+  jalaliMonthKeyLabel,
   jalaliMonthLabel,
   startOfJalaliMonth,
   shiftJalaliMonthKey,
@@ -164,6 +165,9 @@ describe("jalali display (fa-IR)", () => {
   it("labels the month as 'name + year' and the day as 'weekday + day + month'", () => {
     expect(jalaliMonthLabel(shahrivar15)).toBe("شهریور ۱۴۰۵");
     expect(jalaliMonthLabel(fromISODate("2026-03-21"))).toBe("فروردین ۱۴۰۵");
+    expect(jalaliMonthKeyLabel("1405-06")).toBe("شهریور ۱۴۰۵");
+    expect(jalaliMonthKeyLabel("1405-02")).toBe("اردیبهشت ۱۴۰۵");
+    expect(jalaliMonthKeyLabel("1405-01")).toBe("فروردین ۱۴۰۵");
     expect(jalaliDayLabel(shahrivar15)).toBe("یک‌شنبه ۱۵ شهریور");
   });
 

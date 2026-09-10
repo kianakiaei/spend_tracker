@@ -28,10 +28,9 @@ import {
   currentTehranISODate,
   formatToman,
   fromISODate,
-  fromJalaliMonthKey,
-  jalaliMonthLabel,
-  toISODate,
+  jalaliMonthKeyLabel,
 } from "@/lib/jalali";
+import { isoDateFromPicker } from "./picker-iso";
 import type { Category } from "@/lib/services";
 import type { SheetEventOption, SheetOpen } from "./provider";
 import {
@@ -155,8 +154,8 @@ export function ExpenseSheet({
     categories.find((c) => c.id === activeCategoryId) ?? categories[0];
   // The month this save will land in — the sheet's honest subtitle (a dated
   // expense always follows its own date, ticket 15).
-  const targetMonthLabel = jalaliMonthLabel(
-    fromJalaliMonthKey(effectiveMonthKey(date, monthKey, expense?.monthKey)),
+  const targetMonthLabel = jalaliMonthKeyLabel(
+    effectiveMonthKey(date, monthKey, expense?.monthKey),
   );
   const targetMonth = isEdit
     ? `ذخیره در ${targetMonthLabel}`
@@ -348,7 +347,7 @@ export function ExpenseSheet({
               zIndex={60}
               inputClass={PICKER_INPUT_CLASS}
               onChange={(value) => {
-                if (value) setDate(toISODate(value.toDate()));
+                if (value) setDate(isoDateFromPicker(value));
               }}
             />
             {date !== null && (

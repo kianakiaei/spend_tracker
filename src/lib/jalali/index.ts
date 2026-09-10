@@ -67,10 +67,16 @@ export function addJalaliMonths(d: Date, n: number): Date {
 }
 
 /** n months away from a Jalali month key — the month navigator's step
- * ('1405-12' + 1 → '1406-01'). Built on day 1 of the month, so no clamping
- * can ever apply; invalid keys throw like fromJalaliMonthKey. */
+ * ('1405-12' + 1 → '1406-01'). Integer year/month arithmetic, not a Date:
+ * converting the key through local midnight can land in the previous Jalali
+ * month in some timezones, which made «ماه بعد» a no-op and «ماه قبل» skip
+ * two months. Invalid keys throw like fromJalaliMonthKey. */
 export function shiftJalaliMonthKey(monthKey: string, n: number): string {
-  return jalaliMonthKey(addJalaliMonths(fromJalaliMonthKey(monthKey), n));
+  const [year, month] = parseJalaliMonthKey(monthKey);
+  const index = year * 12 + (month - 1) + n;
+  const nextYear = Math.floor(index / 12);
+  const nextMonth = index - nextYear * 12 + 1;
+  return `${String(nextYear).padStart(4, "0")}-${String(nextMonth).padStart(2, "0")}`;
 }
 
 const tehranISODate = new Intl.DateTimeFormat("en-CA", {
@@ -98,13 +104,18 @@ export function currentTehranISODate(now: Date = new Date()): string {
  * The month-key-based recurring logic (ticket 23) builds its month bounds
  * and occurrence dates on this. */
 export function fromJalaliMonthKey(monthKey: string): Date {
+  const [year, month] = parseJalaliMonthKey(monthKey);
+  return newDate(year, month - 1, 1);
+}
+
+function parseJalaliMonthKey(monthKey: string): [number, number] {
   if (!jalaliMonthKeySchema.safeParse(monthKey).success) {
     throw new RangeError(
       `expected a Jalali month key 'YYYY-MM', got ${JSON.stringify(monthKey)}`,
     );
   }
-  const [y, m] = monthKey.split("-").map(Number);
-  return newDate(y!, m! - 1, 1);
+  const [year, month] = monthKey.split("-").map(Number);
+  return [year!, month!];
 }
 
 // --- display (the only place Jalali becomes visible text) ---
@@ -133,9 +144,31 @@ export function formatJalali(d: Date, pattern = "yyyy/MM/dd"): string {
   return toPersianDigits(format(d, pattern));
 }
 
+const JALALI_MONTH_NAMES = [
+  "فروردین",
+  "اردیبهشت",
+  "خرداد",
+  "تیر",
+  "مرداد",
+  "شهریور",
+  "مهر",
+  "آبان",
+  "آذر",
+  "دی",
+  "بهمن",
+  "اسفند",
+] as const;
+
 /** 'شهریور ۱۴۰۵' — dashboard month heading. */
 export function jalaliMonthLabel(d: Date): string {
   return toPersianDigits(format(d, "MMMM yyyy"));
+}
+
+/** 'شهریور ۱۴۰۵' from a month key — no Date, so the label cannot slip a
+ * month when the runtime timezone is not Tehran. */
+export function jalaliMonthKeyLabel(monthKey: string): string {
+  const [year, month] = parseJalaliMonthKey(monthKey);
+  return `${JALALI_MONTH_NAMES[month - 1]} ${toPersianDigits(year)}`;
 }
 
 /** 'یک‌شنبه ۱۵ شهریور' — list-row date. */
