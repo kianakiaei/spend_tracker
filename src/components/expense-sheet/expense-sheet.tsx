@@ -221,14 +221,11 @@ export function ExpenseSheet({
   }
 
   return (
-    <SheetPanel onClose={onClose} labelledBy="expense-sheet-title">
-      <h2 id="expense-sheet-title" className="text-[17px] font-bold">
-        {isEdit ? "ویرایش خرج" : "ثبت خرج"}
-      </h2>
-        <p aria-live="polite" className="mt-0.5 text-[13px] text-ink-muted">
-          {targetMonth}
-        </p>
-
+    <SheetPanel
+      onClose={onClose}
+      title={isEdit ? "ویرایش خرج" : "ثبت خرج"}
+      description={targetMonth}
+    >
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -329,8 +326,8 @@ export function ExpenseSheet({
               editable={false}
               placeholder="تاریخ"
               calendarPosition="top-start"
-              // Portal out of the sheet: SheetPanel's overflow-auto would
-              // otherwise clip the calendar (zIndex already tops the
+              // Portal out of the sheet: the panel's interior scroll region
+              // would otherwise clip the calendar (zIndex already tops the
               // sheet's own layers).
               portal
               zIndex={60}

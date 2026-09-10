@@ -304,15 +304,11 @@ function TemplateSheet({
   }
 
   return (
-    <SheetPanel onClose={onClose} labelledBy="template-sheet-title">
-      <h2 id="template-sheet-title" className="text-[17px] font-bold">
-        {isEdit ? "ویرایش الگو" : "الگوی تکرار"}
-      </h2>
-      <p className="mt-0.5 text-[13px] text-ink-muted">
-        هر ماه، یک بار خرج می‌سازد — ماه‌های گذشته از تاریخ شروع هم با ذخیره
-        ساخته می‌شوند؛ روزهای بلندِ ماه‌های کوتاه به آخر ماه می‌چسبند.
-      </p>
-
+    <SheetPanel
+      onClose={onClose}
+      title={isEdit ? "ویرایش الگو" : "الگوی تکرار"}
+      description="هر ماه، یک بار خرج می‌سازد — ماه‌های گذشته از تاریخ شروع هم با ذخیره ساخته می‌شوند؛ روزهای بلندِ ماه‌های کوتاه به آخر ماه می‌چسبند."
+    >
       <form
         onSubmit={(event) => {
           event.preventDefault();
@@ -401,8 +397,8 @@ function TemplateSheet({
               editable={false}
               placeholder="انتخاب تاریخ"
               calendarPosition="top-start"
-              // Portal out of the sheet: SheetPanel's overflow-auto would
-              // otherwise clip the calendar.
+              // Portal out of the sheet: the panel's interior scroll region
+              // would otherwise clip the calendar.
               portal
               zIndex={60}
               inputClass={PICKER_INPUT_CLASS}
@@ -433,8 +429,8 @@ function TemplateSheet({
               editable={false}
               placeholder="انتخاب تاریخ"
               calendarPosition="top-start"
-              // Portal out of the sheet: SheetPanel's overflow-auto would
-              // otherwise clip the calendar.
+              // Portal out of the sheet: the panel's interior scroll region
+              // would otherwise clip the calendar.
               portal
               zIndex={60}
               inputClass={PICKER_INPUT_CLASS}

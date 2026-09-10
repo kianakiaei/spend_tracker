@@ -26,6 +26,7 @@
     "react-date-object": "2.1.9",
     "react-dom": "19.2.8",
     "react-multi-date-picker": "^4.5.2",
+    "vaul": "^1.1.2",
     "zod": "4.5.4"
   },
   "devDependencies": {

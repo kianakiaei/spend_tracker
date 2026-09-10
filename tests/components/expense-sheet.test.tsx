@@ -132,6 +132,16 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("sheet chrome (vaul drawer)", () => {
+  it("closes on Escape", async () => {
+    await openCreate(otherMonth);
+    fireEvent.keyDown(document, { key: "Escape" });
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
+});
+
 describe("live suggestion (ticket 06 contract)", () => {
   it("updates the chip ~150ms after typing stops, badge on", async () => {
     vi.useFakeTimers();

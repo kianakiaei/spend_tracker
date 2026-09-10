@@ -21,6 +21,13 @@
   --font-sans: var(--font-vazirmatn), Vazirmatn, Tahoma, "Segoe UI", sans-serif;
 }
 
+html {
+  /* The gutter is always reserved: a scrollbar arriving or leaving (page
+     growth, the sheet's body scroll-lock) never reflows the layout — the
+     jump the old UI had every time a sheet opened or content overflowed. */
+  scrollbar-gutter: stable;
+}
+
 body {
   background: var(--color-paper);
   color: var(--color-ink);
@@ -33,26 +40,58 @@ body {
   border-radius: 6px;
 }
 
-/* The expense sheet's one orchestrated moment (ticket 27): the panel rises
-   from the bottom edge, the scrim fades in with it. Gone entirely when the
-   visitor asked for reduced motion. */
-@media (prefers-reduced-motion: no-preference) {
-  .animate-sheet-in {
-    animation: sheet-in 260ms cubic-bezier(0.32, 0.72, 0, 1);
-  }
-  .animate-scrim-in {
-    animation: scrim-in 200ms ease-out;
-  }
+/* Quiet scrollbars, on-palette: thin everywhere, a transparent track, a
+   rule-strong thumb that deepens to ink-muted on hover. Firefox honors the
+   two shorthand properties; WebKit needs the pseudo-elements. */
+:root {
+  color-scheme: light;
 }
 
-@keyframes sheet-in {
-  from {
-    transform: translateY(100%);
-  }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-rule-strong) transparent;
 }
 
-@keyframes scrim-in {
-  from {
-    opacity: 0;
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: content-box;
+  background-color: var(--color-rule-strong);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-ink-muted);
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* The sheet's interior scroll region: scrolls chained here stop instead of
+   dragging the frozen page behind, and its own scrollbar never reflows the
+   form while the category options expand. */
+.sheet-panel-scroll {
+  scrollbar-gutter: stable;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* The sheet's motion is Vaul's (enter/exit keyframes and the drag transform
+   are injected by the library) — the one concession being visitors who
+   asked for reduced motion get none of it. */
+@media (prefers-reduced-motion: reduce) {
+  [data-vaul-drawer],
+  [data-vaul-overlay] {
+    animation: none !important;
+    transition: none !important;
   }
 }
