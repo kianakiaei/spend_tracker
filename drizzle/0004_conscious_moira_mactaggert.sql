@@ -1,0 +1,1 @@
+ALTER TABLE `expenses` ADD `unit` text DEFAULT 'piece' NOT NULL;

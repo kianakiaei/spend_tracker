@@ -6,6 +6,7 @@ import {
   uniqueIndex,
   primaryKey,
 } from "drizzle-orm/sqlite-core";
+import type { ExpenseUnit } from "@/lib/schemas";
 
 // better-auth tables (ticket 18) + domain tables (ticket 19).
 // Field names follow the better-auth drizzle-adapter schema for sqlite.
@@ -99,8 +100,12 @@ export const expenses = sqliteTable(
     // Integer tomans, always > 0 — amountTomanSchema (src/lib/schemas).
     amountToman: integer("amountToman").notNull(),
     // Unit count of the product in this expense — quantitySchema. Total
-    // stays in amountToman; unit price = amountToman / quantity.
+    // stays in amountToman; unit price = amountToman / quantity. Fractional
+    // kilos (0.5) ride along as REAL under this INTEGER column — SQLite keeps
+    // them, same as the learnedKeys counters (ticket: kilo unit).
     quantity: integer("quantity").notNull().default(1),
+    // Quantity unit: 'piece' (عدد) | 'kg' (کیلو) — unitSchema.
+    unit: text("unit").$type<ExpenseUnit>().notNull().default("piece"),
     title: text("title").notNull(),
     note: text("note"),
     // NOT NULL: there is no "uncategorized" group (ticket 05).

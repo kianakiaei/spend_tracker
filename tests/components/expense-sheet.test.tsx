@@ -55,6 +55,7 @@ const UNDATED: ExpenseWithCategory = {
   id: "01900000-0000-7000-8000-000000000101",
   amountToman: 150000,
   quantity: 1,
+  unit: "piece",
   title: "شارژ تاکسی",
   note: null,
   categoryId: GROCERIES.id,
@@ -241,6 +242,7 @@ describe("save path (typed v1 client)", () => {
       expect(api.expenses.create).toHaveBeenCalledWith({
         amountToman: 50000,
         quantity: 1,
+        unit: "piece",
         title: "نان",
         categoryId: GROCERIES.id,
         occurredAt: currentTehranISODate(),
@@ -293,6 +295,7 @@ describe("edit sheet from a ledger row", () => {
         {
           amountToman: 200000,
           quantity: 1,
+          unit: "piece",
           title: "شارژ تاکسی",
           categoryId: GROCERIES.id,
           // legacy undated rows open on today and save dated from here
@@ -393,6 +396,7 @@ describe("locked create from a category (ticket 28 handoff)", () => {
       expect(api.expenses.create).toHaveBeenCalledWith({
         amountToman: 1500000,
         quantity: 1,
+        unit: "piece",
         title: "قسط وام",
         categoryId: INSTALLMENT.id,
         occurredAt: currentTehranISODate(),

@@ -6,8 +6,42 @@ import { z } from "zod";
 /** Integer toman amounts — tomans are the smallest unit, always positive. */
 export const amountTomanSchema = z.number().int().positive();
 
-/** Unit count of a product in one expense — integer ≥1, defaults to 1. */
-export const quantitySchema = z.number().int().min(1);
+/** Unit count of a product in one expense — positive, up to 3 decimals so
+ * weighed goods fit (0.5 kilo); counted pieces stay integers (enforced with
+ * the unit on the input objects below). */
+export const quantitySchema = z
+  .number()
+  .positive()
+  .max(1_000_000)
+  .refine(
+    (v) => Math.abs(v * 1000 - Math.round(v * 1000)) < 1e-9,
+    "at most 3 decimal places",
+  );
+
+/** Quantity unit — counted pieces (عدد) or kilograms (کیلو). */
+export const unitSchema = z.enum(["piece", "kg"]);
+
+export type ExpenseUnit = z.infer<typeof unitSchema>;
+
+/** Piece quantities are whole numbers; kilos may be fractional. The unit
+ * defaults to piece wherever it is omitted. */
+export function refineUnitQuantity(
+  data: { quantity?: number | null; unit?: ExpenseUnit | null },
+  ctx: z.RefinementCtx,
+): void {
+  if (
+    (data.unit ?? "piece") === "piece" &&
+    data.quantity !== undefined &&
+    data.quantity !== null &&
+    !Number.isInteger(data.quantity)
+  ) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["quantity"],
+      message: "piece quantity must be an integer",
+    });
+  }
+}
 
 /** Gregorian date-only string stored as-is ('2026-09-06'). Format-level only
  * (month 01-12, day 01-31): real-calendar validity is the date picker's job. */

@@ -9,8 +9,11 @@ import {
   dateOnlySchema,
   jalaliMonthKeySchema,
   quantitySchema,
+  refineUnitQuantity,
   titleSchema,
+  unitSchema,
   uuidv7Schema,
+  type ExpenseUnit,
 } from "@/lib/schemas";
 import { getOwnedCategory } from "./category-service";
 import { NotFoundError, ValidationError } from "./errors";
@@ -26,23 +29,29 @@ import type { DomainDb, Expense, ExpenseWithCategory } from "./types";
 // form was opened in — the explicit `entryMonthKey` parameter. Every save
 // (create/update) fires the learning pipeline with the final category.
 
-const createExpenseInputSchema = z.object({
-  amountToman: amountTomanSchema,
-  quantity: quantitySchema.optional(),
-  title: titleSchema,
-  note: z.string().nullish(),
-  categoryId: uuidv7Schema,
-  occurredAt: dateOnlySchema.nullish(),
-});
+const createExpenseInputSchema = z
+  .object({
+    amountToman: amountTomanSchema,
+    quantity: quantitySchema.optional(),
+    unit: unitSchema.optional(),
+    title: titleSchema,
+    note: z.string().nullish(),
+    categoryId: uuidv7Schema,
+    occurredAt: dateOnlySchema.nullish(),
+  })
+  .superRefine(refineUnitQuantity);
 
-const updateExpenseInputSchema = z.object({
-  amountToman: amountTomanSchema.optional(),
-  quantity: quantitySchema.optional(),
-  title: titleSchema.optional(),
-  note: z.string().nullish(),
-  categoryId: uuidv7Schema.optional(),
-  occurredAt: dateOnlySchema.nullish(),
-});
+const updateExpenseInputSchema = z
+  .object({
+    amountToman: amountTomanSchema.optional(),
+    quantity: quantitySchema.optional(),
+    unit: unitSchema.optional(),
+    title: titleSchema.optional(),
+    note: z.string().nullish(),
+    categoryId: uuidv7Schema.optional(),
+    occurredAt: dateOnlySchema.nullish(),
+  })
+  .superRefine(refineUnitQuantity);
 
 /** Jalali month of a date-only string — real-calendar validity included
  * (2026-02-30 is rejected here, not just 2026-13-40). */
@@ -57,6 +66,7 @@ function monthKeyOf(occurredAt: string): string {
 export interface CreateExpenseInput {
   amountToman: number;
   quantity?: number;
+  unit?: ExpenseUnit;
   title: string;
   note?: string | null;
   categoryId: string;
@@ -66,6 +76,7 @@ export interface CreateExpenseInput {
 export interface UpdateExpenseInput {
   amountToman?: number;
   quantity?: number;
+  unit?: ExpenseUnit;
   title?: string;
   note?: string | null;
   categoryId?: string;
@@ -141,6 +152,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
           id: newId(),
           amountToman: data.amountToman,
           quantity: data.quantity ?? 1,
+          unit: data.unit ?? "piece",
           title: data.title,
           note: data.note ?? null,
           categoryId: data.categoryId,
@@ -167,6 +179,14 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       if (data.categoryId !== undefined) {
         await getOwnedCategory(db, userId, data.categoryId);
       }
+      // The input schema guards the incoming pair; the stored row supplies
+      // the other half when only one side changes (fractional kilos must
+      // not become fractional pieces through a unit-only edit).
+      const effectiveUnit = data.unit ?? existing.unit;
+      const effectiveQuantity = data.quantity ?? existing.quantity;
+      if (effectiveUnit === "piece" && !Number.isInteger(effectiveQuantity)) {
+        throw new ValidationError("piece quantity must be an integer");
+      }
 
       const occurredAt =
         data.occurredAt !== undefined ? (data.occurredAt ?? null) : existing.occurredAt;
@@ -177,6 +197,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       const set: {
         amountToman?: number;
         quantity?: number;
+        unit?: ExpenseUnit;
         title?: string;
         note?: string | null;
         categoryId?: string;
@@ -184,6 +205,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       } = { updatedAt: new Date() };
       if (data.amountToman !== undefined) set.amountToman = data.amountToman;
       if (data.quantity !== undefined) set.quantity = data.quantity;
+      if (data.unit !== undefined) set.unit = data.unit;
       if (data.title !== undefined) set.title = data.title;
       if (data.note !== undefined) set.note = data.note;
       if (data.categoryId !== undefined) set.categoryId = data.categoryId;
@@ -210,7 +232,8 @@ export function createExpenseService(db: DomainDb): ExpenseService {
 
       // Decision 14's second wiring: the first request reaching the CURRENT
       // month's ledger generates due templates before reading. Past months
-      // never generate (no backfill); the future belongs to preview.
+      // never generate on read (they fill on template writes); the future
+      // belongs to preview.
       // Recording a fresh expense is deliberately NOT a call-site.
       if (monthPosition(monthKey, currentJalaliMonthKey()) === "current") {
         await ensureRecurringExpensesGenerated(db, userId, monthKey);

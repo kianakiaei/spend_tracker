@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/style";
 import type { SuggestionAnswer } from "@/lib/categorization/suggestion-engine";
 import type { ClientSuggestionEngine } from "@/lib/categorization/suggestion-engine";
+import type { ExpenseUnit } from "@/lib/schemas";
 import { api } from "@/lib/api/client";
 import {
   currentTehranISODate,
@@ -88,8 +89,11 @@ export function ExpenseSheet({
     expense ? String(expense.amountToman) : "",
   );
   const [quantityRaw, setQuantityRaw] = useState(
-    expense ? String((expense as { quantity?: number }).quantity ?? 1) : "",
+    expense ? String(expense.quantity) : "",
   );
+  // Quantity unit (عدد | کیلو) — weighed goods take decimals, pieces stay
+  // whole (enforced below, mirroring the server's unit rule).
+  const [unit, setUnit] = useState<ExpenseUnit>(expense?.unit ?? "piece");
   // Create defaults: the date starts on today, always — one date field,
   // no undated path (the sheet stays user-friendly: a single picker the
   // user can change; a dated expense follows its own date).
@@ -148,7 +152,8 @@ export function ExpenseSheet({
       : `ثبت در ${targetMonthLabel}`;
 
   const quantityValid =
-    quantityRaw.trim() === "" || quantityParsed !== null;
+    quantityRaw.trim() === "" ||
+    (quantityParsed !== null && (unit === "kg" || Number.isInteger(quantityParsed)));
   const canSave =
     title.trim() !== "" &&
     amount !== null &&
@@ -165,6 +170,7 @@ export function ExpenseSheet({
         await api.expenses.update(expense.id, {
           amountToman: amount,
           quantity,
+          unit,
           title: title.trim(),
           categoryId: activeCategoryId,
           occurredAt: date,
@@ -173,6 +179,7 @@ export function ExpenseSheet({
         await api.expenses.create({
           amountToman: amount,
           quantity,
+          unit,
           title: title.trim(),
           categoryId: activeCategoryId,
           occurredAt: date,
@@ -258,18 +265,48 @@ export function ExpenseSheet({
             <label htmlFor="expense-quantity" className={LABEL_CLASS}>
               تعداد
             </label>
-            <input
-              id="expense-quantity"
-              type="text"
-              inputMode="numeric"
-              value={quantityRaw}
-              onChange={(event) => setQuantityRaw(event.target.value)}
-              placeholder="۱"
-              className={INPUT_CLASS}
-            />
+            <div className="flex items-center gap-2.5">
+              <input
+                id="expense-quantity"
+                type="text"
+                inputMode="decimal"
+                value={quantityRaw}
+                onChange={(event) => setQuantityRaw(event.target.value)}
+                placeholder="۱"
+                className={INPUT_CLASS}
+              />
+              <div
+                role="group"
+                aria-label="واحد تعداد"
+                className="flex shrink-0 overflow-hidden rounded-full border border-rule"
+              >
+                {(
+                  [
+                    { value: "piece", label: "عدد" },
+                    { value: "kg", label: "کیلو" },
+                  ] as const
+                ).map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-pressed={unit === option.value}
+                    onClick={() => setUnit(option.value)}
+                    className={`px-4 py-2 text-[13px] font-semibold ${
+                      unit === option.value
+                        ? "bg-accent text-white"
+                        : "bg-panel text-ink-muted"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <p aria-live="polite" className="mt-1.5 text-[12px] text-ink-muted">
-              {amount !== null && quantity > 1 && unitPrice !== null
-                ? `هر عدد ${formatToman(unitPrice)}`
+              {amount !== null && quantity !== 1 && unitPrice !== null
+                ? unit === "kg"
+                  ? `هر کیلو ${formatToman(unitPrice)}`
+                  : `هر عدد ${formatToman(unitPrice)}`
                 : ""}
             </p>
           </div>

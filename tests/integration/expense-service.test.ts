@@ -122,6 +122,91 @@ describe("expenseService.create — the monthKey rule (ticket 22)", () => {
   });
 });
 
+describe("expenseService quantity + unit (kilo support)", () => {
+  it("stores fractional kilos with unit 'kg'", async () => {
+    const userId = await fx.signUp();
+    const categoryId = await systemCategory(userId, "groceries");
+
+    const expense = await expensesService.create(
+      userId,
+      { amountToman: 270_000, quantity: 0.5, unit: "kg", title: "بستنی", categoryId },
+      "1405-06",
+    );
+
+    expect(expense.quantity).toBe(0.5);
+    expect(expense.unit).toBe("kg");
+    const fetched = await expensesService.get(userId, expense.id);
+    expect(fetched.quantity).toBe(0.5);
+    expect(fetched.unit).toBe("kg");
+  });
+
+  it("defaults to one piece when quantity and unit are omitted", async () => {
+    const userId = await fx.signUp();
+    const categoryId = await systemCategory(userId, "groceries");
+
+    const expense = await expensesService.create(
+      userId,
+      { amountToman: 30_000, title: "نان", categoryId },
+      "1405-06",
+    );
+
+    expect(expense.quantity).toBe(1);
+    expect(expense.unit).toBe("piece");
+  });
+
+  it("rejects fractional pieces and bad units", async () => {
+    const userId = await fx.signUp();
+    const categoryId = await systemCategory(userId, "groceries");
+    const base = { amountToman: 100_000, title: "سیب", categoryId };
+
+    await expect(
+      expensesService.create(userId, { ...base, quantity: 2.5 }, "1405-06"),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      expensesService.create(
+        userId,
+        { ...base, quantity: 2.5, unit: "piece" },
+        "1405-06",
+      ),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      expensesService.create(
+        userId,
+        { ...base, quantity: 0.12345, unit: "kg" },
+        "1405-06",
+      ),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      expensesService.create(
+        userId,
+        { ...base, quantity: 1, unit: "kilo" as never },
+        "1405-06",
+      ),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it("a unit-only edit cannot turn fractional kilos into fractional pieces", async () => {
+    const userId = await fx.signUp();
+    const categoryId = await systemCategory(userId, "groceries");
+    const expense = await expensesService.create(
+      userId,
+      { amountToman: 132_000, quantity: 2.5, unit: "kg", title: "آلو", categoryId },
+      "1405-06",
+    );
+
+    await expect(
+      expensesService.update(userId, expense.id, { unit: "piece" }),
+    ).rejects.toThrow(ValidationError);
+    const kept = await expensesService.update(userId, expense.id, {
+      quantity: 3,
+      unit: "kg",
+      note: null,
+    });
+    expect(kept.quantity).toBe(3);
+    expect(kept.unit).toBe("kg");
+  });
+});
+
 describe("expenseService.update — monthKey moves (ticket 22)", () => {
   it("giving a date to an undated expense moves it to that date's month", async () => {
     const userId = await fx.signUp();

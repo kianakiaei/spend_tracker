@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { effectiveMonthKey, parseAmountInput } from "@/components/expense-sheet/sheet-helpers";
+import { effectiveMonthKey, parseAmountInput, parseQuantityInput } from "@/components/expense-sheet/sheet-helpers";
 
 // Ticket 27 — the pure edges of the expense sheet: parsing the amount field
 // (any digit script, separators typed freely) and the month a save will land
@@ -26,6 +26,26 @@ describe("parseAmountInput", () => {
     expect(parseAmountInput("۰")).toBeNull();
     expect(parseAmountInput("۰۰")).toBeNull();
     expect(parseAmountInput("abc")).toBeNull();
+  });
+});
+
+describe("parseQuantityInput", () => {
+  it("reads whole and fractional quantities in any digit script", () => {
+    expect(parseQuantityInput("3")).toBe(3);
+    expect(parseQuantityInput("2.5")).toBe(2.5);
+    expect(parseQuantityInput("۲٫۵")).toBe(2.5);
+    expect(parseQuantityInput("۰٫۵")).toBe(0.5);
+  });
+
+  it("ignores group separators around the number", () => {
+    expect(parseQuantityInput(" 1٬۰۰۰ ")).toBe(1000);
+  });
+
+  it("is null while empty or beyond 3 decimals", () => {
+    expect(parseQuantityInput("")).toBeNull();
+    expect(parseQuantityInput("۰")).toBeNull();
+    expect(parseQuantityInput("2.5555")).toBeNull();
+    expect(parseQuantityInput("abc")).toBeNull();
   });
 });
 

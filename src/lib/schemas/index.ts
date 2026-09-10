@@ -8,7 +8,9 @@ export {
   jalaliMonthKeySchema,
   learnedKeySourceSchema,
   quantitySchema,
+  refineUnitQuantity,
   titleSchema,
+  unitSchema,
   uuidv7Schema,
 } from "./domain";
 
@@ -49,3 +51,5 @@ export type {
   UpdateExpenseRequest,
   UpdateTemplateRequest,
 } from "./api";
+
+export type { ExpenseUnit } from "./domain";

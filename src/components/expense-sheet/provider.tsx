@@ -13,6 +13,7 @@ import type {
   ClientSuggestionEngine,
 } from "@/lib/categorization/suggestion-engine";
 import type { Category } from "@/lib/services";
+import type { ExpenseUnit } from "@/lib/schemas";
 import type { LearnedKeyRecord } from "@/lib/categorization";
 import { ExpenseSheet } from "./expense-sheet";
 
@@ -30,6 +31,8 @@ export interface SheetExpense {
   id: string;
   title: string;
   amountToman: number;
+  quantity: number;
+  unit: ExpenseUnit;
   occurredAt: string | null;
   monthKey: string;
   categoryId: string;

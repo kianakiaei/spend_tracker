@@ -15,14 +15,23 @@ export function parseAmountInput(raw: string): number | null {
   return Number.isSafeInteger(value) && value > 0 ? value : null;
 }
 
-/** Raw quantity field text → integer ≥1, or null while empty/invalid.
- * Empty means 1 (the default) at save time. */
+/** Raw quantity field text → positive number with up to 3 decimals (0.5
+ * kilo), or null while empty/invalid. Empty means 1 (the default) at save
+ * time. Counted pieces must still be whole — the sheet enforces that
+ * against the picked unit. Separators (٬ ,) are ignored; the decimal mark
+ * may be . or ٫ in any digit script. */
 export function parseQuantityInput(raw: string): number | null {
-  const trimmed = toEnglishDigits(raw).trim().replace(/[٬,]/g, "");
-  if (trimmed === "") return null;
-  if (!/^\d+$/.test(trimmed)) return null;
-  const value = Number(trimmed);
-  return Number.isSafeInteger(value) && value >= 1 ? value : null;
+  const normalized = toEnglishDigits(raw)
+    .trim()
+    .replace(/[٬,\s]/g, "");
+  if (normalized === "") return null;
+  // Decimal mark: Latin dot or the Arabic decimal separator (U+066B).
+  const dotted = normalized.replace(/٫/g, ".");
+  if (!/^\d+(\.\d{1,3})?$/.test(dotted)) return null;
+  const value = Number(dotted);
+  if (!Number.isFinite(value) || value <= 0 || value > 1_000_000)
+    return null;
+  return value;
 }
 
 /** The Jalali month a save will land in (ticket 15/27): a picked date always

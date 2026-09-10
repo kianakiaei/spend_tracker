@@ -6,6 +6,8 @@ import {
   dayOfMonthSchema,
   jalaliMonthKeySchema,
   learnedKeySourceSchema,
+  quantitySchema,
+  unitSchema,
   uuidv7Schema,
 } from "@/lib/schemas";
 
@@ -102,5 +104,29 @@ describe("uuidv7Schema", () => {
     "",
   ])("rejects %s", (bad) => {
     expect(uuidv7Schema.safeParse(bad).success).toBe(false);
+  });
+});
+
+describe("quantitySchema", () => {
+  it.each([1, 3, 0.5, 2.5, 2.25, 0.001])("accepts %p", (good) => {
+    expect(quantitySchema.safeParse(good).success).toBe(true);
+  });
+
+  it.each([0, -1, 1.0001, 0.12345, Number.NaN, Number.POSITIVE_INFINITY])(
+    "rejects %p",
+    (bad) => {
+      expect(quantitySchema.safeParse(bad).success).toBe(false);
+    },
+  );
+});
+
+describe("unitSchema", () => {
+  it("accepts 'piece' and 'kg'", () => {
+    expect(unitSchema.safeParse("piece").success).toBe(true);
+    expect(unitSchema.safeParse("kg").success).toBe(true);
+  });
+
+  it.each(["count", "kilo", "PIECE", ""])("rejects %s", (bad) => {
+    expect(unitSchema.safeParse(bad).success).toBe(false);
   });
 });

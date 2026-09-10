@@ -8,7 +8,9 @@ import {
   dayOfMonthSchema,
   jalaliMonthKeySchema,
   quantitySchema,
+  refineUnitQuantity,
   titleSchema,
+  unitSchema,
   uuidv7Schema,
 } from "./domain";
 
@@ -22,24 +24,30 @@ import {
 
 /** POST /api/v1/expenses — `entryMonthKey` is the month the form was opened
  * in, used only when the expense is undated (ticket 15). */
-export const createExpenseRequestSchema = z.object({
-  amountToman: amountTomanSchema,
-  quantity: quantitySchema.optional(),
-  title: titleSchema,
-  note: z.string().nullish(),
-  categoryId: uuidv7Schema,
-  occurredAt: dateOnlySchema.nullish(),
-  entryMonthKey: jalaliMonthKeySchema,
-});
+export const createExpenseRequestSchema = z
+  .object({
+    amountToman: amountTomanSchema,
+    quantity: quantitySchema.optional(),
+    unit: unitSchema.optional(),
+    title: titleSchema,
+    note: z.string().nullish(),
+    categoryId: uuidv7Schema,
+    occurredAt: dateOnlySchema.nullish(),
+    entryMonthKey: jalaliMonthKeySchema,
+  })
+  .superRefine(refineUnitQuantity);
 
-export const updateExpenseRequestSchema = z.object({
-  amountToman: amountTomanSchema.optional(),
-  quantity: quantitySchema.optional(),
-  title: titleSchema.optional(),
-  note: z.string().nullish(),
-  categoryId: uuidv7Schema.optional(),
-  occurredAt: dateOnlySchema.nullish(),
-});
+export const updateExpenseRequestSchema = z
+  .object({
+    amountToman: amountTomanSchema.optional(),
+    quantity: quantitySchema.optional(),
+    unit: unitSchema.optional(),
+    title: titleSchema.optional(),
+    note: z.string().nullish(),
+    categoryId: uuidv7Schema.optional(),
+    occurredAt: dateOnlySchema.nullish(),
+  })
+  .superRefine(refineUnitQuantity);
 
 export const createCategoryRequestSchema = z.object({
   name: categoryNameSchema,
@@ -117,7 +125,8 @@ export const categoryResponseSchema = z.object({
 export const expenseResponseSchema = z.object({
   id: uuidv7Schema,
   amountToman: z.number().int().positive(),
-  quantity: z.number().int().min(1),
+  quantity: z.number().positive(),
+  unit: unitSchema,
   title: z.string(),
   note: z.string().nullable(),
   categoryId: uuidv7Schema,

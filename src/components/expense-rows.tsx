@@ -14,6 +14,7 @@ import {
   toPersianDigits,
 } from "@/lib/jalali";
 import type { Category, ExpenseWithCategory } from "@/lib/services";
+import type { ExpenseUnit } from "@/lib/schemas";
 import type { RecurringForecastRow } from "@/lib/recurring";
 
 // The month's chronological rows (ticket 26's ledger, shared with ticket
@@ -88,7 +89,8 @@ export function ExpenseRows({
                 color={expense.category.color}
                 tag={expense.sourceRecurringId !== null ? "از الگو" : null}
                 amountToman={expense.amountToman}
-                quantity={(expense as { quantity?: number }).quantity ?? 1}
+                quantity={expense.quantity}
+                unit={expense.unit}
               />
             </button>
           </li>
@@ -109,9 +111,8 @@ export function ExpenseRows({
                     color={entry.expense.category.color}
                     tag={entry.expense.sourceRecurringId !== null ? "از الگو" : null}
                     amountToman={entry.expense.amountToman}
-                    quantity={
-                      (entry.expense as { quantity?: number }).quantity ?? 1
-                    }
+                    quantity={entry.expense.quantity}
+                    unit={entry.expense.unit}
                   />
                 </button>
               </li>
@@ -146,6 +147,7 @@ export function LedgerRowBody({
   tag,
   amountToman,
   quantity = 1,
+  unit = "piece",
 }: {
   day: string;
   title: string;
@@ -153,8 +155,10 @@ export function LedgerRowBody({
   tag: string | null;
   amountToman: number;
   quantity?: number;
+  unit?: ExpenseUnit;
 }) {
   const qty = quantity ?? 1;
+  const isKg = unit === "kg";
   return (
     <>
       <span className={DAY_CLASS}>{day}</span>
@@ -164,9 +168,11 @@ export function LedgerRowBody({
           <span className="truncate">{title}</span>
           {tag && <Tag>{tag}</Tag>}
         </span>
-        {qty > 1 && (
+        {(qty !== 1 || isKg) && (
           <span className="mt-0.5 text-[11.5px] text-ink-muted">
-            {`×${toPersianDigits(qty)} · هر عدد ${formatToman(Math.round(amountToman / qty))}`}
+            {isKg
+              ? `${toPersianDigits(qty)} کیلو · هر کیلو ${formatToman(Math.round(amountToman / qty))}`
+              : `×${toPersianDigits(qty)} · هر عدد ${formatToman(Math.round(amountToman / qty))}`}
           </span>
         )}
       </span>
