@@ -111,8 +111,7 @@ export function SearchBoard({ results }: { results: SearchResultDto[] }) {
                       {hit.eventTitle !== null && (
                         <span className={TAG_EVENT_CLASS}>{hit.eventTitle}</span>
                       )}
-                      {label}
-                      {formatJalali(fromISODate(hit.occurredAt), "d MMMM")}
+                      {formatJalali(fromISODate(hit.occurredAt), "d MMMM yyyy")}
                     </span>
                   </span>
                   <span className="whitespace-nowrap text-[13.5px] font-bold">
