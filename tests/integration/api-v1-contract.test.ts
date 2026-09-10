@@ -33,6 +33,8 @@ const previewRoute = await import(
   "@/app/api/v1/recurring-templates/preview/route"
 );
 const summariesRoute = await import("@/app/api/v1/summaries/route");
+const eventsRoute = await import("@/app/api/v1/events/route");
+const eventIdRoute = await import("@/app/api/v1/events/[id]/route");
 const classifyRoute = await import("@/app/api/v1/classify/route");
 
 const { systemCategoryBySlug, relativeMonthKeys } = await import(
@@ -206,6 +208,13 @@ describe("the session gate — 401 problem+json without credentials", () => {
       () =>
         previewRoute.GET(v1Request("/recurring-templates/preview?month=1405-07")),
       () => summariesRoute.GET(v1Request("/summaries?month=1405-06")),
+      () => eventsRoute.GET(v1Request("/events")),
+      () => eventsRoute.POST(v1Request("/events", { method: "POST" })),
+      () => eventIdRoute.GET(v1Request("/events/x"), idCtx("x")),
+      () =>
+        eventIdRoute.PATCH(v1Request("/events/x", { method: "PATCH" }), idCtx("x")),
+      () =>
+        eventIdRoute.DELETE(v1Request("/events/x", { method: "DELETE" }), idCtx("x")),
       () => classifyRoute.POST(v1Request("/classify", { method: "POST" })),
     ];
 
@@ -656,6 +665,124 @@ describe("categories resource", () => {
       idCtx(groceries.id),
     );
     await expectProblem(self, 400, "validation_failed");
+  });
+});
+
+describe("events resource", () => {
+  it("POST creates an event and GET lists it; duplicates are 409", async () => {
+    const res = await eventsRoute.POST(
+      v1Request("/events", {
+        method: "POST",
+        session: sessionA,
+        body: { title: "سفر اصفهان", note: "سه روزه" },
+      }),
+    );
+    expect(res.status).toBe(201);
+    const event = (await res.json()) as {
+      id: string;
+      title: string;
+      note: string | null;
+      userId: string;
+    };
+    expect(event.title).toBe("سفر اصفهان");
+    expect(event.note).toBe("سه روزه");
+    expect(event.userId).toBe(sessionA.userId);
+
+    const list = await eventsRoute.GET(
+      v1Request("/events", { session: sessionA }),
+    );
+    expect(list.status).toBe(200);
+    const rows = (await list.json()) as Array<{ id: string; title: string }>;
+    expect(rows.map((r) => r.id)).toContain(event.id);
+
+    const duplicate = await eventsRoute.POST(
+      v1Request("/events", {
+        method: "POST",
+        session: sessionA,
+        body: { title: "سفر اصفهان" },
+      }),
+    );
+    await expectProblem(duplicate, 409, "duplicate_category_name");
+  });
+
+  it("rejects an inverted date range with 400", async () => {
+    const res = await eventsRoute.POST(
+      v1Request("/events", {
+        method: "POST",
+        session: sessionA,
+        body: { title: "بد", startDate: "2026-09-06", endDate: "2026-09-01" },
+      }),
+    );
+    await expectProblem(res, 400, "validation_failed");
+  });
+
+  it("PATCH renames; DELETE unlinks and returns 204; read-back is 404", async () => {
+    const created = await eventsRoute.POST(
+      v1Request("/events", {
+        method: "POST",
+        session: sessionA,
+        body: { title: "سفر قم" },
+      }),
+    );
+    const event = (await created.json()) as { id: string };
+
+    const renamed = await eventIdRoute.PATCH(
+      v1Request(`/events/${event.id}`, {
+        method: "PATCH",
+        session: sessionA,
+        body: { title: "سفر قم و کاشان" },
+      }),
+      idCtx(event.id),
+    );
+    expect(renamed.status).toBe(200);
+    expect(((await renamed.json()) as { title: string }).title).toBe(
+      "سفر قم و کاشان",
+    );
+
+    // an event with a linked expense still deletes (unlinks only)
+    const groceries = await systemCategoryBySlug(db, sessionA.userId, "groceries");
+    await expensesRoute.POST(
+      v1Request("/expenses", {
+        method: "POST",
+        session: sessionA,
+        body: {
+          amountToman: 2000,
+          title: "زیر سفر",
+          categoryId: groceries.id,
+          eventId: event.id,
+          entryMonthKey: CURRENT,
+        },
+      }),
+    );
+
+    const removed = await eventIdRoute.DELETE(
+      v1Request(`/events/${event.id}`, { method: "DELETE", session: sessionA }),
+      idCtx(event.id),
+    );
+    expect(removed.status).toBe(204);
+
+    const gone = await eventIdRoute.GET(
+      v1Request(`/events/${event.id}`, { session: sessionA }),
+      idCtx(event.id),
+    );
+    await expectProblem(gone, 404, "not_found");
+  });
+
+  it("is scoped to the user — a foreign event is 404", async () => {
+    const created = await eventsRoute.POST(
+      v1Request("/events", {
+        method: "POST",
+        session: sessionA,
+        body: { title: "عروسی" },
+      }),
+    );
+    const event = (await created.json()) as { id: string };
+
+    const foreign = await eventIdRoute.GET(
+      v1Request(`/events/${event.id}`, { session: sessionB }),
+      idCtx(event.id),
+    );
+    await expectProblem(foreign, 404, "not_found");
   });
 });
 

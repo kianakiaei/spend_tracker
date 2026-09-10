@@ -63,6 +63,7 @@ const UNDATED: ExpenseWithCategory = {
   monthKey: "1405-05",
   sourceRecurringId: null,
   userId: GROCERIES.userId,
+  eventId: null,
   createdAt: NOW,
   updatedAt: NOW,
   category: GROCERIES,
@@ -77,6 +78,7 @@ function renderCreate(monthKey: string) {
     <ExpenseSheetProvider
       monthKey={monthKey}
       categories={CATEGORIES}
+      events={[]}
       learnedKeys={[]}
       fallbackCategoryId={GROCERIES.id}
     >
@@ -90,6 +92,7 @@ function renderEdit(expense: ExpenseWithCategory) {
     <ExpenseSheetProvider
       monthKey={expense.monthKey}
       categories={CATEGORIES}
+      events={[]}
       learnedKeys={[]}
       fallbackCategoryId={GROCERIES.id}
     >
@@ -246,6 +249,7 @@ describe("save path (typed v1 client)", () => {
         title: "نان",
         categoryId: GROCERIES.id,
         occurredAt: currentTehranISODate(),
+        eventId: null,
         entryMonthKey: otherMonth,
       }),
     );
@@ -300,6 +304,7 @@ describe("edit sheet from a ledger row", () => {
           categoryId: GROCERIES.id,
           // the dateless row stays dateless — the edit never moves months
           occurredAt: null,
+          eventId: null,
         },
       ),
     );
@@ -351,7 +356,7 @@ describe("locked create from a category (ticket 28 handoff)", () => {
     function Trigger() {
       const { openCreate } = useExpenseSheet();
       return (
-        <button type="button" onClick={() => openCreate(INSTALLMENT.id)}>
+        <button type="button" onClick={() => openCreate({ categoryId: INSTALLMENT.id })}>
           افزودن به این دسته
         </button>
       );
@@ -360,6 +365,7 @@ describe("locked create from a category (ticket 28 handoff)", () => {
       <ExpenseSheetProvider
         monthKey={monthKey}
         categories={CATEGORIES}
+        events={[]}
         learnedKeys={[]}
         fallbackCategoryId={GROCERIES.id}
       >
@@ -417,6 +423,7 @@ describe("locked create from a category (ticket 28 handoff)", () => {
         title: "قسط وام",
         categoryId: INSTALLMENT.id,
         occurredAt: currentTehranISODate(),
+        eventId: null,
         entryMonthKey: otherMonth,
       }),
     );
