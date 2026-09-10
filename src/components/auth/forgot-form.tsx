@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
+import { normalizeEmail } from "@/lib/email";
 
 const GENERIC_OK = "اگر این ایمیل ثبت شده باشد، لینک ریست فرستاده شد";
 const NETWORK = "ارتباط با سرور برقرار نشد؛ دوباره تلاش کنید";
@@ -19,7 +20,7 @@ export function ForgotForm() {
     setPending(true);
     try {
       const { error } = await authClient.requestPasswordReset({
-        email,
+        email: normalizeEmail(email),
         redirectTo: "/reset-password",
       });
       if (error) {
