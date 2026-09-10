@@ -17,12 +17,14 @@ export function CategoryDrilldownPanel({
   expenses,
   forecast,
   categories,
+  eventId,
 }: {
   monthKey: string;
   category: Category;
   expenses: ExpenseWithCategory[];
   forecast: RecurringForecastRow[];
   categories: Category[];
+  eventId?: string;
 }) {
   const { openCreate } = useExpenseSheet();
   const empty = expenses.length === 0 && forecast.length === 0;
@@ -31,7 +33,13 @@ export function CategoryDrilldownPanel({
     <>
       <button
         type="button"
-        onClick={() => openCreate(category.id)}
+        onClick={() =>
+          openCreate(
+            eventId === undefined
+              ? { categoryId: category.id }
+              : { categoryId: category.id, eventId },
+          )
+        }
         className="mt-5 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-rule-strong bg-panel px-4 py-3 text-[14px] font-semibold text-accent hover:border-accent"
       >
         + افزودن به این دسته

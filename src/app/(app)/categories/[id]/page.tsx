@@ -16,6 +16,7 @@ import { monthPosition } from "@/lib/recurring";
 import { jalaliMonthKeySchema } from "@/lib/schemas";
 import {
   createCategoryService,
+  createEventService,
   createExpenseService,
   createRecurringService,
   createSummaryService,
@@ -34,6 +35,7 @@ const categoryService = createCategoryService(db);
 const expenseService = createExpenseService(db);
 const recurringService = createRecurringService(db);
 const summaryService = createSummaryService(db);
+const eventService = createEventService(db);
 
 export default async function CategoryDrilldownPage({
   params,
@@ -55,7 +57,7 @@ export default async function CategoryDrilldownPage({
 
   // The summary/expense reads ensure the current month's generation
   // (decision 14); the learned counters feed the sheet's engine (27).
-  const [summary, expenses, forecast, categories, learnedKeys, fallback] =
+  const [summary, expenses, forecast, categories, learnedKeys, fallback, allEvents] =
     await Promise.all([
       summaryService.getSummary(userId, monthKey),
       expenseService.listByMonth(userId, monthKey),
@@ -63,6 +65,7 @@ export default async function CategoryDrilldownPage({
       categoryService.list(userId),
       listLearnedKeys(db, userId),
       getFallbackCategory(db, userId),
+      eventService.list(userId),
     ]);
 
   const mine = expenses.filter((e) => e.categoryId === category.id);
@@ -76,6 +79,7 @@ export default async function CategoryDrilldownPage({
     <ExpenseSheetProvider
       monthKey={monthKey}
       categories={categories}
+      events={allEvents}
       learnedKeys={learnedKeys}
       fallbackCategoryId={fallback.id}
     >

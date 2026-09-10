@@ -13,6 +13,7 @@ import {
 import { jalaliMonthKeySchema, uuidv7Schema } from "@/lib/schemas";
 import {
   createCategoryService,
+  createEventService,
   createExpenseService,
   createRecurringService,
   createSummaryService,
@@ -39,6 +40,7 @@ const summaryService = createSummaryService(db);
 const expenseService = createExpenseService(db);
 const recurringService = createRecurringService(db);
 const categoryService = createCategoryService(db);
+const eventService = createEventService(db);
 
 export default async function DashboardPage({
   searchParams,
@@ -55,7 +57,7 @@ export default async function DashboardPage({
   // Six independent reads; ensure runs inside the second for the current
   // month (decision 14) — idempotent, so concurrent calls are harmless. The
   // last two feed the sheet's client-side suggestion engine (ticket 27).
-  const [summary, expenses, forecast, categories, learnedKeys, fallback] =
+  const [summary, expenses, forecast, categories, learnedKeys, fallback, allEvents] =
     await Promise.all([
       summaryService.getSummary(userId, monthKey),
       expenseService.listByMonth(userId, monthKey),
@@ -63,8 +65,8 @@ export default async function DashboardPage({
       categoryService.list(userId),
       listLearnedKeys(db, userId),
       getFallbackCategory(db, userId),
+      eventService.list(userId),
     ]);
-
   // The ?expense= deep-link (ticket 28: the templates page's «خرج این ماه
   // تولید شد»): a valid id owned by this user opens its edit sheet; a stale
   // or foreign one is quietly just a ledger visit.
@@ -81,6 +83,7 @@ export default async function DashboardPage({
     <ExpenseSheetProvider
       monthKey={monthKey}
       categories={categories}
+      events={allEvents}
       learnedKeys={learnedKeys}
       fallbackCategoryId={fallback.id}
       initialExpense={deepLinkedExpense ?? undefined}
@@ -91,6 +94,9 @@ export default async function DashboardPage({
           <nav className="flex gap-4 text-[13px] text-ink-muted">
             <Link href="/insights" className="hover:text-accent">
               بینش‌ها
+            </Link>
+            <Link href="/events" className="hover:text-accent">
+              رویدادها
             </Link>
             <Link href="/categories" className="hover:text-accent">
               دسته‌ها

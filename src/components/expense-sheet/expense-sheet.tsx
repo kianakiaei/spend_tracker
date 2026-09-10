@@ -33,7 +33,7 @@ import {
   toISODate,
 } from "@/lib/jalali";
 import type { Category } from "@/lib/services";
-import type { SheetOpen } from "./provider";
+import type { SheetEventOption, SheetOpen } from "./provider";
 import {
   effectiveMonthKey,
   parseAmountInput,
@@ -65,12 +65,14 @@ export function ExpenseSheet({
   onClose,
   monthKey,
   categories,
+  events,
   engine,
 }: {
   open: SheetOpen;
   onClose: () => void;
   monthKey: string;
   categories: Category[];
+  events: SheetEventOption[];
   engine: ClientSuggestionEngine;
 }) {
   const router = useRouter();
@@ -82,6 +84,11 @@ export function ExpenseSheet({
   const lockedCategory =
     open.mode === "create" && "lockedCategoryId" in open
       ? (categories.find((c) => c.id === open.lockedCategoryId) ?? null)
+      : null;
+  // The event page's locked create: same shape — the page brought the event.
+  const lockedEvent =
+    open.mode === "create" && "lockedEventId" in open
+      ? (events.find((e) => e.id === open.lockedEventId) ?? null)
       : null;
 
   const [title, setTitle] = useState(expense?.title ?? "");
@@ -108,6 +115,11 @@ export function ExpenseSheet({
     expense?.categoryId ?? lockedCategory?.id ?? null,
   );
   const [optsOpen, setOptsOpen] = useState(false);
+  // Event attach is always a free pick — never suggested, never locked
+  // (except the event page's pre-select below). «بدون رویداد» = null.
+  const [eventId, setEventId] = useState<string | null>(
+    expense?.eventId ?? lockedEvent?.id ?? null,
+  );
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -148,9 +160,13 @@ export function ExpenseSheet({
   );
   const targetMonth = isEdit
     ? `ذخیره در ${targetMonthLabel}`
-    : lockedCategory
-      ? `ثبت در ${lockedCategory.name} — ${targetMonthLabel}`
-      : `ثبت در ${targetMonthLabel}`;
+    : lockedCategory && lockedEvent
+      ? `ثبت در ${lockedCategory.name} — ${lockedEvent.title} — ${targetMonthLabel}`
+      : lockedCategory
+        ? `ثبت در ${lockedCategory.name} — ${targetMonthLabel}`
+        : lockedEvent
+          ? `ثبت در ${lockedEvent.title} — ${targetMonthLabel}`
+          : `ثبت در ${targetMonthLabel}`;
 
   const quantityValid =
     quantityRaw.trim() === "" ||
@@ -175,6 +191,7 @@ export function ExpenseSheet({
           title: title.trim(),
           categoryId: activeCategoryId,
           occurredAt: date,
+          eventId: lockedEvent ? lockedEvent.id : eventId,
         });
       } else {
         await api.expenses.create({
@@ -184,6 +201,7 @@ export function ExpenseSheet({
           title: title.trim(),
           categoryId: activeCategoryId,
           occurredAt: date,
+          eventId: lockedEvent ? lockedEvent.id : eventId,
           entryMonthKey: monthKey,
         });
       }
@@ -398,6 +416,40 @@ export function ExpenseSheet({
                   </div>
                 )}
               </>
+            )}
+          </div>
+
+          <div className={FIELD_CLASS}>
+            <label htmlFor="expense-event" className={LABEL_CLASS}>
+              رویداد
+            </label>
+            {lockedEvent ? (
+              <div className="flex items-center gap-2.5">
+                <span className={`${CHIP_CLASS} border-rule bg-paper`}>
+                  <span>{lockedEvent.title}</span>
+                </span>
+                <span className="text-[12px] text-ink-muted">
+                  رویداد این صفحه
+                </span>
+              </div>
+            ) : (
+              <select
+                id="expense-event"
+                value={eventId ?? ""}
+                onChange={(event) =>
+                  setEventId(
+                    event.target.value === "" ? null : event.target.value,
+                  )
+                }
+                className="w-full rounded-lg border border-rule bg-panel px-3 py-2 text-[14px] outline-none focus:border-accent"
+              >
+                <option value="">بدون رویداد</option>
+                {events.map((option) => (
+                  <option key={option.id} value={option.id}>
+                    {option.title}
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 

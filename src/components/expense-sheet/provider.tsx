@@ -36,7 +36,13 @@ export interface SheetExpense {
   occurredAt: string | null;
   monthKey: string;
   categoryId: string;
+  eventId: string | null;
   sourceRecurringId: string | null;
+}
+
+export interface SheetEventOption {
+  id: string;
+  title: string;
 }
 
 export type SheetOpen =
@@ -44,12 +50,19 @@ export type SheetOpen =
   /** The drilldown's «افزودن به این دسته» (ticket 28): record with the
    * category fixed — no picker, no suggestion engine. */
   | { mode: "create"; lockedCategoryId: string }
+  /** The event page's «افزودن به این رویداد»: record with the event fixed. */
+  | { mode: "create"; lockedEventId: string }
+  | {
+      mode: "create";
+      lockedCategoryId: string;
+      lockedEventId: string;
+    }
   | { mode: "edit"; expense: SheetExpense };
 
 interface ExpenseSheetContextValue {
   /** Without an id: the dashboard's suggestion-driven record flow. With
    * one: the locked create of a category drilldown. */
-  openCreate: (lockedCategoryId?: string) => void;
+  openCreate: (locked?: { categoryId?: string; eventId?: string }) => void;
   openEdit: (expense: SheetExpense) => void;
 }
 
@@ -72,6 +85,7 @@ const EXPENSE_PARAM = "expense";
 export function ExpenseSheetProvider({
   monthKey,
   categories,
+  events,
   learnedKeys,
   fallbackCategoryId,
   initialExpense,
@@ -79,6 +93,7 @@ export function ExpenseSheetProvider({
 }: {
   monthKey: string;
   categories: Category[];
+  events: SheetEventOption[];
   learnedKeys: LearnedKeyRecord[];
   fallbackCategoryId: string;
   /** A ?expense= deep-link opens that row's edit sheet once, then strips
@@ -115,11 +130,19 @@ export function ExpenseSheetProvider({
 
   const value = useMemo<ExpenseSheetContextValue>(
     () => ({
-      openCreate: (lockedCategoryId?: string) =>
+      openCreate: (locked) =>
         setOpen(
-          lockedCategoryId === undefined
-            ? { mode: "create" }
-            : { mode: "create", lockedCategoryId },
+          locked?.categoryId !== undefined && locked?.eventId !== undefined
+            ? {
+                mode: "create",
+                lockedCategoryId: locked.categoryId,
+                lockedEventId: locked.eventId,
+              }
+            : locked?.categoryId !== undefined
+              ? { mode: "create", lockedCategoryId: locked.categoryId }
+              : locked?.eventId !== undefined
+                ? { mode: "create", lockedEventId: locked.eventId }
+                : { mode: "create" },
         ),
       openEdit: (expense) => setOpen({ mode: "edit", expense }),
     }),
@@ -135,6 +158,7 @@ export function ExpenseSheetProvider({
           onClose={() => setOpen(null)}
           monthKey={monthKey}
           categories={categories}
+          events={events}
           engine={engine}
         />
       )}
