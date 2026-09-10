@@ -247,12 +247,15 @@ export function InsightsBoard({
   }, [active]);
 
   return (
-    <div className="mx-auto w-full max-w-[680px] px-6 pb-16 pt-4">
+    <div className="mx-auto w-full max-w-6xl px-6 pb-16 pt-4">
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
         <h1 className="text-[20px] font-extrabold">بینش محصول‌ها</h1>
         <nav className="flex gap-4 text-[13px] text-ink-muted">
           <Link href="/" className="hover:text-accent">
             داشبورد
+          </Link>
+          <Link href="/events" className="hover:text-accent">
+            رویدادها
           </Link>
           <Link href="/categories" className="hover:text-accent">
             دسته‌ها
@@ -295,46 +298,45 @@ export function InsightsBoard({
             <div className="mt-5 flex flex-wrap gap-3">
               {filtered.map((p) => {
                 const isOpen = active?.key === p.key;
-              return (
-                <button
-                  key={p.key}
-                  type="button"
-                  onClick={() => {
-                    setOpenKey(p.key);
-                    setHover(null);
-                  }}
-                  aria-pressed={isOpen}
-                  className={`relative rounded-2xl border bg-panel px-4 pb-3 pt-5 text-right ${
-                    isOpen
+                return (
+                  <button
+                    key={p.key}
+                    type="button"
+                    onClick={() => {
+                      setOpenKey(p.key);
+                      setHover(null);
+                    }}
+                    aria-pressed={isOpen}
+                    className={`relative rounded-2xl border bg-panel px-4 pb-3 pt-5 text-right ${isOpen
                       ? "border-accent"
                       : "border-rule hover:border-rule-strong"
-                  }`}
-                  style={
-                    isOpen
-                      ? { boxShadow: "0 0 0 2px var(--color-accent-soft)" }
-                      : undefined
-                  }
-                >
-                  <span
-                    aria-hidden
-                    className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-paper"
-                    style={{
-                      borderColor: "var(--color-rule-strong)",
-                      boxShadow: "inset 0 1px 2px rgba(32,36,31,.25)",
-                    }}
-                  />
-                  <span className="block text-[15px] font-bold">
-                    {p.displayTitle}
-                  </span>
-                  <span className="mt-1 block text-[20px] font-extrabold tabular-nums">
-                    {formatNumber(p.overallAvgUnit)}
-                  </span>
-                  <span className="block text-[11.5px] text-ink-muted">
-                    میانگین هر عدد · {toPersianDigits(p.count)} خرید
-                  </span>
-                </button>
-              );
-            })}
+                      }`}
+                    style={
+                      isOpen
+                        ? { boxShadow: "0 0 0 2px var(--color-accent-soft)" }
+                        : undefined
+                    }
+                  >
+                    <span
+                      aria-hidden
+                      className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border bg-paper"
+                      style={{
+                        borderColor: "var(--color-rule-strong)",
+                        boxShadow: "inset 0 1px 2px rgba(32,36,31,.25)",
+                      }}
+                    />
+                    <span className="block text-[15px] font-bold">
+                      {p.displayTitle}
+                    </span>
+                    <span className="mt-1 block text-[20px] font-extrabold tabular-nums">
+                      {formatNumber(p.overallAvgUnit)}
+                    </span>
+                    <span className="block text-[11.5px] text-ink-muted">
+                      میانگین هر عدد · {toPersianDigits(p.count)} خرید
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
 

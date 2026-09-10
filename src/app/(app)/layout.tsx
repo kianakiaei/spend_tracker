@@ -17,7 +17,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-dvh">
-      <header className="mx-auto flex w-full max-w-[680px] items-center justify-between px-6 pt-5">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 pt-5">
         <span className="text-[13.5px] font-semibold">دفتر هزینه</span>
         <span className="flex items-center gap-3">
           <span className="max-w-[220px] truncate text-[12.5px] text-ink-muted">

@@ -83,7 +83,7 @@ export default async function CategoryDrilldownPage({
       learnedKeys={learnedKeys}
       fallbackCategoryId={fallback.id}
     >
-      <div className="mx-auto w-full max-w-[680px] px-6 pb-10 pt-4">
+      <div className="mx-auto w-full max-w-6xl px-6 pb-10 pt-4">
         <Link
           href={`/?month=${monthKey}`}
           className="text-[13px] text-ink-muted hover:text-ink"
