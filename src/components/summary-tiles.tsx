@@ -70,7 +70,7 @@ export function SummaryTiles({
             </span>
             <span className="min-w-0">
               <span
-                className={`block tabular-nums leading-snug break-words ${amountClass(formatted, tall)} font-bold`}
+                className={`block leading-snug break-words ${amountClass(formatted, tall)} font-bold`}
               >
                 {formatted}
               </span>

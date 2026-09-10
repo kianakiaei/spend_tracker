@@ -96,7 +96,7 @@ export function SearchBoard({ results }: { results: SearchResultDto[] }) {
                     )}
                   </span>
                 </span>
-                <span className="whitespace-nowrap text-[13.5px] font-bold tabular-nums">
+                <span className="whitespace-nowrap text-[13.5px] font-bold">
                   {formatToman(hit.amountToman)}
                   <span className="ms-1 text-[11.5px] font-medium text-ink-muted">
                     · {toPersianDigits(hit.quantity)} عدد

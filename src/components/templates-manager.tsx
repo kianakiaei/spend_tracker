@@ -363,7 +363,7 @@ function TemplateSheet({
             max={31}
             value={dayRaw}
             onChange={(event) => setDayRaw(event.target.value)}
-            className={`${INPUT_CLASS} max-w-24 tabular-nums`}
+            className={`${INPUT_CLASS} max-w-24`}
           />
           <span className="ms-2 text-[12px] text-ink-muted">۱ تا ۳۱</span>
         </div>
@@ -377,11 +377,10 @@ function TemplateSheet({
                 type="button"
                 aria-pressed={category.id === categoryId}
                 onClick={() => setCategoryId(category.id)}
-                className={`${CHIP_CLASS} ${
-                  category.id === categoryId
+                className={`${CHIP_CLASS} ${category.id === categoryId
                     ? "border-accent bg-accent-soft"
                     : "border-rule bg-panel"
-                }`}
+                  }`}
               >
                 <CategoryDot color={category.color} />
                 {category.name}

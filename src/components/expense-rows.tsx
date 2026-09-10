@@ -32,7 +32,7 @@ const LI_CLASS = "border-b border-rule";
 const ROW_CLASS = "flex items-center gap-2.5 px-0.5 py-2.5";
 const ROW_BUTTON_CLASS = `${ROW_CLASS} w-full rounded-lg text-start hover:bg-accent-soft`;
 const DAY_CLASS = "w-[66px] shrink-0 text-[11.5px] text-ink-muted";
-const AMOUNT_CLASS = "whitespace-nowrap text-[13.5px] font-bold tabular-nums";
+const AMOUNT_CLASS = "whitespace-nowrap text-[13.5px] font-bold";
 
 /** Chronological entries: dated recorded rows and forecast rows on the same
  * Jalali day scale. */

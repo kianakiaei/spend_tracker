@@ -100,7 +100,7 @@ export default async function CategoryDrilldownPage({
             {category.name}
           </h1>
           <p className="mt-2">
-            <span className="text-[34px] font-extrabold leading-[1.35] tabular-nums">
+            <span className="text-[34px] font-extrabold leading-[1.35]">
               {formatNumber(total)}
             </span>
             <small className="ms-2 text-[13.5px] font-medium text-ink-muted">

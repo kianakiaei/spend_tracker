@@ -82,7 +82,7 @@ function MonthlyChart({
     >
       <p
         aria-live="polite"
-        className="h-6 text-[13px] tabular-nums text-ink-muted"
+        className="h-6 text-[13px] text-ink-muted"
       >
         {readout
           ? `${jalaliMonthLabel(fromJalaliMonthKey(readout.monthKey))} · ${formatToman(readout.avgUnitPrice)} · ${toPersianDigits(readout.count)} خرید`
@@ -328,7 +328,7 @@ export function InsightsBoard({
                     <span className="block text-[15px] font-bold">
                       {p.displayTitle}
                     </span>
-                    <span className="mt-1 block text-[20px] font-extrabold tabular-nums">
+                    <span className="mt-1 block text-[20px] font-extrabold">
                       {formatNumber(p.overallAvgUnit)}
                     </span>
                     <span className="block text-[11.5px] text-ink-muted">
@@ -386,7 +386,7 @@ export function InsightsBoard({
                           )}
                         </span>
                       </span>
-                      <span className="whitespace-nowrap text-[13.5px] font-bold tabular-nums">
+                      <span className="whitespace-nowrap text-[13.5px] font-bold">
                         {formatToman(pt.amountToman)}
                       </span>
                     </li>
