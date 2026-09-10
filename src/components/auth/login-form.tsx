@@ -124,7 +124,7 @@ export function LoginForm({ resetDone }: { resetDone?: boolean }) {
             dir="ltr"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-rule bg-panel px-3 py-2 text-left text-[14.5px]"
+            className="rounded-xl border border-rule bg-panel px-3 py-2 text-left text-[16px]"
           />
         </label>
         <label className="flex flex-col gap-1.5 text-[13.5px]">
@@ -137,7 +137,7 @@ export function LoginForm({ resetDone }: { resetDone?: boolean }) {
             dir="ltr"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="rounded-xl border border-rule bg-panel px-3 py-2 text-left text-[14.5px]"
+            className="rounded-xl border border-rule bg-panel px-3 py-2 text-left text-[16px]"
           />
         </label>
         {error && (

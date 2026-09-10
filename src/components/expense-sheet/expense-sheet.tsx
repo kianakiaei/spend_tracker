@@ -417,7 +417,7 @@ export function ExpenseSheet({
                     event.target.value === "" ? null : event.target.value,
                   )
                 }
-                className="w-full rounded-lg border border-rule bg-panel px-3 py-2 text-[14px] outline-none focus:border-accent"
+                className="w-full rounded-lg border border-rule bg-panel px-3 py-2 text-[16px] outline-none focus:border-accent"
               >
                 <option value="">بدون رویداد</option>
                 {events.map((option) => (

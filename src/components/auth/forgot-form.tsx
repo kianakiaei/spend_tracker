@@ -51,7 +51,7 @@ export function ForgotForm() {
             dir="ltr"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="rounded-xl border border-rule bg-panel px-3 py-2 text-left text-[14.5px]"
+            className="rounded-xl border border-rule bg-panel px-3 py-2 text-left text-[16px]"
           />
         </label>
         {error && (

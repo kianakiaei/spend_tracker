@@ -76,7 +76,7 @@ export function SearchBoard({ results }: { results: SearchResultDto[] }) {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="جست‌وجو… مثلاً نان"
           aria-label="جست‌وجوی خرج"
-          className="w-full rounded-2xl border border-rule bg-panel px-4 py-2.5 text-[14px] outline-none placeholder:text-ink-muted focus:border-accent"
+          className="w-full rounded-2xl border border-rule bg-panel px-4 py-2.5 text-[16px] outline-none placeholder:text-ink-muted focus:border-accent"
         />
       </div>
 

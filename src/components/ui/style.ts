@@ -20,5 +20,9 @@ export const FIELD_CLASS = "border-b border-rule py-3";
 export const LABEL_CLASS = "mb-1.5 block text-[12px] text-ink-muted";
 export const INPUT_CLASS =
   "w-full border-0 bg-transparent p-0 text-[16px] outline-none placeholder:text-ink-muted/70";
+// Every text-entry control in the app stays at 16px or above: iOS (Safari
+// and Chrome alike) auto-zooms the page on focus of anything smaller,
+// which shrank and broke the bottom sheet on phones. Labels, hints and
+// buttons may stay small — only focusable text entry zooms.
 export const PICKER_INPUT_CLASS =
-  "w-[128px] cursor-pointer rounded-lg border border-rule bg-paper px-3 py-1.5 text-[13.5px] outline-none";
+  "w-[152px] cursor-pointer rounded-lg border border-rule bg-paper px-3 py-1.5 text-[16px] outline-none";
