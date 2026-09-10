@@ -2,7 +2,12 @@ import { and, asc, count, eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { expenses, recurringTemplates } from "@/db/schema";
 import { newId } from "@/lib/id";
-import { currentJalaliMonthKey, fromISODate } from "@/lib/jalali";
+import {
+  currentJalaliMonthKey,
+  fromISODate,
+  jalaliMonthKey,
+  shiftJalaliMonthKey,
+} from "@/lib/jalali";
 import {
   isTemplateDueInMonth,
   monthPosition,
@@ -27,11 +32,13 @@ import type { DomainDb, RecurringTemplate } from "./types";
 // Recurring-template service (ticket 23; decisions 05/06/14/15). Creating or
 // editing a template is an expense-like save: the learning pipeline fires
 // with the final title/category — but GENERATION never teaches (decision 06).
-// The lazy generate gate (ensure) is the current Jalali month only: past
-// months stay empty forever (no backfill), future months belong to preview.
-// A read never breaks because of generation: ensure swallows + logs, and the
-// next request retries for free — idempotent via the
-// (userId, sourceRecurringId, monthKey) unique index.
+// Generation has two halves: the lazy ensure gate runs on READS and covers
+// the current Jalali month only (decision 14), while WRITES backfill every
+// due month from the template's start month through the current one — a
+// past start fills its missed months the moment it is saved. Future months
+// always belong to preview. A read never breaks because of generation:
+// ensure swallows + logs, and the next request retries for free —
+// idempotent via the (userId, sourceRecurringId, monthKey) unique index.
 
 const createTemplateInputSchema = z.object({
   amountToman: amountTomanSchema,
@@ -85,8 +92,8 @@ export interface RecurringService {
    * survive (the generated expense's sourceRecurringId is provenance only). */
   remove(userId: string, id: string): Promise<void>;
   /** Forecast rows for a FUTURE Jalali month; [] for current/past — the
-   * current month has real generated expenses, a missed past month stays
-   * empty (decision 15). */
+   * current month has real generated expenses, past months hold theirs once
+   * a template save backfilled them (decision 15: preview is future-only). */
   preview(userId: string, monthKey: string): Promise<RecurringForecastRow[]>;
   /** All-time template count per category, PAUSED ones included — a paused
    * template still points at its category and still blocks the delete
@@ -169,6 +176,7 @@ export function createRecurringService(db: DomainDb): RecurringService {
         .returning();
 
       await learnOnSave(db, userId, data.title, data.categoryId);
+      await backfillRecurringTemplate(db, userId, template!);
       return template!;
     },
 
@@ -218,6 +226,10 @@ export function createRecurringService(db: DomainDb): RecurringService {
       const title = data.title ?? existing.title;
       const categoryId = data.categoryId ?? existing.categoryId;
       await learnOnSave(db, userId, title, categoryId);
+      // A moved-earlier start, a reactivation or a widened window fills the
+      // newly covered months; already-generated rows keep their saved values
+      // (generated expenses are independent rows).
+      await backfillRecurringTemplate(db, userId, template!);
       return template!;
     },
 
@@ -282,62 +294,111 @@ export async function ensureRecurringExpensesGenerated(
   monthKey: string,
 ): Promise<{ generated: number }> {
   parseOrThrow(jalaliMonthKeySchema, monthKey, "month key");
-  // Only the CURRENT Jalali month generates — a missed month stays empty
-  // forever, the future belongs to preview.
+  // Reads only ever touch the CURRENT Jalali month — past months fill on
+  // template writes (backfill below), the future belongs to preview.
   if (monthPosition(monthKey, currentJalaliMonthKey()) !== "current") {
     return { generated: 0 };
   }
 
-  let generated = 0;
   try {
     const due = await listActiveDueTemplates(db, userId, monthKey);
-
-    const existing = await db
-      .select({ sourceRecurringId: expenses.sourceRecurringId })
-      .from(expenses)
-      .where(
-        and(
-          eq(expenses.userId, userId),
-          eq(expenses.monthKey, monthKey),
-          isNotNull(expenses.sourceRecurringId),
-        ),
-      );
-    const alreadyGenerated = new Set(
-      existing.map((row) => row.sourceRecurringId),
-    );
-    const missing = due.filter((t) => !alreadyGenerated.has(t.id));
-
-    const now = new Date();
-    for (const template of missing) {
-      // ON CONFLICT DO NOTHING on the unique index: a concurrent request's
-      // insert (or a retried one) is a no-op, never an error.
-      const inserted = await db
-        .insert(expenses)
-        .values({
-          id: newId(),
-          amountToman: template.amountToman,
-          quantity: 1,
-          title: template.title,
-          note: null,
-          categoryId: template.categoryId,
-          occurredAt: occurrenceISO(monthKey, template.dayOfMonth),
-          monthKey,
-          sourceRecurringId: template.id,
-          userId,
-          createdAt: now,
-          updatedAt: now,
-        })
-        .onConflictDoNothing({
-          target: [expenses.userId, expenses.sourceRecurringId, expenses.monthKey],
-        })
-        .returning({ id: expenses.id });
-      generated += inserted.length;
-    }
+    return { generated: await generateDueExpenses(db, userId, due, monthKey) };
   } catch (error) {
     // Reads never break because of generation (decision 14): log and serve
     // with the data that exists; the next request retries for free.
     console.error("[recurring] generation failed; serving without it", error);
-    return { generated };
+    return { generated: 0 };
+  }
+}
+
+/** Write-side backfill: every due month from the template's start month
+ * through the current Jalali month gets its expense — so a template
+ * starting in a past month fills those ledgers the moment it is saved.
+ * Inactive templates and future starts generate nothing. Idempotent like
+ * ensure (same unique index); already-generated rows are never touched.
+ * A backfill failure never fails the save that triggered it — log and move
+ * on; the next template edit retries the missing months for free. */
+export async function backfillRecurringTemplate(
+  db: DomainDb,
+  userId: string,
+  template: RecurringTemplate,
+): Promise<{ generated: number }> {
+  if (!template.active) return { generated: 0 };
+  let startMonth: string;
+  try {
+    startMonth = jalaliMonthKey(fromISODate(template.startDate));
+  } catch {
+    throw new ValidationError(`not a real calendar date: ${template.startDate}`);
+  }
+  const current = currentJalaliMonthKey();
+  if (startMonth > current) return { generated: 0 };
+
+  let generated = 0;
+  try {
+    for (
+      let monthKey = startMonth;
+      monthKey <= current;
+      monthKey = shiftJalaliMonthKey(monthKey, 1)
+    ) {
+      if (!isTemplateDueInMonth(template, monthKey)) continue;
+      generated += await generateDueExpenses(db, userId, [template], monthKey);
+    }
+  } catch (error) {
+    console.error("[recurring] backfill failed; serving without it", error);
   }
   return { generated };
+}
+
+/** Inserts one expense per due template missing in `monthKey` — the shared
+ * write half of ensure and backfill. Returns how many rows were inserted. */
+async function generateDueExpenses(
+  db: DomainDb,
+  userId: string,
+  due: RecurringTemplate[],
+  monthKey: string,
+): Promise<number> {
+  if (due.length === 0) return 0;
+  const existing = await db
+    .select({ sourceRecurringId: expenses.sourceRecurringId })
+    .from(expenses)
+    .where(
+      and(
+        eq(expenses.userId, userId),
+        eq(expenses.monthKey, monthKey),
+        isNotNull(expenses.sourceRecurringId),
+      ),
+    );
+  const alreadyGenerated = new Set(
+    existing.map((row) => row.sourceRecurringId),
+  );
+  const missing = due.filter((t) => !alreadyGenerated.has(t.id));
+
+  const now = new Date();
+  let generated = 0;
+  for (const template of missing) {
+    // ON CONFLICT DO NOTHING on the unique index: a concurrent request's
+    // insert (or a retried one) is a no-op, never an error.
+    const inserted = await db
+      .insert(expenses)
+      .values({
+        id: newId(),
+        amountToman: template.amountToman,
+        quantity: 1,
+        title: template.title,
+        note: null,
+        categoryId: template.categoryId,
+        occurredAt: occurrenceISO(monthKey, template.dayOfMonth),
+        monthKey,
+        sourceRecurringId: template.id,
+        userId,
+        createdAt: now,
+        updatedAt: now,
+      })
+      .onConflictDoNothing({
+        target: [expenses.userId, expenses.sourceRecurringId, expenses.monthKey],
+      })
+      .returning({ id: expenses.id });
+    generated += inserted.length;
+  }
+  return generated;
 }

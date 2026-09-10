@@ -13,11 +13,12 @@ import type { DomainDb } from "./types";
 // Summary service (ticket 24): the ticket-12 GET /api/v1/summaries shape,
 // one shared read for the RSC dashboard and the v1 handler. Decision 14
 // makes this the FIRST ensure call-site — but only the current month
-// generates: past months never ensure and never forecast (a missed month
-// stays empty), future months never generate (they belong to preview) —
-// their totals composite the active due templates behind the ticket-23
-// predicate, exposed additively as `forecastToman`. Aggregation lives in
-// SQL (GROUP BY categoryId); the month's expense rows never reach memory.
+// generates on read: past months never ensure and never forecast (their rows
+// come from template-write backfills), future months never generate (they
+// belong to preview) — their totals composite the active due templates
+// behind the ticket-23 predicate, exposed additively as `forecastToman`.
+// Aggregation lives in SQL (GROUP BY categoryId); the month's expense rows
+// never reach memory.
 
 /** One dashboard tile: a category's share of the month. `count` is the
  * number of RECORDED expenses — forecast rows contribute to totals only

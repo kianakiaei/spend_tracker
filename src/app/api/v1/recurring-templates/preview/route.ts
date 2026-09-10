@@ -7,9 +7,10 @@ import { createRecurringService } from "@/lib/services";
 
 // /api/v1/recurring-templates/preview (ticket 15's additive read): the
 // forecast rows of a FUTURE Jalali month — active due templates with the
-// clamped day, never generated into expenses (decision 14 keeps generation
-// current-month-only). Current/past months render 200 [] (the current month
-// has real generated expenses; a missed past month stays empty).
+// clamped day, never generated into expenses (decision 14 keeps read-side
+// generation current-month-only). Current/past months render 200 [] (the
+// current month has real generated expenses; past months hold theirs once a
+// template save backfilled them).
 //
 // Routing note: the static `preview` segment wins over [id] — which only
 // exposes PATCH/DELETE anyway.

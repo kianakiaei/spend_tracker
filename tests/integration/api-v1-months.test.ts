@@ -332,7 +332,7 @@ describe("GET /expenses?month= across months", () => {
     await expect(await ledger.json()).toEqual([]);
   });
 
-  it("the current month's read carries the lazily generated expenses (decision 14)", async () => {
+  it("the current month's read carries the generated expenses (decision 14)", async () => {
     const ledger = await expensesRoute.GET(
       v1Request(`/expenses?month=${encodeURIComponent(CURRENT)}`, { session: sessionE }),
     );

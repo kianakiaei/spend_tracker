@@ -86,8 +86,9 @@ export function occurrenceISO(monthKey: string, dayOfMonth: number): string {
   return toISODate(first);
 }
 
-/** The ensure gate: generation only ever happens for the CURRENT Jalali
- * month — never past (no backfill, decision 14), never future. */
+/** The ensure gate: reads only ever generate the CURRENT Jalali month —
+ * past months fill on template writes (backfill), never on reads, and the
+ * future belongs to preview. */
 export function monthPosition(
   monthKey: string,
   currentMonthKey: string,

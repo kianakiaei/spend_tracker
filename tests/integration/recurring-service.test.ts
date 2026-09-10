@@ -1,11 +1,17 @@
 import { afterAll, describe, expect, it, vi } from "vitest";
 import { eq } from "drizzle-orm";
-import { learnedKeys } from "@/db/schema";
+import { learnedKeys, recurringTemplates } from "@/db/schema";
 import {
   clampedDayOfMonth,
   jalaliMonthBounds,
   occurrenceISO,
 } from "@/lib/recurring";
+import {
+  fromISODate,
+  jalaliMonthKey,
+  shiftJalaliMonthKey,
+} from "@/lib/jalali";
+import { newId } from "@/lib/id";
 import { createExpenseService } from "@/lib/services/expense-service";
 import {
   createRecurringService,
@@ -21,10 +27,10 @@ import {
 import { setupIntegrationDb } from "../helpers/integration";
 
 // Recurring service rules on a real temp libSQL file (ticket 23): lazy
-// generation for the CURRENT Jalali month only (decision 14), preview for
-// FUTURE months only (decision 15), template saves teach the engine but
-// generation never does (decision 06), and a read never breaks because of
-// generation.
+// generation for the CURRENT Jalali month on reads (decision 14), preview
+// for FUTURE months only (decision 15), backfill of past months on template
+// writes, template saves teach the engine but generation never does
+// (decision 06), and a read never breaks because of generation.
 
 const fx = await setupIntegrationDb("recurring-service");
 const recurring = createRecurringService(fx.db);
@@ -51,6 +57,33 @@ async function createTemplate(
     endDate: null,
     ...over,
   });
+}
+
+/** A template row straight into the DB — bypasses the service so the
+ * ensure (read-path) tests never trip the write-side backfill. */
+async function insertTemplateRow(
+  userId: string,
+  over: Partial<CreateRecurringTemplateInput> = {},
+) {
+  const now = new Date();
+  const [row] = await fx.db
+    .insert(recurringTemplates)
+    .values({
+      id: newId(),
+      amountToman: 1_500_000,
+      title: "قسط وام",
+      categoryId: (await systemCategoryBySlug(fx.db, userId, "installment")).id,
+      dayOfMonth: 10,
+      startDate: "2025-01-01",
+      endDate: null,
+      active: true,
+      userId,
+      createdAt: now,
+      updatedAt: now,
+      ...over,
+    })
+    .returning();
+  return row!;
 }
 
 const learnedRows = (userId: string) =>
@@ -208,7 +241,7 @@ describe("recurringService.remove/get/list", () => {
 describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", () => {
   it("generates this month's due templates with standard expense fields", async () => {
     const userId = await fx.signUp();
-    await createTemplate(userId, { dayOfMonth: 15 });
+    await insertTemplateRow(userId, { dayOfMonth: 15 });
     const learnedBefore = await learnedRows(userId);
 
     const { generated } = await ensureRecurringExpensesGenerated(fx.db, userId, CURRENT);
@@ -229,8 +262,8 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
 
   it("twice in a row → zero duplicates; parallel calls → one row", async () => {
     const userId = await fx.signUp();
-    await createTemplate(userId, { dayOfMonth: 10 });
-    await createTemplate(userId, { dayOfMonth: 20, title: "قبض برق", amountToman: 300_000 });
+    await insertTemplateRow(userId, { dayOfMonth: 10 });
+    await insertTemplateRow(userId, { dayOfMonth: 20, title: "قبض برق", amountToman: 300_000 });
 
     await ensureRecurringExpensesGenerated(fx.db, userId, CURRENT);
     const second = await ensureRecurringExpensesGenerated(fx.db, userId, CURRENT);
@@ -247,8 +280,8 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
 
   it("a mid-month template with a past day still generates this month (backdated)", async () => {
     const userId = await fx.signUp();
-    // created "today", but its day is the 3rd and it starts this month
-    await createTemplate(userId, {
+    // inserted "today", but its day is the 3rd and it starts this month
+    await insertTemplateRow(userId, {
       dayOfMonth: 3,
       startDate: occurrenceISO(CURRENT, 3),
     });
@@ -260,9 +293,13 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
     expect(expense!.occurredAt).toBe(occurrenceISO(CURRENT, 3));
   });
 
-  it("past and future months never generate (no backfill — decision 14)", async () => {
+  it("reads never generate past or future months — the ensure gate is current-only", async () => {
     const userId = await fx.signUp();
-    await createTemplate(userId);
+    // Starts next month: due nowhere at or before CURRENT, so the write
+    // backfills nothing and the read gate is what is under test.
+    await createTemplate(userId, {
+      startDate: jalaliMonthBounds(NEXT).startISO,
+    });
 
     const past = await ensureRecurringExpensesGenerated(fx.db, userId, PREV);
     const future = await ensureRecurringExpensesGenerated(fx.db, userId, NEXT);
@@ -274,12 +311,18 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
 
   it("skips templates the predicate excludes: paused, ended, not yet started", async () => {
     const userId = await fx.signUp();
-    // PREV's last day < CURRENT's start; NEXT's start > CURRENT's end
-    const paused = await createTemplate(userId, { dayOfMonth: 5 });
+    // PREV's last day < CURRENT's start; NEXT's start > CURRENT's end.
+    // Starts sit outside CURRENT so the service create backfills nothing —
+    // the CURRENT emptiness below is the ensure gate's doing alone.
+    const paused = await createTemplate(userId, {
+      dayOfMonth: 5,
+      startDate: jalaliMonthBounds(NEXT).startISO,
+    });
     await recurring.update(userId, paused.id, { active: false });
     await createTemplate(userId, {
       dayOfMonth: 5,
       title: "تمام‌شده",
+      startDate: jalaliMonthBounds(PREV).startISO,
       endDate: jalaliMonthBounds(PREV).endISO,
     });
     await createTemplate(userId, {
@@ -295,7 +338,7 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
 
   it("an injected generation failure never breaks the read path (insert or select)", async () => {
     const userId = await fx.signUp();
-    await createTemplate(userId);
+    await insertTemplateRow(userId);
 
     const brokenDb = (breaking: string) =>
       new Proxy(fx.db, {
@@ -320,6 +363,117 @@ describe("ensureRecurringExpensesGenerated — lazy generation (decision 14)", (
     // the shield heals: the same (unbroken) db retries for free
     const healed = await ensureRecurringExpensesGenerated(fx.db, userId, CURRENT);
     expect(healed.generated).toBe(1);
+  });
+});
+
+describe("template writes backfill past months from the start date", () => {
+  /** Every Jalali month key from `from` through `to`, inclusive. */
+  function monthRange(from: string, to: string): string[] {
+    const out: string[] = [];
+    for (let m = from; m <= to; m = shiftJalaliMonthKey(m, 1)) out.push(m);
+    return out;
+  }
+
+  it("create with a past start fills every due month through the current one", async () => {
+    const userId = await fx.signUp();
+    const startISO = jalaliMonthBounds(PREV).startISO;
+    await createTemplate(userId, { dayOfMonth: 10, startDate: startISO });
+
+    const months = monthRange(jalaliMonthKey(fromISODate(startISO)), CURRENT);
+    expect(months.length).toBeGreaterThan(1);
+    for (const monthKey of months) {
+      const rows = await generatedExpenses(fx.db, userId, monthKey);
+      expect(rows).toHaveLength(1);
+      expect(rows[0]!.occurredAt).toBe(occurrenceISO(monthKey, 10));
+      expect(rows[0]!.amountToman).toBe(1_500_000);
+    }
+  });
+
+  it("create with a future start generates nothing yet", async () => {
+    const userId = await fx.signUp();
+    await createTemplate(userId, {
+      startDate: jalaliMonthBounds(NEXT).startISO,
+    });
+
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toHaveLength(0);
+    expect(await generatedExpenses(fx.db, userId, NEXT)).toHaveLength(0);
+  });
+
+  it("an unrelated update adds no rows — backfill is idempotent", async () => {
+    const userId = await fx.signUp();
+    const template = await createTemplate(userId, {
+      startDate: jalaliMonthBounds(PREV).startISO,
+    });
+    const before = await generatedExpenses(fx.db, userId, CURRENT);
+
+    await recurring.update(userId, template.id, { title: "قسط وام بازنویسی" });
+
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toEqual(before);
+    expect(await generatedExpenses(fx.db, userId, PREV)).toHaveLength(1);
+  });
+
+  it("moving the start earlier fills only the newly covered months", async () => {
+    const userId = await fx.signUp();
+    const template = await createTemplate(userId, {
+      startDate: jalaliMonthBounds(CURRENT).startISO,
+    });
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toHaveLength(1);
+    expect(await generatedExpenses(fx.db, userId, PREV)).toHaveLength(0);
+
+    await recurring.update(userId, template.id, {
+      startDate: jalaliMonthBounds(PREV).startISO,
+    });
+
+    const prev = await generatedExpenses(fx.db, userId, PREV);
+    expect(prev).toHaveLength(1);
+    expect(prev[0]!.occurredAt).toBe(occurrenceISO(PREV, 10));
+    // the current month keeps its single row — no duplicate
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toHaveLength(1);
+  });
+
+  it("the end date bounds the backfill", async () => {
+    const userId = await fx.signUp();
+    await createTemplate(userId, {
+      startDate: jalaliMonthBounds(PREV).startISO,
+      endDate: jalaliMonthBounds(PREV).endISO,
+    });
+
+    expect(await generatedExpenses(fx.db, userId, PREV)).toHaveLength(1);
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toHaveLength(0);
+  });
+
+  it("a paused template backfills nothing on update", async () => {
+    const userId = await fx.signUp();
+    const template = await createTemplate(userId, {
+      startDate: jalaliMonthBounds(NEXT).startISO,
+    });
+    await recurring.update(userId, template.id, { active: false });
+
+    await recurring.update(userId, template.id, {
+      startDate: jalaliMonthBounds(PREV).startISO,
+    });
+
+    expect(await generatedExpenses(fx.db, userId, PREV)).toHaveLength(0);
+    expect(await generatedExpenses(fx.db, userId, CURRENT)).toHaveLength(0);
+  });
+
+  it("backfill never teaches — generation stays learning-free", async () => {
+    const userId = await fx.signUp();
+    await createTemplate(userId, {
+      startDate: jalaliMonthBounds(PREV).startISO,
+    });
+    const shape = (await learnedRows(userId)).map((r) => [r.key, r.count]);
+
+    const other = await fx.signUp();
+    await createTemplate(other, {
+      startDate: jalaliMonthBounds(NEXT).startISO,
+    });
+    // one learnOnSave per save in both cases — the filled months add none
+    // (category ids differ per user, so only keys and counters compare)
+    expect(
+      (await learnedRows(other)).map((r) => [r.key, r.count]),
+    ).toEqual(shape);
+    expect(shape.length).toBeGreaterThan(0);
   });
 });
 

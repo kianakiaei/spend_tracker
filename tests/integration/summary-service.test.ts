@@ -1,4 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
+import { recurringTemplates } from "@/db/schema";
+import { newId } from "@/lib/id";
 import { jalaliMonthBounds } from "@/lib/recurring";
 import { createCategoryService } from "@/lib/services/category-service";
 import {
@@ -20,8 +22,9 @@ import { setupIntegrationDb } from "../helpers/integration";
 // Summary service rules on a real temp libSQL file (ticket 24): the ticket-12
 // shape with decision 15's additive forecast composition for FUTURE Jalali
 // months, decision 14's ensure-before-read for the CURRENT month only (past
-// months never generate, never forecast), and the SQL-side aggregation
-// (GROUP BY categoryId — the month's expense rows never reach memory).
+// months never generate on read — they fill on template writes — and never
+// forecast), and the SQL-side aggregation (GROUP BY categoryId — the month's
+// expense rows never reach memory).
 
 const fx = await setupIntegrationDb("summary-service");
 const categories = createCategoryService(fx.db);
@@ -90,7 +93,22 @@ describe("summaryService.getSummary — current month: ensure before read (decis
   it("generates due templates BEFORE reading — the summary includes them, with no forecast field", async () => {
     const userId = await fx.signUp();
     const installment = await systemCategoryBySlug(fx.db, userId, "installment");
-    await createTemplate(userId); // due this month — nothing generated yet
+    // Straight into the DB so the write-side backfill cannot run ahead of
+    // the read — the single insert below must be the ensure's.
+    const now = new Date();
+    await fx.db.insert(recurringTemplates).values({
+      id: newId(),
+      amountToman: 1_500_000,
+      title: "قسط وام",
+      categoryId: installment.id,
+      dayOfMonth: 10,
+      startDate: "2025-01-01",
+      endDate: null,
+      active: true,
+      userId,
+      createdAt: now,
+      updatedAt: now,
+    });
     const spy = insertCountingDb(fx.db);
     const spySummaries = createSummaryService(spy.db);
 
@@ -125,7 +143,12 @@ describe("summaryService.getSummary — past month: recorded only", () => {
     const userId = await fx.signUp();
     const groceries = await systemCategoryBySlug(fx.db, userId, "groceries");
     await createExpense(userId, {}, PREV); // recorded in PREV
-    await createTemplate(userId, { dayOfMonth: 5 }); // due in PREV too
+    // Starts next month: due nowhere at or before PREV, so the write
+    // backfills nothing and the read truly must not generate.
+    await createTemplate(userId, {
+      dayOfMonth: 5,
+      startDate: jalaliMonthBounds(NEXT).startISO,
+    });
     const spy = insertCountingDb(fx.db);
     const spySummaries = createSummaryService(spy.db);
 
@@ -271,11 +294,26 @@ describe("summaryService.getSummary — future month: composite (decision 15)", 
 describe("expenseService.listByMonth — the second ensure call-site (decision 14)", () => {
   it("triggers generation ONLY when the requested month is the current one", async () => {
     const userId = await fx.signUp();
-    await createTemplate(userId, { dayOfMonth: 12 });
+    // Straight into the DB so the write-side backfill cannot run ahead of
+    // the read — the single insert below must be the ensure's.
+    const now = new Date();
+    await fx.db.insert(recurringTemplates).values({
+      id: newId(),
+      amountToman: 1_500_000,
+      title: "قسط وام",
+      categoryId: (await systemCategoryBySlug(fx.db, userId, "installment")).id,
+      dayOfMonth: 12,
+      startDate: "2025-01-01",
+      endDate: null,
+      active: true,
+      userId,
+      createdAt: now,
+      updatedAt: now,
+    });
     const spy = insertCountingDb(fx.db);
     const ledger = createExpenseService(spy.db);
 
-    // past: never generates (no backfill) — future: never (preview territory)
+    // past: never generates on read — future: never (preview territory)
     await ledger.listByMonth(userId, PREV);
     await ledger.listByMonth(userId, NEXT);
     expect(spy.count()).toBe(0);
@@ -290,7 +328,11 @@ describe("expenseService.listByMonth — the second ensure call-site (decision 1
 
   it("recording a fresh expense is NOT an ensure call-site", async () => {
     const userId = await fx.signUp();
-    await createTemplate(userId);
+    // Starts next month so the write backfills nothing — the expense write
+    // below must not generate either.
+    await createTemplate(userId, {
+      startDate: jalaliMonthBounds(NEXT).startISO,
+    });
 
     await createExpense(userId); // a write — must not generate
 
