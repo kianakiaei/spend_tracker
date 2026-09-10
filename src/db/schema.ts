@@ -118,6 +118,10 @@ export const expenses = sqliteTable(
     monthKey: text("monthKey").notNull(),
     // Set only on expenses generated from a recurring template.
     sourceRecurringId: text("sourceRecurringId"),
+    // Optional event membership (رویداد, e.g. a trip): a second axis —
+    // the expense keeps its category AND its month, the event is a pure
+    // overlay. Nullable; enforced per-user in the service layer.
+    eventId: text("eventId"),
     userId: text("userId").notNull(),
     createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
     updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull(),
@@ -132,7 +136,26 @@ export const expenses = sqliteTable(
     ),
     // Month reads: dashboard sum, category breakdown, expense list.
     index("expenses_user_month_idx").on(t.userId, t.monthKey),
+    // Event reads: an event's detail lists its expenses.
+    index("expenses_user_event_idx").on(t.userId, t.eventId),
   ],
+);
+
+export const events = sqliteTable(
+  "events",
+  {
+    id: text("id").primaryKey(),
+    title: text("title").notNull(),
+    note: text("note"),
+    // Gregorian date-only 'YYYY-MM-DD'; display only — never drives
+    // membership (events collect expenses by manual attach).
+    startDate: text("startDate"),
+    endDate: text("endDate"),
+    userId: text("userId").notNull(),
+    createdAt: integer("createdAt", { mode: "timestamp" }).notNull(),
+    updatedAt: integer("updatedAt", { mode: "timestamp" }).notNull(),
+  },
+  (t) => [uniqueIndex("events_user_title_unique").on(t.userId, t.title)],
 );
 
 export const recurringTemplates = sqliteTable("recurringTemplates", {

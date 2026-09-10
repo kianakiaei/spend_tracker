@@ -8,11 +8,12 @@ describe("node project smoke", () => {
     expect(parser.safeParse({ monthKey: "1405-06" }).success).toBe(true);
   });
 
-  it("db schema exposes the four better-auth tables and the four domain tables", () => {
+  it("db schema exposes the better-auth tables and the domain tables", () => {
     expect(Object.keys(schema).sort()).toEqual(
       [
         "account",
         "categories",
+        "events",
         "expenses",
         "learnedKeys",
         "recurringTemplates",

@@ -21,6 +21,7 @@ export default async function globalSetup() {
     "account",
     "learnedKeys",
     "expenses",
+    "events",
     "recurringTemplates",
     "categories",
     "user",
