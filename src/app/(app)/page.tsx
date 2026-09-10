@@ -88,10 +88,13 @@ export default async function DashboardPage({
       fallbackCategoryId={fallback.id}
       initialExpense={deepLinkedExpense ?? undefined}
     >
-      <div className="mx-auto w-full max-w-[680px] px-6 pb-10 pt-4">
+      <div className="mx-auto w-full max-w-6xl px-6 pb-10 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <MonthNav monthKey={monthKey} label={label} />
           <nav className="flex gap-4 text-[13px] text-ink-muted">
+            <Link href="/search" className="hover:text-accent">
+              جست‌وجو
+            </Link>
             <Link href="/insights" className="hover:text-accent">
               بینش‌ها
             </Link>

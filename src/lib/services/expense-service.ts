@@ -1,6 +1,7 @@
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { categories, events, expenses } from "@/db/schema";
+import { canonical } from "@/lib/categorization/normalize";
 import { newId } from "@/lib/id";
 import { currentJalaliMonthKey, fromISODate, jalaliMonthKey } from "@/lib/jalali";
 import { monthPosition } from "@/lib/recurring";
@@ -28,6 +29,38 @@ import type { DomainDb, Expense, ExpenseWithCategory } from "./types";
 // via the jalali module; an UNDATED expense is a member of the month the
 // form was opened in — the explicit `entryMonthKey` parameter. Every save
 // (create/update) fires the learning pipeline with the final category.
+
+/** The search page's cap — one screen, the query stays cheap on big ledgers. */
+const SEARCH_LIMIT = 100;
+
+/** One row of the whole-ledger search (تیکت جست‌وجو): everything the
+ * «جست‌وجو در همه ماه‌ها» page needs to render a hit. */
+export interface SearchResult {
+  expenseId: string;
+  title: string;
+  amountToman: number;
+  quantity: number;
+  monthKey: string;
+  occurredAt: string | null;
+  categoryName: string;
+  categoryId: string;
+}
+
+function toSearchResult(row: {
+  expense: Expense;
+  category: { id: string; name: string };
+}): SearchResult {
+  return {
+    expenseId: row.expense.id,
+    title: row.expense.title,
+    amountToman: row.expense.amountToman,
+    quantity: row.expense.quantity,
+    monthKey: row.expense.monthKey,
+    occurredAt: row.expense.occurredAt,
+    categoryName: row.category.name,
+    categoryId: row.category.id,
+  };
+}
 
 const createExpenseInputSchema = z
   .object({
@@ -87,6 +120,20 @@ export interface UpdateExpenseInput {
   eventId?: string | null;
 }
 
+/** One row of the whole-ledger search (تیکت جست‌وجو): everything the
+ * «جست‌وجو در همه ماه‌ها» page needs to render a hit. */
+
+export interface SearchResult {
+  expenseId: string;
+  title: string;
+  amountToman: number;
+  quantity: number;
+  monthKey: string;
+  occurredAt: string | null;
+  categoryName: string;
+  categoryId: string;
+}
+
 export interface ExpenseService {
   /** One expense with its category — the v1 API's GET [id] (ticket 25). */
   get(userId: string, id: string): Promise<ExpenseWithCategory>;
@@ -116,7 +163,15 @@ export interface ExpenseService {
   /** All-time expense count per category (the categories page's delete
    * guard, ticket 28): missing key = zero. Aggregation lives in SQL. */
   countByCategory(userId: string): Promise<Record<string, number>>;
+  countByCategory(userId: string): Promise<Record<string, number>>;
+  /** Whole-ledger search (تیکت جست‌وجو): every expense whose title contains
+   * the query in canonical Persian form, newest first. */
+  searchByTitle(userId: string, query: string): Promise<SearchResult[]>;
+  /** The newest SEARCH_LIMIT rows of the whole ledger — the search page's
+   * initial render (the client board narrows live as the user types). */
+  listAll(userId: string): Promise<SearchResult[]>;
 }
+
 
 export function createExpenseService(db: DomainDb): ExpenseService {
   /** null/undefined = no event; otherwise the event must exist + belong here. */
@@ -287,6 +342,38 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         .where(eq(expenses.userId, userId))
         .groupBy(expenses.categoryId);
       return Object.fromEntries(rows.map((row) => [row.categoryId, row.count]));
+    },
+
+    async listAll(userId) {
+      // The whole ledger, newest first (search page's initial render and the
+      // mobile search's q="" case). One screen's worth is returned — same cap
+      // as a search.
+      const rows = await db
+        .select({ expense: expenses, category: categories })
+        .from(expenses)
+        .innerJoin(categories, eq(categories.id, expenses.categoryId))
+        .where(eq(expenses.userId, userId))
+        .orderBy(
+          desc(expenses.monthKey),
+          desc(expenses.createdAt),
+          desc(expenses.id),
+        )
+        .limit(SEARCH_LIMIT);
+      return rows.map(toSearchResult);
+    },
+
+    async searchByTitle(userId, query) {
+      // The query and every title pass through the SAME canonical form the
+      // categorization engine uses — «شير» matches «شیر», Persian digits
+      // match Latin ones, diacritics/ZWNJ vanish. A blank query is the empty
+      // result: an empty search box lists nothing over the API.
+      const needle = canonical(query);
+      if (needle === "") return [];
+
+      const all = await this.listAll(userId);
+      return all
+        .filter((hit) => canonical(hit.title).includes(needle))
+        .slice(0, SEARCH_LIMIT);
     },
   };
 }

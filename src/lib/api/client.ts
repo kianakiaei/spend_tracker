@@ -10,6 +10,7 @@ import {
   monthSummaryResponseSchema,
   moveExpensesResponseSchema,
   recurringTemplateResponseSchema,
+  searchResultResponseSchema,
   type ClassifyRequest,
   type CreateCategoryRequest,
   type CreateEventRequest,
@@ -221,6 +222,12 @@ export function createV1Client(options: V1ClientOptions = {}) {
           body: patch,
         }),
       remove: (id: string) => expectNoBody("DELETE", `/events${idPath(id)}`),
+    },
+    search: {
+      byTitle: (q: string) =>
+        readValidated("GET", "/search", z.array(searchResultResponseSchema), {
+          query: { q },
+        }),
     },
     classify: (input: ClassifyRequest) =>
       readValidated("POST", "/classify", classifyResponseSchema, { body: input }),

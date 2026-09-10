@@ -103,6 +103,12 @@ export const monthQuerySchema = z.object({
   month: jalaliMonthKeySchema,
 });
 
+/** GET /api/v1/search?q= — the whole-ledger title search. Blank is legal and
+ * means «nothing typed yet»: the handler answers an empty list. */
+export const searchQuerySchema = z.object({
+  q: z.string().max(200),
+});
+
 // --- Responses (the JSON serialization of the service rows) ---
 
 /** An ISO timestamp as JSON.stringify writes a Date. */
@@ -179,6 +185,19 @@ export const monthSummaryResponseSchema = z.object({
     }),
   ),
   forecastToman: z.number().int().optional(),
+});
+
+/** GET /api/v1/search?q= — one hit: the fields the search page renders
+ * (item title, price, Jalali month of the purchase, category chip). */
+export const searchResultResponseSchema = z.object({
+  expenseId: uuidv7Schema,
+  title: z.string(),
+  amountToman: z.number().int().positive(),
+  quantity: z.number().positive(),
+  monthKey: jalaliMonthKeySchema,
+  occurredAt: dateOnlySchema.nullable(),
+  categoryName: z.string(),
+  categoryId: uuidv7Schema,
 });
 
 /** POST /api/v1/classify — always 200 on a valid title; the fallback answer
@@ -264,6 +283,7 @@ export type CreateEventRequest = z.infer<typeof createEventRequestSchema>;
 export type UpdateEventRequest = z.infer<typeof updateEventRequestSchema>;
 export type ClassifyRequest = z.infer<typeof classifyRequestSchema>;
 export type MonthQuery = z.infer<typeof monthQuerySchema>;
+export type SearchQuery = z.infer<typeof searchQuerySchema>;
 
 export type CategoryDto = z.infer<typeof categoryResponseSchema>;
 export type ExpenseDto = z.infer<typeof expenseResponseSchema>;
@@ -275,3 +295,4 @@ export type ForecastRowDto = z.infer<typeof forecastRowResponseSchema>;
 export type MonthSummaryDto = z.infer<typeof monthSummaryResponseSchema>;
 export type ClassifyDto = z.infer<typeof classifyResponseSchema>;
 export type MoveExpensesDto = z.infer<typeof moveExpensesResponseSchema>;
+export type SearchResultDto = z.infer<typeof searchResultResponseSchema>;

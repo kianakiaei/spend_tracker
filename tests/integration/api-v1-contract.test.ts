@@ -35,6 +35,7 @@ const previewRoute = await import(
 const summariesRoute = await import("@/app/api/v1/summaries/route");
 const eventsRoute = await import("@/app/api/v1/events/route");
 const eventIdRoute = await import("@/app/api/v1/events/[id]/route");
+const searchRoute = await import("@/app/api/v1/search/route");
 const classifyRoute = await import("@/app/api/v1/classify/route");
 
 const { systemCategoryBySlug, relativeMonthKeys } = await import(
@@ -215,6 +216,7 @@ describe("the session gate — 401 problem+json without credentials", () => {
         eventIdRoute.PATCH(v1Request("/events/x", { method: "PATCH" }), idCtx("x")),
       () =>
         eventIdRoute.DELETE(v1Request("/events/x", { method: "DELETE" }), idCtx("x")),
+      () => searchRoute.GET(v1Request("/search?q=نان")),
       () => classifyRoute.POST(v1Request("/classify", { method: "POST" })),
     ];
 
@@ -783,6 +785,54 @@ describe("events resource", () => {
       idCtx(event.id),
     );
     await expectProblem(foreign, 404, "not_found");
+  });
+});
+
+describe("GET /search — the whole-ledger title search", () => {
+  it("finds an expense across months with price and month in the payload", async () => {
+    const groceries = await systemCategoryBySlug(db, sessionB.userId, "groceries");
+    const created = await expensesRoute.POST(
+      v1Request("/expenses", {
+        method: "POST",
+        session: sessionB,
+        body: {
+          amountToman: 45_000,
+          title: "نان سنگک",
+          categoryId: groceries.id,
+          occurredAt: "2026-08-25",
+          entryMonthKey: CURRENT,
+        },
+      }),
+    );
+    expect(created.status).toBe(201);
+
+    const res = await searchRoute.GET(
+      v1Request("/search?q=" + encodeURIComponent("سنگک"), { session: sessionB }),
+    );
+    expect(res.status).toBe(200);
+    const hits = (await res.json()) as Array<{
+      expenseId: string;
+      title: string;
+      amountToman: number;
+      monthKey: string;
+    }>;
+    expect(hits).toHaveLength(1);
+    expect(hits[0]!.title).toBe("نان سنگک");
+    expect(hits[0]!.amountToman).toBe(45_000);
+    expect(hits[0]!.monthKey).toBe(CURRENT);
+  });
+
+  it("answers an empty list for a blank query and 400s on a missing one", async () => {
+    const blank = await searchRoute.GET(
+      v1Request("/search?q=", { session: sessionB }),
+    );
+    expect(blank.status).toBe(200);
+    expect(await blank.json()).toEqual([]);
+
+    const missing = await searchRoute.GET(
+      v1Request("/search", { session: sessionB }),
+    );
+    await expectProblem(missing, 400, "validation_failed");
   });
 });
 
