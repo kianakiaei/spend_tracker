@@ -5,15 +5,16 @@ import { useRouter } from "next/navigation";
 import { CategoryDot } from "./category-color";
 import { useRun } from "./ui/use-run";
 import { toCategoryRow } from "./ui/client-row";
+import { api } from "@/lib/api/client";
+import { toPersianDigits } from "@/lib/jalali";
+import type { Category } from "@/lib/services";
+import { CATEGORY_SWATCHES } from "@/lib/category-palette";
 import {
   BTN_DANGER,
   BTN_GHOST,
   BTN_PRIMARY,
   INPUT_CLASS,
 } from "./ui/style";
-import { api } from "@/lib/api/client";
-import { toPersianDigits } from "@/lib/jalali";
-import type { Category } from "@/lib/services";
 
 // The categories page's island (ticket 28): the full manage flow over the
 // typed v1 client — create with a color swatch, free rename (system ones
@@ -23,19 +24,6 @@ import type { Category } from "@/lib/services";
 // one pointed at by a recurring template has NO shortcut — the move API
 // carries expenses only, so the template must be re-pointed first and a
 // delete would 409 after the move. Every failure speaks once, generically.
-
-const DEFAULT_COLOR = "#1a7a5c";
-
-const SWATCHES: Array<{ hex: string; name: string }> = [
-  { hex: DEFAULT_COLOR, name: "یشمی" },
-  { hex: "#3da3c4", name: "فیروزه‌ای" },
-  { hex: "#3d7fc4", name: "آبی" },
-  { hex: "#7a5fc4", name: "بنفش" },
-  { hex: "#c4559b", name: "سرخابی" },
-  { hex: "#c47a3d", name: "نارنجی" },
-  { hex: "#b3402e", name: "آجری" },
-  { hex: "#82887e", name: "خاکستری" },
-];
 
 export function CategoriesManager({
   initialCategories,
@@ -50,7 +38,7 @@ export function CategoriesManager({
   const [rows, setRows] = useState(initialCategories);
   const [formOpen, setFormOpen] = useState(false);
   const [name, setName] = useState("");
-  const [color, setColor] = useState(DEFAULT_COLOR);
+  const [color, setColor] = useState(CATEGORY_SWATCHES[0].hex);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
   const [movingId, setMovingId] = useState<string | null>(null);
@@ -75,7 +63,7 @@ export function CategoriesManager({
       setRows((prev) => [...prev, toCategoryRow(created)]);
       setFormOpen(false);
       setName("");
-      setColor(DEFAULT_COLOR);
+      setColor(CATEGORY_SWATCHES[0].hex);
       router.refresh();
     }, "انجام نشد؛ دوباره تلاش کنید.");
 
@@ -157,6 +145,38 @@ export function CategoriesManager({
                     onChange={(event) => setEditName(event.target.value)}
                     className={INPUT_CLASS}
                   />
+                  <div
+                    role="radiogroup"
+                    aria-label="رنگ دسته"
+                    className="mt-2.5 flex flex-wrap gap-2"
+                  >
+                    {CATEGORY_SWATCHES.map((swatch) => (
+                      <button
+                        key={swatch.hex}
+                        type="button"
+                        role="radio"
+                        aria-checked={category.color === swatch.hex}
+                        aria-label={swatch.name}
+                        title={swatch.name}
+                        onClick={() => {
+                          api.categories
+                            .update(category.id, { color: swatch.hex })
+                            .then((updated) => {
+                              replaceRow(toCategoryRow(updated));
+                            })
+                            .catch(() => {
+                              // generic error voice is in useRun
+                            });
+                        }}
+                        className={`size-7 rounded-full border-2 ${
+                          category.color === swatch.hex
+                            ? "border-ink"
+                            : "border-transparent hover:border-rule-strong"
+                        }`}
+                        style={{ backgroundColor: swatch.hex }}
+                      />
+                    ))}
+                  </div>
                   <button type="button" onClick={() => setEditingId(null)} className={BTN_GHOST}>
                     انصراف
                   </button>
@@ -359,7 +379,7 @@ export function CategoriesManager({
             aria-label="رنگ دسته"
             className="mt-4 flex flex-wrap gap-2"
           >
-            {SWATCHES.map((swatch) => (
+            {CATEGORY_SWATCHES.map((swatch) => (
               <button
                 key={swatch.hex}
                 type="button"

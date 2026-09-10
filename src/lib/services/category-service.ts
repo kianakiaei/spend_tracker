@@ -2,6 +2,7 @@ import { and, asc, eq, max } from "drizzle-orm";
 import { z } from "zod";
 import { categories, expenses, recurringTemplates } from "@/db/schema";
 import { newId } from "@/lib/id";
+import { firstUnusedSwatch } from "@/lib/category-palette";
 import { categoryOrderSchema, categoryNameSchema, uuidv7Schema } from "@/lib/schemas";
 import {
   CategoryInUseError,
@@ -126,13 +127,24 @@ export function createCategoryService(db: DomainDb): CategoryService {
         .from(categories)
         .where(eq(categories.userId, userId));
 
+      // No more gray customs: without an explicit color the row takes the
+      // first palette swatch none of the user's categories uses yet.
+      let color = data.color ?? null;
+      if (color === null) {
+        const taken = await db
+          .select({ color: categories.color })
+          .from(categories)
+          .where(eq(categories.userId, userId));
+        color = firstUnusedSwatch(taken.map((row) => row.color));
+      }
+
       const now = new Date();
       const [category] = await db
         .insert(categories)
         .values({
           id: newId(),
           name: data.name,
-          color: data.color ?? null,
+          color,
           icon: data.icon ?? null,
           kind: "custom",
           order: (maxOrder ?? -1) + 1,
