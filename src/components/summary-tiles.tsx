@@ -21,6 +21,17 @@ function spanClass(index: number, share: number): string {
   return "col-span-1";
 }
 
+/** Amount size for small tiles — a grouped 8-digit total (۳٬۹۱۴٬۰۰۰) at the
+ * base size spills out of a single-column tile, so longer strings step
+ * down; with min-w-0 + break-words below, nothing ever leaves the box. */
+function amountClass(formatted: string, tall: boolean): string {
+  if (tall) return "text-[21px]";
+  const len = [...formatted].length;
+  if (len >= 9) return "text-[12px]";
+  if (len >= 7) return "text-[14px]";
+  return "text-[16.5px]";
+}
+
 export function SummaryTiles({
   monthKey,
   summary,
@@ -45,22 +56,23 @@ export function SummaryTiles({
         const color = colorOf.get(row.categoryId) ?? null;
         const share = total > 0 ? row.totalToman / total : 0;
         const tall = index === 0;
+        const formatted = formatNumber(row.totalToman);
         return (
           <Link
             key={row.categoryId}
             href={`/categories/${row.categoryId}?month=${monthKey}`}
-            className={`${spanClass(index, share)} ${tall ? "min-h-[186px]" : "min-h-[88px]"} flex flex-col justify-between gap-2.5 rounded-2xl border border-rule p-3.5 text-start hover:border-rule-strong`}
+            className={`${spanClass(index, share)} ${tall ? "min-h-[186px]" : "min-h-[88px]"} flex min-w-0 flex-col justify-between gap-2.5 rounded-2xl border border-rule p-3.5 text-start hover:border-rule-strong`}
             style={{ backgroundColor: tintOf(color) }}
           >
             <span className="flex items-center gap-1.5 text-[13px] font-semibold">
               <CategoryDot color={color} />
               {row.name}
             </span>
-            <span>
+            <span className="min-w-0">
               <span
-                className={`block tabular-nums ${tall ? "text-[21px]" : "text-[16.5px]"} font-bold`}
+                className={`block tabular-nums leading-snug break-words ${amountClass(formatted, tall)} font-bold`}
               >
-                {formatNumber(row.totalToman)}
+                {formatted}
               </span>
               <span className="text-[11px] text-ink-muted">
                 {formatPercent(share)}
