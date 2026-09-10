@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { canonical } from "@/lib/categorization/normalize";
 import { formatNumber } from "@/lib/format";
 import {
   formatJalali,
   formatToman,
+  fromISODate,
   fromJalaliMonthKey,
   jalaliMonthLabel,
   toPersianDigits,
@@ -220,7 +222,29 @@ export function InsightsBoard({
 }) {
   const [openKey, setOpenKey] = useState(products[0]?.key ?? "");
   const [hover, setHover] = useState<number | null>(null);
-  const active = products.find((p) => p.key === openKey) ?? products[0];
+  const [query, setQuery] = useState("");
+
+  const filtered = useMemo(() => {
+    const q = canonical(query);
+    if (q === "") return products;
+    return products.filter((p) => canonical(p.displayTitle).includes(q));
+  }, [products, query]);
+
+  const active =
+    filtered.find((p) => p.key === openKey) ??
+    filtered[0] ??
+    products.find((p) => p.key === openKey) ??
+    products[0];
+
+  const history = useMemo(() => {
+    if (!active) return [];
+    return [...active.points].sort((a, b) => {
+      const da = a.occurredAt ?? "";
+      const dbb = b.occurredAt ?? "";
+      if (da !== dbb) return da < dbb ? 1 : -1;
+      return a.expenseId < b.expenseId ? 1 : -1;
+    });
+  }, [active]);
 
   return (
     <div className="mx-auto w-full max-w-[680px] px-6 pb-16 pt-4">
@@ -249,9 +273,28 @@ export function InsightsBoard({
         </p>
       ) : (
         <>
-          <div className="mt-5 flex flex-wrap gap-3">
-            {products.map((p) => {
-              const isOpen = active?.key === p.key;
+          <div className="mt-4">
+            <label htmlFor="product-search" className="sr-only">
+              جست‌وجوی محصول
+            </label>
+            <input
+              id="product-search"
+              type="search"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="جست‌وجوی محصول… مثلاً نان"
+              aria-label="جست‌وجوی محصول"
+              className="w-full rounded-2xl border border-rule bg-panel px-4 py-2.5 text-[14px] outline-none placeholder:text-ink-muted focus:border-accent"
+            />
+          </div>
+          {filtered.length === 0 ? (
+            <p className="py-10 text-center text-[14px] text-ink-muted">
+              محصولی با این عنوان پیدا نشد.
+            </p>
+          ) : (
+            <div className="mt-5 flex flex-wrap gap-3">
+              {filtered.map((p) => {
+                const isOpen = active?.key === p.key;
               return (
                 <button
                   key={p.key}
@@ -292,7 +335,8 @@ export function InsightsBoard({
                 </button>
               );
             })}
-          </div>
+            </div>
+          )}
 
           {active && (
             <section
@@ -315,6 +359,38 @@ export function InsightsBoard({
                 hover={hover}
                 setHover={setHover}
               />
+              <h3 className="mt-5 text-[14px] font-bold">تاریخچه خریدها</h3>
+              <ul aria-label="تاریخچه خریدها" className="mt-2">
+                {history.map((pt) => {
+                  const label = jalaliMonthLabel(fromJalaliMonthKey(pt.monthKey));
+                  return (
+                    <li
+                      key={pt.expenseId}
+                      className="flex items-center justify-between gap-3 border-b border-rule py-2.5"
+                    >
+                      <span className="flex min-w-0 flex-col gap-0.5">
+                        <span className="text-[13px] font-semibold">
+                          {pt.occurredAt
+                            ? formatJalali(fromISODate(pt.occurredAt), "d MMMM yyyy")
+                            : label}
+                        </span>
+                        <span className="text-[11.5px] text-ink-muted">
+                          {pt.occurredAt ? (
+                            label
+                          ) : (
+                            <span className="inline-flex items-center rounded-full border border-rule bg-panel px-2 py-0.5 text-[11px]">
+                              بدون تاریخ
+                            </span>
+                          )}
+                        </span>
+                      </span>
+                      <span className="whitespace-nowrap text-[13.5px] font-bold tabular-nums">
+                        {formatToman(pt.amountToman)}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
             </section>
           )}
         </>
