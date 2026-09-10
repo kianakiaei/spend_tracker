@@ -40,7 +40,15 @@ async function sendEmailOrLog({
       html,
     }),
   });
-  if (!res.ok) throw new Error(`Resend rejected the email (${res.status})`);
+  if (!res.ok) {
+    // The auth endpoints answer generically (anti-enumeration), so a
+    // rejected send would otherwise be invisible — log it server-side.
+    const detail = await res.text().catch(() => "");
+    console.error(
+      `[auth] Resend rejected "${subject}" to ${to} (${res.status}): ${detail}`,
+    );
+    throw new Error(`Resend rejected the email (${res.status})`);
+  }
 }
 
 export const auth = betterAuth({
