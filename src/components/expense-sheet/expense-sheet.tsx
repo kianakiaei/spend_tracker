@@ -11,6 +11,7 @@ import persian_fa from "react-date-object/locales/persian_fa";
 import { CategoryDot } from "@/components/category-color";
 import { Tag } from "@/components/tag";
 import { SheetPanel } from "@/components/ui/sheet-panel";
+import { useDelayedFocus } from "@/components/ui/use-delayed-focus";
 import {
   BTN_GHOST,
   CHIP_CLASS,
@@ -116,6 +117,9 @@ export function ExpenseSheet({
   const [error, setError] = useState<string | null>(null);
   // ثبت و جدید returns focus here so the next entry starts typing at once.
   const titleInputRef = useRef<HTMLInputElement>(null);
+  // Create sheets focus the title a beat after opening (edit sheets stay
+  // keyboard-free) — never during the enter animation.
+  useDelayedFocus(titleInputRef, !isEdit);
 
   // Live suggestion (ticket 06): ~150ms after the last keystroke; silent
   // once the category is manual (an edit row or the drilldown's locked
@@ -280,7 +284,6 @@ export function ExpenseSheet({
               value={title}
               onChange={(event) => setTitle(event.target.value)}
               placeholder="مثلاً نان و شیر"
-              autoFocus
               className={INPUT_CLASS}
             />
           </div>

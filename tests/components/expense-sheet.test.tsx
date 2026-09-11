@@ -142,6 +142,30 @@ describe("sheet chrome (vaul drawer)", () => {
   });
 });
 
+describe("sheet focus", () => {
+  it("create focuses the title after a beat, edit focuses nothing", () => {
+    vi.useFakeTimers();
+    openCreateSync(otherMonth);
+    // not during the enter animation
+    expect(screen.getByLabelText("عنوان")).not.toHaveFocus();
+    act(() => {
+      vi.advanceTimersByTime(1000);
+    });
+    expect(screen.getByLabelText("عنوان")).toHaveFocus();
+  });
+
+  it("edit sheets stay keyboard-free", () => {
+    vi.useFakeTimers();
+    renderEdit(UNDATED);
+    fireEvent.click(screen.getByRole("button", { name: /شارژ تاکسی/ }));
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(screen.getByLabelText("عنوان")).not.toHaveFocus();
+  });
+});
+
 describe("live suggestion (ticket 06 contract)", () => {
   it("updates the chip ~150ms after typing stops, badge on", async () => {
     vi.useFakeTimers();
