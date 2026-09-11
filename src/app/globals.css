@@ -78,11 +78,14 @@ body {
 
 /* The sheet's interior scroll region: scrolls chained here stop instead of
    dragging the frozen page behind, and its own scrollbar never reflows the
-   form while the category options expand. */
+   form while the category options expand. Bottom padding clears the iPhone
+   home indicator (plain fallback first for browsers without env()). */
 .sheet-panel-scroll {
   scrollbar-gutter: stable;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  padding-bottom: 1.75rem;
+  padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* The sheet's motion is Vaul's (enter/exit keyframes and the drag transform
