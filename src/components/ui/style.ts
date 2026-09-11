@@ -16,7 +16,7 @@ export const BTN_PRIMARY =
 export const BTN_DANGER =
   "rounded-full bg-danger px-6 py-2.5 text-[14px] font-semibold text-white hover:brightness-110 disabled:opacity-60";
 
-export const FIELD_CLASS = "border-b border-rule py-3";
+export const FIELD_CLASS = "border-b border-rule py-2";
 export const LABEL_CLASS = "mb-1.5 block text-[12px] text-ink-muted";
 export const INPUT_CLASS =
   "w-full border-0 bg-transparent p-0 text-[16px] outline-none placeholder:text-ink-muted/70";

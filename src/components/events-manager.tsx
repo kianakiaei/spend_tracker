@@ -73,7 +73,7 @@ export function EventsManager({
           {rows.map((event) => {
             const summary = summaries[event.id] ?? { totalToman: 0, count: 0 };
             return (
-              <li key={event.id} className="border-b border-rule py-3">
+              <li key={event.id} className="border-b border-rule py-2">
                 {editingId === event.id ? (
                   <form
                     onSubmit={(e) => {

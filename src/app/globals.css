@@ -109,6 +109,7 @@ body {
   padding-top: 0.5rem;
   background: var(--color-panel);
   border-top: 1px solid var(--color-rule);
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* The sheet's interior scroll region: scrolls chained here stop instead of
@@ -119,8 +120,7 @@ body {
   scrollbar-gutter: stable;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 0.5rem;
-  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 0;
 }
 
 /* The sheet's motion is Vaul's (enter/exit keyframes and the drag transform
