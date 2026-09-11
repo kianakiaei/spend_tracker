@@ -119,7 +119,7 @@ export default async function DashboardPage({
         ) : (
           <>
             <h1 className="mt-3 text-[48px] font-extrabold leading-[1.45] tracking-[-0.01em]">
-              <span className="tabular-nums">{formatNumber(summary.totalToman)}</span>
+              <span>{formatNumber(summary.totalToman)}</span>
               <small className="ms-2 text-[14.5px] font-medium text-ink-muted">
                 تومان
               </small>
