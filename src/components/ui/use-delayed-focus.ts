@@ -1,19 +1,25 @@
 import { useEffect, type RefObject } from "react";
 
-// Focus a sheet's first field after a beat instead of autoFocus: the sheet's
-// enter animation plus any toolbar dance settle first, so the keyboard opens
-// against final geometry (the anchor in SheetPanel never sees a mid-flight
-// viewport). Skipped entirely when the caller says so (edit sheets open
-// keyboard-free), and never steals focus if the user already tapped
-// somewhere within the delay. preventScroll keeps Safari from panning —
-// the anchor owns positioning.
+// Focus a create sheet's first field shortly after opening — mobile only
+// (coarse pointers), edit sheets stay keyboard-free. Two reasons for the
+// shape: the sheet's enter animation settles first so the keyboard opens
+// against final geometry, and ~500ms still rides the opening tap's user
+// activation, which is what makes iOS actually open the keyboard for a
+// programmatic focus (a longer delay lands outside it: focused field, no
+// keyboard). Never steals focus if the user already tapped somewhere, and
+// never fires after unmount. Plain focus() — Safari's own scroll-into-view
+// targets the form's scroll region, which is what we want.
 export function useDelayedFocus<T extends HTMLElement>(
   ref: RefObject<T | null>,
   enabled: boolean,
-  delayMs = 1000,
+  delayMs = 500,
 ) {
   useEffect(() => {
     if (!enabled) return;
+    const coarse =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: coarse)").matches;
+    if (!coarse) return;
     const timer = setTimeout(() => {
       if (
         document.activeElement &&
@@ -21,7 +27,8 @@ export function useDelayedFocus<T extends HTMLElement>(
       ) {
         return;
       }
-      ref.current?.focus({ preventScroll: true });
-    }, delayMs);    return () => clearTimeout(timer);
+      ref.current?.focus();
+    }, delayMs);
+    return () => clearTimeout(timer);
   }, [enabled, delayMs, ref]);
 }

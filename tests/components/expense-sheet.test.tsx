@@ -130,6 +130,7 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe("sheet chrome (vaul drawer)", () => {
@@ -140,18 +141,45 @@ describe("sheet chrome (vaul drawer)", () => {
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
     );
   });
+
+  it("closes on scrim tap", async () => {
+    await openCreate(otherMonth);
+    fireEvent.click(document.querySelector(".sheet-scrim")!);
+    await waitFor(() =>
+      expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
+    );
+  });
 });
 
 describe("sheet focus", () => {
-  it("create focuses the title after a beat, edit focuses nothing", () => {
+  it("create focuses the title after a beat on touch", () => {
     vi.useFakeTimers();
+    // Mobile: coarse pointer gets the delayed focus.
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: true }),
+    );
     openCreateSync(otherMonth);
     // not during the enter animation
     expect(screen.getByLabelText("عنوان")).not.toHaveFocus();
     act(() => {
-      vi.advanceTimersByTime(1000);
+      vi.advanceTimersByTime(500);
     });
     expect(screen.getByLabelText("عنوان")).toHaveFocus();
+  });
+
+  it("create does not autofocus on desktop", () => {
+    vi.useFakeTimers();
+    // Fine pointer: no delayed focus at all.
+    vi.stubGlobal(
+      "matchMedia",
+      vi.fn().mockReturnValue({ matches: false }),
+    );
+    openCreateSync(otherMonth);
+    act(() => {
+      vi.advanceTimersByTime(2000);
+    });
+    expect(document.getElementById("expense-title")).not.toHaveFocus();
   });
 
   it("edit sheets stay keyboard-free", () => {

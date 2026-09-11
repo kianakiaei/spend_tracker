@@ -76,6 +76,41 @@ body {
   background: transparent;
 }
 
+/* The sheet's dim: a plain element (Vaul renders no overlay outside modal
+   mode). Fades in; gone entirely under reduced motion. */
+.sheet-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: color-mix(in srgb, var(--color-ink) 30%, transparent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .sheet-scrim {
+    animation: scrim-in 200ms ease-out;
+  }
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The sheet's action footer (ثبت/انصراف, delete confirm): stuck to the
+   panel's bottom edge so it never scrolls out of reach on small screens.
+   Full-bleed over the scroll region's side padding, paper-backed so fields
+   slide underneath, ruled on top like every other row in the form. */
+.sheet-footer {
+  position: sticky;
+  bottom: 0;
+  margin-inline: -1.5rem;
+  padding-inline: 1.5rem;
+  padding-top: 0.75rem;
+  background: var(--color-panel);
+  border-top: 1px solid var(--color-rule);
+}
+
 /* The sheet's interior scroll region: scrolls chained here stop instead of
    dragging the frozen page behind, and its own scrollbar never reflows the
    form while the category options expand. Bottom padding clears the iPhone

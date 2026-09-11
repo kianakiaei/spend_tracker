@@ -32,6 +32,16 @@ import { Drawer } from "vaul";
 //    viewport itself (pan offset included) while typing, and handing
 //    geometry back to CSS the moment the keyboard closes.
 //
+// 3. The scrim is a plain div, not Drawer.Overlay: Vaul renders its overlay
+//    as null outside modal mode, so the previous code had no dim and no
+//    tap-outside-to-close at all. This one always renders and closes.
+//
+// 4. The form scrolls natively and never drags — kept deliberately. Vaul
+//    closes on release velocity alone, so a scroll-down-to-close gesture
+//    and a fast scroll flick are the same gesture to it; restoring the
+//    former resurrects the flick-dismiss that threw half-filled forms away.
+//    Close paths: header drag, scrim tap, Escape, انصراف.
+//
 // Scroll lock stays a one-line body freeze: with `scrollbar-gutter: stable`
 // on <html> (globals.css) hiding the page scrollbar no longer reflows the
 // layout — the visible jump the old sheet had on open and close.
@@ -159,13 +169,10 @@ export function SheetPanel({
       direction="bottom"
     >
       <Drawer.Portal>
-        <Drawer.Overlay
-          onClick={onClose}
-          className="fixed inset-0 z-40 bg-ink/30"
-        />
+        <div aria-hidden onClick={onClose} className="sheet-scrim" />
         <Drawer.Content
           ref={contentRef}
-          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[84dvh] w-full max-w-[680px] flex-col rounded-t-[20px] bg-panel shadow-[0_-14px_44px_rgba(32,36,31,0.2)] outline-none"
+          className="fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[90dvh] w-full max-w-[680px] flex-col rounded-t-[20px] bg-panel shadow-[0_-14px_44px_rgba(32,36,31,0.2)] outline-none"
         >
           {/* Fixed header: the title never scrolls away on long forms, and
               this strip is the drawer's only drag surface. */}

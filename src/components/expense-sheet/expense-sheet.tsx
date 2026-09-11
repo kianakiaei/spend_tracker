@@ -482,8 +482,11 @@ export function ExpenseSheet({
             </p>
           )}
 
-          {isEdit && confirmingDelete ? (
-            <div className="mt-5 flex items-center gap-2.5">
+          {/* Stuck to the panel's bottom edge: the actions never scroll out
+              of reach on small screens. */}
+          <div className="sheet-footer">
+            {isEdit && confirmingDelete ? (
+              <div className="flex items-center gap-2.5">
               <p className="me-auto text-[13.5px] text-ink-muted">
                 این خرج حذف شود؟
               </p>
@@ -504,7 +507,7 @@ export function ExpenseSheet({
               </button>
             </div>
           ) : (
-            <div className="mt-5 flex flex-wrap items-center gap-2.5">
+            <div className="flex flex-wrap items-center gap-2.5">
               {isEdit && (
                 <button
                   type="button"
@@ -537,7 +540,8 @@ export function ExpenseSheet({
                 {isEdit ? "ذخیره" : "ثبت"}
               </button>
             </div>
-          )}
+            )}
+          </div>
         </form>
     </SheetPanel>
   );

@@ -452,18 +452,22 @@ function TemplateSheet({
           </p>
         )}
 
-        <div className="mt-5 flex items-center gap-2.5">
-          <button type="button" onClick={onClose} className={`${BTN_GHOST} me-auto`}>
-            انصراف
-          </button>
-          <button
-            type="submit"
-            disabled={!canSave}
-            aria-busy={pending || undefined}
-            className={BTN_PRIMARY}
-          >
-            {isEdit ? "ذخیره" : "ثبت"}
-          </button>
+        {/* Stuck to the panel's bottom edge: the actions never scroll out
+            of reach on small screens. */}
+        <div className="sheet-footer">
+          <div className="flex items-center gap-2.5">
+            <button type="button" onClick={onClose} className={`${BTN_GHOST} me-auto`}>
+              انصراف
+            </button>
+            <button
+              type="submit"
+              disabled={!canSave}
+              aria-busy={pending || undefined}
+              className={BTN_PRIMARY}
+            >
+              {isEdit ? "ذخیره" : "ثبت"}
+            </button>
+          </div>
         </div>
       </form>
     </SheetPanel>
