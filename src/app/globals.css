@@ -106,7 +106,7 @@ body {
   bottom: 0;
   margin-inline: -1.5rem;
   padding-inline: 1.5rem;
-  padding-top: 0.75rem;
+  padding-top: 0.5rem;
   background: var(--color-panel);
   border-top: 1px solid var(--color-rule);
 }
@@ -119,14 +119,15 @@ body {
   scrollbar-gutter: stable;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
-  padding-bottom: 1.75rem;
-  padding-bottom: calc(1.75rem + env(safe-area-inset-bottom, 0px));
+  padding-bottom: 0.5rem;
+  padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px));
 }
 
 /* The sheet's motion is Vaul's (enter/exit keyframes and the drag transform
    are injected by the library) — the one concession being visitors who
    asked for reduced motion get none of it. */
 @media (prefers-reduced-motion: reduce) {
+
   [data-vaul-drawer],
   [data-vaul-overlay] {
     animation: none !important;
