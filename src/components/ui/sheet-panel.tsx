@@ -24,11 +24,13 @@ import { Drawer } from "vaul";
 //    renders at document.body to escape the interior scroll region — see
 //    the date-picker smoke test), which a modal drawer would pointer-lock,
 //    aria-hide, and dismiss on. And Vaul's keyboard repositioning mixes
-//    inline height AND bottom offsets against getBoundingClientRect
-//    readings that iOS Chrome's toolbar shifts corrupt — the stuck white
-//    gap above the keyboard. Ours only ever lifts `bottom` by the keyboard
-//    height while a text control inside the sheet holds focus, and clears
-//    it otherwise; height stays CSS-owned, so there is nothing to desync.
+//    inline height AND bottom offsets from readings that iOS Chrome's
+//    toolbar shifts corrupt — the stuck white gap above the keyboard. A
+//    bottom-only lift of ours had the same disease from the other side: it
+//    ignored Safari's viewport pan, so lift plus pan stacked and shoved the
+//    title off-screen. What works is pinning the panel to the visual
+//    viewport itself (pan offset included) while typing, and handing
+//    geometry back to CSS the moment the keyboard closes.
 //
 // Scroll lock stays a one-line body freeze: with `scrollbar-gutter: stable`
 // on <html> (globals.css) hiding the page scrollbar no longer reflows the
@@ -67,28 +69,54 @@ export function SheetPanel({
     };
   }, []);
 
-  // Keyboard lift: sit the whole sheet flush above the keyboard while the
-  // user types, settle back to the bottom edge otherwise. Bottom-only —
-  // never touch height, or iOS leaves a gap behind (see above).
+  // Keyboard anchor: while a text control inside the sheet holds focus and
+  // the keyboard is open, pin the panel to the visual viewport — flush
+  // above the keyboard, following Safari's pan via offsetTop — so the
+  // focused field scrolls into view inside the form instead of the whole
+  // page shifting and stranding a gap. Short sheets keep their size and
+  // dock to the keyboard's top edge; tall ones fill what remains. The
+  // moment the keyboard closes, all inline geometry is cleared and the
+  // CSS bottom-0 sheet is back. Focus landing on a button while the
+  // keyboard is still up keeps the last anchor (no flicker); the viewport
+  // settling clears it.
   useEffect(() => {
     if (!window.visualViewport) return;
     // Narrowed once — the nested update() below can't reuse the guard.
     const viewport: VisualViewport = window.visualViewport;
+    // Natural panel height while CSS owns the geometry; the anchor never
+    // grows past it, so short sheets stay sheets instead of going fullscreen.
+    let naturalHeight: number | null = null;
     function update() {
       const panel = contentRef.current;
       if (!panel) return;
       const keyboardHeight = window.innerHeight - viewport.height;
+      const keyboardOpen = keyboardHeight > KEYBOARD_THRESHOLD_PX;
       const typing =
-        keyboardHeight > KEYBOARD_THRESHOLD_PX &&
+        keyboardOpen &&
         panel.contains(document.activeElement) &&
         isTextEntry(document.activeElement);
-      panel.style.bottom = typing ? `${Math.round(keyboardHeight)}px` : "";
+      if (typing) {
+        const height = Math.min(
+          naturalHeight ?? panel.offsetHeight,
+          viewport.height,
+        );
+        panel.style.bottom = "";
+        panel.style.height = `${Math.round(height)}px`;
+        panel.style.top = `${Math.round(viewport.offsetTop + viewport.height - height)}px`;
+      } else if (!keyboardOpen) {
+        panel.style.top = "";
+        panel.style.height = "";
+        panel.style.bottom = "";
+        naturalHeight = panel.offsetHeight;
+      }
     }
     viewport.addEventListener("resize", update);
+    viewport.addEventListener("scroll", update);
     document.addEventListener("focusin", update);
     document.addEventListener("focusout", update);
     return () => {
       viewport.removeEventListener("resize", update);
+      viewport.removeEventListener("scroll", update);
       document.removeEventListener("focusin", update);
       document.removeEventListener("focusout", update);
     };
