@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import DatePicker from "react-multi-date-picker";
 // The OFFICIAL persian calendar + locale (research 04 — never `jalali`):
@@ -114,6 +114,8 @@ export function ExpenseSheet({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // ثبت و جدید returns focus here so the next entry starts typing at once.
+  const titleInputRef = useRef<HTMLInputElement>(null);
 
   // Live suggestion (ticket 06): ~150ms after the last keystroke; silent
   // once the category is manual (an edit row or the drilldown's locked
@@ -167,31 +169,16 @@ export function ExpenseSheet({
     !pending;
 
   async function save() {
-    if (pending || title.trim() === "" || amount === null || !quantityValid)
-      return;
+    if (pending) return;
+    const payload = buildPayload();
+    if (!payload) return;
     setPending(true);
     setError(null);
     try {
       if (expense) {
-        await api.expenses.update(expense.id, {
-          amountToman: amount,
-          quantity,
-          unit,
-          title: title.trim(),
-          categoryId: activeCategoryId,
-          occurredAt: date,
-          eventId: lockedEvent ? lockedEvent.id : eventId,
-        });
+        await api.expenses.update(expense.id, payload);
       } else {
-        await api.expenses.create({
-          amountToman: amount,
-          quantity,
-          unit,
-          title: title.trim(),
-          categoryId: activeCategoryId,
-          occurredAt: date,
-          eventId: lockedEvent ? lockedEvent.id : eventId,
-        });
+        await api.expenses.create(payload);
       }
       onClose();
       // Fresh dashboard AND fresh learned counters — learning happened
@@ -200,6 +187,56 @@ export function ExpenseSheet({
     } catch {
       // Network/handler faults speak with one generic voice; every field
       // keeps exactly what the user typed (ticket 27).
+      setError("ذخیره نشد؛ دوباره تلاش کنید.");
+      setPending(false);
+    }
+  }
+
+  function buildPayload() {
+    if (title.trim() === "" || amount === null || !quantityValid) return null;
+    return {
+      amountToman: amount,
+      quantity,
+      unit,
+      title: title.trim(),
+      categoryId: activeCategoryId,
+      occurredAt: date,
+      eventId: lockedEvent ? lockedEvent.id : eventId,
+    };
+  }
+
+  // ثبت و جدید (create only): persist, then reset to a fresh form so the
+  // next expense goes in without reopening the sheet. The suggestion
+  // restarts from the empty title exactly like a fresh open; the refresh
+  // carries the just-learned counters back into the engine behind it.
+  function resetForNext() {
+    setTitle("");
+    setAmountRaw("");
+    setQuantityRaw("");
+    setUnit("piece");
+    setDate(defaultCreateDate(monthKey));
+    setManual(lockedCategory !== null);
+    setPickedId(lockedCategory?.id ?? null);
+    setOptsOpen(false);
+    setEventId(lockedEvent?.id ?? null);
+    setConfirmingDelete(false);
+    setError(null);
+    setSuggestion(engine.classify(""));
+  }
+
+  async function saveAndNew() {
+    if (pending || expense) return;
+    const payload = buildPayload();
+    if (!payload) return;
+    setPending(true);
+    setError(null);
+    try {
+      await api.expenses.create(payload);
+      resetForNext();
+      setPending(false);
+      router.refresh();
+      titleInputRef.current?.focus();
+    } catch {
       setError("ذخیره نشد؛ دوباره تلاش کنید.");
       setPending(false);
     }
@@ -238,6 +275,7 @@ export function ExpenseSheet({
             </label>
             <input
               id="expense-title"
+              ref={titleInputRef}
               type="text"
               value={title}
               onChange={(event) => setTitle(event.target.value)}
@@ -463,7 +501,7 @@ export function ExpenseSheet({
               </button>
             </div>
           ) : (
-            <div className="mt-5 flex items-center gap-2.5">
+            <div className="mt-5 flex flex-wrap items-center gap-2.5">
               {isEdit && (
                 <button
                   type="button"
@@ -476,6 +514,17 @@ export function ExpenseSheet({
               <button type="button" onClick={onClose} className={BTN_GHOST}>
                 انصراف
               </button>
+              {!isEdit && (
+                <button
+                  type="button"
+                  onClick={() => void saveAndNew()}
+                  disabled={!canSave}
+                  aria-busy={pending || undefined}
+                  className="rounded-full border border-accent px-5 py-2.5 text-[14px] font-semibold text-accent hover:bg-accent-soft disabled:opacity-60"
+                >
+                  ثبت و جدید
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={!canSave}

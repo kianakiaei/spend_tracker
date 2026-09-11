@@ -268,6 +268,37 @@ describe("save path (typed v1 client)", () => {
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
+  it("saves and resets for the next entry on «ثبت و جدید»", async () => {
+    api.expenses.create.mockResolvedValue({});
+    await openCreate(otherMonth);
+
+    fireEvent.change(screen.getByLabelText("عنوان"), {
+      target: { value: "نان" },
+    });
+    fireEvent.change(screen.getByLabelText("مبلغ"), {
+      target: { value: "50000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "ثبت و جدید" }));
+
+    await waitFor(() =>
+      expect(api.expenses.create).toHaveBeenCalledWith({
+        amountToman: 50000,
+        quantity: 1,
+        unit: "piece",
+        title: "نان",
+        categoryId: GROCERIES.id,
+        occurredAt: defaultCreateDate(otherMonth),
+        eventId: null,
+      }),
+    );
+    // The sheet stays open on a fresh form, title refocused for rapid entry.
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText("عنوان")).toHaveValue("");
+    expect(screen.getByLabelText("مبلغ")).toHaveValue("");
+    expect(document.activeElement).toBe(screen.getByLabelText("عنوان"));
+    await waitFor(() => expect(refresh).toHaveBeenCalled());
+  });
+
   it("keeps every field and speaks generically when the save fails", async () => {
     api.expenses.create.mockRejectedValueOnce(new TypeError("network down"));
     await openCreate(otherMonth);
