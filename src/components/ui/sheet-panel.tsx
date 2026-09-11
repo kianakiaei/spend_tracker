@@ -38,6 +38,8 @@ import { Drawer } from "vaul";
 
 /** visualViewport shrinks from toolbars too — only treat 60px+ as keyboard. */
 const KEYBOARD_THRESHOLD_PX = 60;
+/** iOS keyboard/toolbar animations run ~300ms — re-sync after they settle. */
+const SETTLE_MS = 400;
 
 function isTextEntry(element: Element | null): boolean {
   return (
@@ -79,6 +81,13 @@ export function SheetPanel({
   // CSS bottom-0 sheet is back. Focus landing on a button while the
   // keyboard is still up keeps the last anchor (no flicker); the viewport
   // settling clears it.
+  //
+  // Keyboard slide, toolbar slide and the sheet's own enter animation all
+  // run concurrently, so the last live event often arrives mid-transition
+  // with wrong geometry — and nothing used to re-run afterwards, leaving
+  // the first-open anchor (or a toolbar-shifted one) stuck. Every trigger
+  // below therefore also schedules a trailing re-sync after the animations
+  // settle; the settled recompute always wins.
   useEffect(() => {
     if (!window.visualViewport) return;
     // Narrowed once — the nested update() below can't reuse the guard.
@@ -86,6 +95,8 @@ export function SheetPanel({
     // Natural panel height while CSS owns the geometry; the anchor never
     // grows past it, so short sheets stay sheets instead of going fullscreen.
     let naturalHeight: number | null = null;
+    // Trailing re-sync timer; always cleared on unmount.
+    let settleTimer: ReturnType<typeof setTimeout> | null = null;
     function update() {
       const panel = contentRef.current;
       if (!panel) return;
@@ -110,15 +121,29 @@ export function SheetPanel({
         naturalHeight = panel.offsetHeight;
       }
     }
-    viewport.addEventListener("resize", update);
-    viewport.addEventListener("scroll", update);
-    document.addEventListener("focusin", update);
-    document.addEventListener("focusout", update);
+    // Live recompute plus a settled recompute once animations finish.
+    function synced() {
+      update();
+      if (settleTimer) clearTimeout(settleTimer);
+      settleTimer = setTimeout(() => {
+        settleTimer = null;
+        update();
+      }, SETTLE_MS);
+    }
+    viewport.addEventListener("resize", synced);
+    viewport.addEventListener("scroll", synced);
+    // Chrome's toolbar show/hide resizes the window without always
+    // resizing the visual viewport — same stuck-geometry hazard.
+    window.addEventListener("resize", synced);
+    document.addEventListener("focusin", synced);
+    document.addEventListener("focusout", synced);
     return () => {
-      viewport.removeEventListener("resize", update);
-      viewport.removeEventListener("scroll", update);
-      document.removeEventListener("focusin", update);
-      document.removeEventListener("focusout", update);
+      if (settleTimer) clearTimeout(settleTimer);
+      viewport.removeEventListener("resize", synced);
+      viewport.removeEventListener("scroll", synced);
+      window.removeEventListener("resize", synced);
+      document.removeEventListener("focusin", synced);
+      document.removeEventListener("focusout", synced);
     };
   }, []);
 
