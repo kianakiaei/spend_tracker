@@ -158,6 +158,9 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
                 fontSize={12}
                 fontFamily={FONT_FAMILY_EXTRA_BOLD}
                 fill={INK}
+                // Labels must not swallow taps: the invisible hit circle
+                // below owns the press on every platform.
+                pointerEvents="none"
               >
                 {formatNumber(b.avgUnitPrice)}
               </SvgText>
@@ -168,21 +171,13 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
                 fontSize={10.5}
                 fontFamily={FONT_FAMILY_REGULAR}
                 fill={MUTED}
+                pointerEvents="none"
               >
                 {jalaliMonthNameFromKey(b.monthKey)}
               </SvgText>
-              <Circle
-                cx={X(i)}
-                cy={Y(b.avgUnitPrice)}
-                r={16}
-                fill="transparent"
-                // onPress on expo web wires PanResponder props that react-dom
-                // rejects ("Unknown event handler property
-                // `onResponderTerminate'"): clicks on web, presses on native.
-                {...(Platform.OS === "web"
-                  ? { onClick: () => setSelected(active ? null : i) }
-                  : { onPress: () => setSelected(active ? null : i) })}
-              />
+              {/* Paint order matters: the transparent hit circle renders last
+                  so it sits above the dot and owns every tap in its radius
+                  on all platforms. */}
               {active ? (
                 <Circle
                   cx={X(i)}
@@ -200,6 +195,18 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
                 fillOpacity={dimmed ? 0.45 : 1}
                 strokeWidth={2}
                 stroke={active ? PAPER : "none"}
+              />
+              <Circle
+                cx={X(i)}
+                cy={Y(b.avgUnitPrice)}
+                r={16}
+                fill="transparent"
+                // onPress on expo web wires PanResponder props that react-dom
+                // rejects ("Unknown event handler property
+                // `onResponderTerminate'"): clicks on web, presses on native.
+                {...(Platform.OS === "web"
+                  ? { onClick: () => setSelected(active ? null : i) }
+                  : { onPress: () => setSelected(active ? null : i) })}
               />
             </G>
           );
