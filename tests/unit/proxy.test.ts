@@ -143,3 +143,52 @@ describe("proxy dev CORS for expo web (localhost:8081)", () => {
     }
   });
 });
+
+describe("proxy never login-redirects the API (mobile Bearer crash)", () => {
+  // Production regression: the phone carries no session cookie, so the old
+  // fall-through bounced every /api call 307 → /login, fetch followed into
+  // 200 HTML, and the typed client died with "Unexpected character: <".
+  // Handlers own auth (401 problem+json); the proxy just passes through.
+  function withProdEnv(fn: () => void): void {
+    const env = process.env as Record<string, string | undefined>;
+    const previous = env.NODE_ENV;
+    env.NODE_ENV = "production";
+    try {
+      fn();
+    } finally {
+      env.NODE_ENV = previous;
+    }
+  }
+
+  it("passes cookieless API calls through in production (no redirect)", () => {
+    withProdEnv(() => {
+      for (const path of ["/api/v1/expenses", "/api/auth/get-session"]) {
+        const res = proxy(requestAt(path));
+        expect(res.headers.get("x-middleware-next")).toBe("1");
+        expect(res.headers.get("location")).toBeNull();
+      }
+    });
+  });
+
+  it("answers API preflights in production with bare 204 (no redirect, no CORS)", () => {
+    withProdEnv(() => {
+      const res = proxy(
+        new NextRequest("http://localhost:3000/api/v1/expenses", {
+          method: "OPTIONS",
+          headers: { origin: "http://localhost:8081" },
+        }),
+      );
+      expect(res.status).toBe(204);
+      expect(res.headers.get("location")).toBeNull();
+      expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    });
+  });
+
+  it("still bounces cookie-less page loads to /login in production", () => {
+    withProdEnv(() => {
+      const res = proxy(requestAt("/"));
+      expect(res.status).toBe(307);
+      expect(res.headers.get("location")).toBe("http://localhost:3000/login");
+    });
+  });
+});

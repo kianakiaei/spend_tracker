@@ -22,14 +22,8 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const DEV_WEB_ORIGINS = new Set(["http://localhost:8081", "http://127.0.0.1:8081"]);
 
-function isDevApiRequest(request: NextRequest): boolean {
-  return (
-    process.env.NODE_ENV === "development" &&
-    request.nextUrl.pathname.startsWith("/api/")
-  );
-}
-
 function withDevCors(request: NextRequest, response: NextResponse): NextResponse {
+  if (process.env.NODE_ENV !== "development") return response;
   const origin = request.headers.get("origin");
   if (origin && DEV_WEB_ORIGINS.has(origin)) {
     response.headers.set("Access-Control-Allow-Origin", origin);
@@ -42,9 +36,17 @@ function withDevCors(request: NextRequest, response: NextResponse): NextResponse
 }
 
 export function proxy(request: NextRequest) {
-  if (isDevApiRequest(request)) {
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    // API routes answer for themselves and must NEVER login-redirect: mobile
+    // authenticates cookieless with a Bearer token, and fetch follows a 307
+    // into 200 HTML — which the typed client then fails to parse as JSON
+    // ("Unexpected character: <"). Real authz lives in requireUserId (401
+    // problem+json). Dev CORS stamping below is unchanged.
     if (request.method === "OPTIONS") {
-      return withDevCors(request, new NextResponse(null, { status: 204 }));
+      if (process.env.NODE_ENV === "development") {
+        return withDevCors(request, new NextResponse(null, { status: 204 }));
+      }
+      return new NextResponse(null, { status: 204 });
     }
     return withDevCors(request, NextResponse.next());
   }
