@@ -15,7 +15,7 @@ import {
   ScrollView,
   View,
 } from "react-native";
-import { T as Text } from "../components/app-text";
+import { T as Text } from "../../components/app-text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   currentJalaliMonthKey,
@@ -30,7 +30,7 @@ import type {
   ForecastRowDto,
   RecurringTemplateDto,
 } from "@spend-tracker/shared/schemas/api";
-import { useSession } from "../src/session";
+import { useSession } from "../../src/session";
 import {
   TEMPLATE_MESSAGES,
   buildGeneratedThisMonth,
@@ -40,20 +40,20 @@ import {
   rhythmLabelFor,
   toggleTemplateActive,
   type TemplateRow,
-} from "../src/templates";
+} from "../../src/templates";
 import {
   affectedScopesForTemplateMutation,
   invalidateTemplateScopes,
   loadTemplatesScreen,
   templatesKey,
   type TemplatePreviewMonth,
-} from "../src/template-queries";
-import type { SheetExpenseRef, SheetOpen } from "../src/expense-sheet";
-import { ExpenseSheetModal } from "../components/expense-sheet-form";
+} from "../../src/template-queries";
+import type { SheetExpenseRef, SheetOpen } from "../../src/expense-sheet";
+import { ExpenseSheetModal } from "../../components/expense-sheet-form";
 import {
   TemplateSheetModal,
   type TemplateSheetOpen,
-} from "../components/template-sheet-form";
+} from "../../components/template-sheet-form";
 
 interface TemplatesScreenData {
   templates: RecurringTemplateDto[];

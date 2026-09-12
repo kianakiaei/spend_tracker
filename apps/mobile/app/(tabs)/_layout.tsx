@@ -1,8 +1,8 @@
-// Three bottom tabs (expo-mobile tickets 10 + 11): Home, Categories, Events.
-// Titles mirror MOBILE_TABS in apps/mobile/src/routes.ts. Search moved to a
-// stack screen behind the header search action; the More tab is gone and its
-// entries live in the header «…» menu. Every tab shows its native header
-// with the title centered, search on the left, and the menu on the right.
+// Five bottom tabs (expo-mobile tickets 10–12): Home, Categories, Events,
+// Templates, Insights. Titles mirror MOBILE_TABS in apps/mobile/src/routes.ts.
+// Search lives behind the header search action (left) as a stack screen;
+// logout sits header-right on Home only, so stack screens keep a clean back
+// header. Every tab shows its native header with the title centered.
 
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -11,7 +11,7 @@ import type { ComponentProps } from "react";
 import { FONT_FAMILY_BOLD } from "../../src/font-weights";
 import { MOBILE_TABS } from "../../src/routes";
 import {
-  HeaderMenuAction,
+  HeaderLogoutAction,
   HeaderSearchAction,
 } from "../../components/header-actions";
 
@@ -20,12 +20,13 @@ const TITLES = Object.fromEntries(MOBILE_TABS.map((t) => [t.name, t.title]));
 type IoniconName = ComponentProps<typeof Ionicons>["name"];
 
 function tabIcon(filled: IoniconName, outline: IoniconName) {
-  function TabBarIcon({ color, size, focused }: { color: ColorValue; size: number; focused: boolean }) {
-    // The tab bar always hands down a plain color string.
+  function TabBarIcon({ color, focused }: { color: ColorValue; focused: boolean }) {
+    // The tab bar always hands down a plain color string; icons stay compact
+    // so labels never clip (expo web).
     return (
       <Ionicons
         name={focused ? filled : outline}
-        size={size}
+        size={22}
         color={typeof color === "string" ? color : "#1c1a17"}
       />
     );
@@ -33,9 +34,10 @@ function tabIcon(filled: IoniconName, outline: IoniconName) {
   return TabBarIcon;
 }
 
-// Native headers carry the search shortcut (left) + «…» menu (right) with
-// the title centered; native tab labels and header titles wear Vazirmatn
-// Bold explicitly (they are not RN Text, so the T wrapper cannot reach them).
+// Native headers carry the search shortcut (left) with the title centered;
+// native tab labels and header titles wear Vazirmatn Bold explicitly (they
+// are not RN Text, so the T wrapper cannot reach them). The bar is tall
+// enough for icon + label on expo web without clipping.
 const headerTitleStyle = { fontFamily: FONT_FAMILY_BOLD };
 
 export default function TabsLayout() {
@@ -46,9 +48,9 @@ export default function TabsLayout() {
         headerTitleAlign: "center",
         headerTitleStyle,
         headerLeft: () => <HeaderSearchAction />,
-        headerRight: () => <HeaderMenuAction />,
-        tabBarLabelStyle: { fontFamily: FONT_FAMILY_BOLD, fontSize: 12 },
+        tabBarLabelStyle: { fontFamily: FONT_FAMILY_BOLD, fontSize: 11 },
         tabBarActiveTintColor: "#1a7a5c",
+        tabBarStyle: { height: 64, paddingTop: 6, paddingBottom: 8 },
       }}
     >
       <Tabs.Screen
@@ -56,6 +58,7 @@ export default function TabsLayout() {
         options={{
           title: TITLES["index"],
           tabBarIcon: tabIcon("home", "home-outline"),
+          headerRight: () => <HeaderLogoutAction />,
         }}
       />
       <Tabs.Screen
@@ -70,6 +73,20 @@ export default function TabsLayout() {
         options={{
           title: TITLES["events"],
           tabBarIcon: tabIcon("calendar", "calendar-outline"),
+        }}
+      />
+      <Tabs.Screen
+        name="templates"
+        options={{
+          title: TITLES["templates"],
+          tabBarIcon: tabIcon("repeat", "repeat-outline"),
+        }}
+      />
+      <Tabs.Screen
+        name="insights"
+        options={{
+          title: TITLES["insights"],
+          tabBarIcon: tabIcon("stats-chart", "stats-chart-outline"),
         }}
       />
     </Tabs>

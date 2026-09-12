@@ -17,7 +17,7 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { T as Text } from "../components/app-text";
+import { T as Text } from "../../components/app-text";
 import { useQuery } from "@tanstack/react-query";
 import {
   currentJalaliMonthKey,
@@ -29,19 +29,19 @@ import {
 import { formatNumber } from "@spend-tracker/shared/format";
 import { canonical } from "@spend-tracker/shared/normalize";
 import type { ExpenseDto } from "@spend-tracker/shared/schemas/api";
-import { useSession } from "../src/session";
-import { INPUT_FONT_STYLE } from "../components/app-text";
+import { useSession } from "../../src/session";
+import { INPUT_FONT_STYLE } from "../../components/app-text";
 import {
   INSIGHT_MESSAGES,
   buildProductInsights,
   historyFor,
   type InsightExpenseLike,
-} from "../src/insights";
+} from "../../src/insights";
 import {
   insightsKey,
   loadInsightsScreen,
   type InsightsScreenData,
-} from "../src/insights-queries";
+} from "../../src/insights-queries";
 
 interface InsightsData extends InsightsScreenData {
   expenses: ExpenseDto[];

@@ -42,8 +42,6 @@ function RootNavigator() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="category/[id]" options={{ headerShown: true, title: "دسته", headerTitleStyle: { fontFamily: FONT_FAMILY_BOLD } }} />
           <Stack.Screen name="event/[id]" options={{ headerShown: true, title: "رویداد", headerTitleStyle: { fontFamily: FONT_FAMILY_BOLD } }} />
-          <Stack.Screen name="templates" options={{ headerShown: true, title: "الگوها", headerTitleStyle: { fontFamily: FONT_FAMILY_BOLD } }} />
-          <Stack.Screen name="insights" options={{ headerShown: true, title: "بینش محصول‌ها", headerTitleStyle: { fontFamily: FONT_FAMILY_BOLD } }} />
           <Stack.Screen name="search" options={{ headerShown: true, title: "جست‌وجو", headerTitleStyle: { fontFamily: FONT_FAMILY_BOLD } }} />
         </Stack.Protected>
         <Stack.Protected guard={!session}>
