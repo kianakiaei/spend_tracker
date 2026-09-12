@@ -1,6 +1,6 @@
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import { Button } from "react-native";
+import { Button, Pressable, Text } from "react-native";
 import { useSession } from "../../src/session";
 import { ShellNote, ShellPanel } from "./_panel";
 
@@ -22,7 +22,23 @@ export default function MoreScreen() {
 
   return (
     <ShellPanel title="بیشتر">
-      <ShellNote>الگوها و بینش‌ها در تیکت‌های 05 و 08 می‌آیند.</ShellNote>
+      <Link href="/templates" asChild>
+        <Pressable
+          accessibilityLabel="الگوهای تکرار"
+          style={{
+            borderWidth: 1,
+            borderColor: "#d8d3c8",
+            borderRadius: 12,
+            paddingHorizontal: 20,
+            paddingVertical: 12,
+          }}
+        >
+          <Text style={{ fontSize: 15, fontWeight: "800", color: "#1a7a5c" }}>
+            الگوهای تکرار
+          </Text>
+        </Pressable>
+      </Link>
+      <ShellNote>بینش‌ها در تیکت 08 می‌آیند.</ShellNote>
       <Button title={pending ? "…" : "خروج"} onPress={onSignOut} disabled={pending} />
     </ShellPanel>
   );
