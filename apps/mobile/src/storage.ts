@@ -10,24 +10,44 @@ import { Platform } from "react-native";
 import * as SecureStore from "expo-secure-store";
 import type { KeyValueStorage } from "./token-store";
 
+// Minimal browser-storage shape: the mobile tsconfig has no DOM lib (this
+// module also loads on native, where `window` does not exist), so the
+// contract is declared structurally instead of referencing DOM types.
+interface WebLocalStorageShape {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+}
+
+declare const window: { localStorage?: WebLocalStorageShape } | undefined;
+
+function webLocalStorage(): WebLocalStorageShape | null {
+  try {
+    if (typeof window === "undefined") return null;
+    return window.localStorage ?? null;
+  } catch {
+    return null;
+  }
+}
+
 const webStorage: KeyValueStorage = {
   getItem: (key) => {
     try {
-      return window.localStorage.getItem(key);
+      return webLocalStorage()?.getItem(key) ?? null;
     } catch {
       return null;
     }
   },
   setItem: (key, value) => {
     try {
-      window.localStorage.setItem(key, value);
+      webLocalStorage()?.setItem(key, value);
     } catch {
       // Private-mode / disabled storage: the session just won't persist.
     }
   },
   removeItem: (key) => {
     try {
-      window.localStorage.removeItem(key);
+      webLocalStorage()?.removeItem(key);
     } catch {
       // Best effort (see above).
     }
