@@ -1,17 +1,4 @@
-// The problem+json WIRE SHAPE (RFC 9457; ticket 12), shared verbatim by the
-// server renderer (problem.ts), the typed client (client.ts), and any
-// future mobile consumer — a dependency-free leaf, portable to any bundle.
-
-export interface ProblemErrorEntry {
-  path: string;
-  code: string;
-  message: string;
-}
-
-export interface ProblemBody {
-  type: string;
-  title: string;
-  status: number;
-  detail?: string;
-  errors?: ProblemErrorEntry[];
-}
+// Re-export of the shared problem+json wire shape (expo-mobile ticket 01).
+// @spend-tracker/shared is the single source of truth; this module stays
+// so existing `@/lib/api/problem-body` imports keep working with zero change.
+export * from "@spend-tracker/shared/api/problem-body";
