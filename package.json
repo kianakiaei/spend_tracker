@@ -16,6 +16,7 @@
     "db:migrate": "drizzle-kit migrate"
   },
   "dependencies": {
+    "@spend-tracker/shared": "workspace:*",
     "@libsql/client": "0.18.0",
     "better-auth": "1.7.3",
     "date-fns-jalali": "4.4.0-0",

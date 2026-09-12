@@ -1,0 +1,23 @@
+{
+  "name": "@spend-tracker/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Pure shared domain helpers for web and Expo mobile: v1 API client, DTO shapes, Jalali calendar, Persian normalization, formatting, quantity arithmetic. No web-only or native-only dependencies.",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schemas": "./src/schemas/index.ts",
+    "./schemas/domain": "./src/schemas/domain.ts",
+    "./schemas/api": "./src/schemas/api.ts",
+    "./api/client": "./src/api/client.ts",
+    "./api/problem-body": "./src/api/problem-body.ts",
+    "./jalali": "./src/jalali.ts",
+    "./normalize": "./src/normalize.ts",
+    "./format": "./src/format.ts",
+    "./quantity": "./src/quantity.ts"
+  },
+  "dependencies": {
+    "date-fns-jalali": "4.4.0-0",
+    "zod": "4.5.4"
+  }
+}
