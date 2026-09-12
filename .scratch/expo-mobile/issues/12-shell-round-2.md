@@ -48,6 +48,11 @@ props for `onPress`. Dots now take `onClick` on web and `onPress` on native
 responder mixin attaches, and a direct `onClick` flows through `...rest` to
 the DOM node).
 
+Follow-up 2026-09-12 (3): smoother chart theme — Catmull-Rom curve instead
+of kinked segments (round caps/joins), soft area fill under the line, faint
+gridlines, larger dots with a halo on the tapped one. Tap-a-dot readout and
+tooltip unchanged.
+
 Follow-up 2026-09-12 (2): the tab bar laid out LTR on expo web (Home on
 the left) — screens set `direction: "rtl"` explicitly but the bar container
 never got it. `tabBarStyle` now carries `direction: "rtl"` so the first tab

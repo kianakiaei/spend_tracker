@@ -14,7 +14,7 @@ import Svg, {
   Circle,
   G,
   Line,
-  Polyline,
+  Path,
   Rect,
   Text as SvgText,
 } from "react-native-svg";
@@ -40,6 +40,25 @@ const MUTED = "#6b6259";
 const ACCENT = "#1a7a5c";
 const PAPER = "#fffdf9";
 
+/** Catmull-Rom → cubic bezier smoothing so the trend reads as a curve, not
+ * kinked segments. Pure geometry (view-level, like the X/Y scales). */
+function smoothLinePath(pts: Array<{ x: number; y: number }>): string {
+  if (pts.length < 2) return "";
+  let d = `M ${pts[0]!.x},${pts[0]!.y}`;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const p0 = pts[Math.max(i - 1, 0)]!;
+    const p1 = pts[i]!;
+    const p2 = pts[i + 1]!;
+    const p3 = pts[Math.min(i + 2, pts.length - 1)]!;
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2.x},${p2.y}`;
+  }
+  return d;
+}
+
 export function InsightsChart({ product }: { product: ProductInsight }) {
   const { width: windowWidth } = useWindowDimensions();
   const [selected, setSelected] = useState<number | null>(null);
@@ -59,6 +78,14 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
   const Y = (v: number) =>
     H - PAD_BOTTOM - ((v - min) / span) * (H - PAD_TOP - PAD_BOTTOM);
   const readout = selected !== null ? (buckets[selected] ?? null) : null;
+
+  const points = vals.map((v, i) => ({ x: X(i), y: Y(v) }));
+  const line = smoothLinePath(points);
+  const baseline = H - PAD_BOTTOM;
+  const area =
+    points.length < 2
+      ? ""
+      : `${line} L ${points[points.length - 1]!.x},${baseline} L ${points[0]!.x},${baseline} Z`;
 
   return (
     <View style={{ gap: 4 }}>
@@ -86,12 +113,34 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
           strokeDasharray="6 5"
           strokeWidth={1.5}
         />
-        <Polyline
-          points={vals.map((v, i) => `${X(i)},${Y(v)}`).join(" ")}
-          fill="none"
-          stroke={ACCENT}
-          strokeWidth={2.5}
-        />
+        {[0, 0.5, 1].map((t) => {
+          const gy = H - PAD_BOTTOM - t * (H - PAD_TOP - PAD_BOTTOM);
+          return (
+            <Line
+              key={t}
+              x1={PAD_SIDE}
+              x2={W - PAD_SIDE}
+              y1={gy}
+              y2={gy}
+              stroke={MUTED}
+              strokeOpacity={0.15}
+              strokeWidth={1}
+            />
+          );
+        })}
+        {area !== "" ? (
+          <Path d={area} fill={ACCENT} fillOpacity={0.1} />
+        ) : null}
+        {line !== "" ? (
+          <Path
+            d={line}
+            fill="none"
+            stroke={ACCENT}
+            strokeWidth={2.5}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        ) : null}
         {buckets.map((b, i) => {
           const above = i % 2 === 0;
           const active = selected === i;
@@ -129,10 +178,19 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
                   ? { onClick: () => setSelected(active ? null : i) }
                   : { onPress: () => setSelected(active ? null : i) })}
               />
+              {active ? (
+                <Circle
+                  cx={X(i)}
+                  cy={Y(b.avgUnitPrice)}
+                  r={12}
+                  fill={ACCENT}
+                  fillOpacity={0.18}
+                />
+              ) : null}
               <Circle
                 cx={X(i)}
                 cy={Y(b.avgUnitPrice)}
-                r={active ? 7 : 4.5}
+                r={active ? 7 : 5}
                 fill={ACCENT}
                 fillOpacity={dimmed ? 0.45 : 1}
                 strokeWidth={2}
