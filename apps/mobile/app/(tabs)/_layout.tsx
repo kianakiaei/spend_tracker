@@ -6,7 +6,8 @@
 
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import type { ColorValue } from "react-native";
+import { BlurView } from "expo-blur";
+import { Platform, StyleSheet, type ColorValue } from "react-native";
 import type { ComponentProps } from "react";
 import { FONT_FAMILY_BOLD } from "../../src/font-weights";
 import { MOBILE_TABS } from "../../src/routes";
@@ -36,9 +37,15 @@ function tabIcon(filled: IoniconName, outline: IoniconName) {
 
 // Native headers carry the search shortcut (left) with the title centered;
 // native tab labels and header titles wear Vazirmatn Bold explicitly (they
-// are not RN Text, so the T wrapper cannot reach them). The bar is tall
-// enough for icon + label on expo web without clipping.
+// are not RN Text, so the T wrapper cannot reach them).
 const headerTitleStyle = { fontFamily: FONT_FAMILY_BOLD };
+
+// Frosted bar background on iOS (UIKit blur over paper); Android's Material
+// variant draws its own surface, so nothing renders there.
+function TabBarBackground() {
+  if (Platform.OS !== "ios") return null;
+  return <BlurView tint="extraLight" intensity={90} style={StyleSheet.absoluteFill} />;
+}
 
 export default function TabsLayout() {
   return (
@@ -48,12 +55,25 @@ export default function TabsLayout() {
         headerTitleAlign: "center",
         headerTitleStyle,
         headerLeft: () => <HeaderSearchAction />,
+        // Platform chrome from the bundled bottom-tabs fork: UIKit blur on
+        // iOS, Material 3 on Android (its active pill gets the jade tint).
+        // Web stays UIKit with the roomier bar from ticket 12.
+        tabBarVariant: Platform.OS === "android" ? "material" : "uikit",
+        tabBarBackground: TabBarBackground,
+        tabBarActiveBackgroundColor:
+          Platform.OS === "android" ? "#e4f0e9" : undefined,
         tabBarLabelStyle: { fontFamily: FONT_FAMILY_BOLD, fontSize: 11 },
         tabBarActiveTintColor: "#1a7a5c",
-        // RTL bar: the screens set direction explicitly, but the tab bar
-        // container never got it — on expo web it laid out LTR (Home on the
-        // left). First tab renders rightmost.
-        tabBarStyle: { height: 64, paddingTop: 6, paddingBottom: 8, direction: "rtl" },
+        tabBarStyle: Platform.select({
+          web: { height: 64, paddingTop: 6, paddingBottom: 8, direction: "rtl" },
+          ios: {
+            backgroundColor: "transparent",
+            borderTopWidth: 0,
+            elevation: 0,
+            direction: "rtl",
+          },
+          default: { direction: "rtl" },
+        }),
       }}
     >
       <Tabs.Screen
