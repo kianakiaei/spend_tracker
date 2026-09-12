@@ -17,6 +17,7 @@ import {
   jalaliMonthKeyLabel,
   jalaliMonthLabel,
   jalaliMonthNameFromKey,
+  occurrenceISO,
   startOfJalaliMonth,
   shiftJalaliMonthKey,
   toEnglishDigits,
@@ -259,5 +260,19 @@ describe("jalaliDayOfMonth (ledger interleaving, ticket 26)", () => {
   it("gives the jalali day as a latin number", () => {
     expect(jalaliDayOfMonth(fromISODate("2026-09-06"))).toBe(15);
     expect(jalaliDayOfMonth(fromISODate("2026-03-21"))).toBe(1); // 1 فروردین ۱۴۰۵
+  });
+});
+
+describe("occurrenceISO (shared day-math, ticket 11)", () => {
+  it("resolves the first of the month to its Gregorian start", () => {
+    expect(occurrenceISO("1405-06", 1)).toBe("2026-08-23");
+  });
+
+  it("walks forward inside the month", () => {
+    expect(occurrenceISO("1405-06", 15)).toBe("2026-09-06");
+  });
+
+  it("clamps long days to the month's last day", () => {
+    expect(occurrenceISO("1404-12", 31)).toBe(occurrenceISO("1404-12", 29));
   });
 });

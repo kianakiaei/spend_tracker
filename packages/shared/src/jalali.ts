@@ -109,6 +109,21 @@ export function fromJalaliMonthKey(monthKey: string): Date {
   return newDate(year, month - 1, 1);
 }
 
+/** Gregorian date-only string of a Jalali (monthKey, day-of-month) pair —
+ * the generated expense's `occurredAt` and the picker's storage value. The
+ * day clamps into what the month actually has (day 31 in a 30-day month
+ * sticks to the 30th). Day arithmetic within one month is calendar-agnostic:
+ * the Jalali month's day n is n-1 Gregorian days past its first day.
+ * Moved verbatim from the recurring service (expo-mobile ticket 11) so the
+ * server and the mobile picker share one day-math. */
+export function occurrenceISO(monthKey: string, dayOfMonth: number): string {
+  const first = fromJalaliMonthKey(monthKey);
+  const day = Math.min(dayOfMonth, jalaliDaysInMonth(first));
+  const date = fromISODate(toISODate(startOfJalaliMonth(first)));
+  date.setDate(date.getDate() + day - 1);
+  return toISODate(date);
+}
+
 function parseJalaliMonthKey(monthKey: string): [number, number] {
   if (!jalaliMonthKeySchema.safeParse(monthKey).success) {
     throw new RangeError(
