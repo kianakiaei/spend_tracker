@@ -40,3 +40,10 @@ clean.
 logout header-only on Home). `react-native-svg` is the one new native dep
 (Expo Go + web safe); the chart ports the web geometry verbatim with
 touch instead of hover. Rename-with-color is one PATCH (no extra endpoint).
+
+Follow-up 2026-09-12: expo web warned «Unknown event handler property
+`onResponderTerminate`» on the chart dots — RNSVG web wires PanResponder
+props for `onPress`. Dots now take `onClick` on web and `onPress` on native
+(verified in the installed `prepare.js`: without touchable props no
+responder mixin attaches, and a direct `onClick` flows through `...rest` to
+the DOM node).

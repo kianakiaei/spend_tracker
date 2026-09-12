@@ -9,7 +9,7 @@
 // only renders it.
 
 import { useState } from "react";
-import { useWindowDimensions } from "react-native";
+import { Platform, useWindowDimensions } from "react-native";
 import Svg, {
   Circle,
   G,
@@ -122,7 +122,12 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
                 cy={Y(b.avgUnitPrice)}
                 r={16}
                 fill="transparent"
-                onPress={() => setSelected(active ? null : i)}
+                // onPress on expo web wires PanResponder props that react-dom
+                // rejects ("Unknown event handler property
+                // `onResponderTerminate'"): clicks on web, presses on native.
+                {...(Platform.OS === "web"
+                  ? { onClick: () => setSelected(active ? null : i) }
+                  : { onPress: () => setSelected(active ? null : i) })}
               />
               <Circle
                 cx={X(i)}
