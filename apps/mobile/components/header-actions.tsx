@@ -6,11 +6,28 @@
 
 import { useState } from "react";
 import { Modal, Pressable, View } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
 import { T as Text } from "./app-text";
 import { useRouter } from "expo-router";
 import { useSession } from "../src/session";
 
-export function HeaderActions() {
+/** Tabs header search shortcut (headerLeft): jumps to the search stack. */
+export function HeaderSearchAction() {
+  const router = useRouter();
+  return (
+    <Pressable
+      accessibilityLabel="جست‌وجو"
+      accessibilityRole="button"
+      onPress={() => router.push("/search")}
+      style={iconButton}
+    >
+      <Ionicons name="search" size={22} color="#1c1a17" />
+    </Pressable>
+  );
+}
+
+/** Tabs header «…» menu (headerRight, see module doc above). */
+export function HeaderMenuAction() {
   const router = useRouter();
   const { auth, refreshSession } = useSession();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -35,22 +52,14 @@ export function HeaderActions() {
   }
 
   return (
-    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-      <Pressable
-        accessibilityLabel="جست‌وجو"
-        accessibilityRole="button"
-        onPress={() => router.push("/search")}
-        style={iconButton}
-      >
-        <Text style={{ fontSize: 19 }}>🔍</Text>
-      </Pressable>
+    <>
       <Pressable
         accessibilityLabel="منوی بیشتر"
         accessibilityRole="button"
         onPress={() => setMenuOpen(true)}
         style={iconButton}
       >
-        <Text style={{ fontSize: 19, fontWeight: "800" }}>⋯</Text>
+        <Ionicons name="ellipsis-horizontal" size={24} color="#1c1a17" />
       </Pressable>
 
       <Modal
@@ -105,7 +114,7 @@ export function HeaderActions() {
           </View>
         </Pressable>
       </Modal>
-    </View>
+    </>
   );
 }
 

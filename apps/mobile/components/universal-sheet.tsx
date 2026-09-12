@@ -19,39 +19,38 @@ export function UniversalSheet({
 }: UniversalSheetProps & { children: ReactNode }) {
   if (!open) return null;
   if (resolveSheetVariant(Platform.OS) === "web") {
+    // A Modal portal, not an inline view: the sheet must cover the tab bar
+    // (an inline fixed view slides under it). Same bottom-anchored panel as
+    // native, capped for wide browser windows.
     return (
-      <View
+      <Modal
+        visible={open}
+        transparent
+        animationType="slide"
+        onRequestClose={onClose}
         testID={testID}
-        style={{
-          position: "fixed" as never,
-          inset: 0 as never,
-          zIndex: 50,
-          alignItems: "center",
-          justifyContent: "flex-end",
-          backgroundColor: "rgba(0,0,0,0.45)",
-          direction: "rtl",
-        }}
       >
         <Pressable
           accessibilityLabel="بستن"
           onPress={onClose}
-          style={{ position: "absolute" as never, inset: 0 as never }}
-        />
-        <View
-          style={{
-            width: "100%",
-            maxWidth: 560,
-            maxHeight: "88%",
-            backgroundColor: "#fff",
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-            padding: 20,
-          }}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end", alignItems: "center", direction: "rtl" }}
         >
-          <SheetHeader title={title} description={description} onClose={onClose} />
-          {children}
-        </View>
-      </View>
+          <Pressable
+            style={{
+              width: "100%",
+              maxWidth: 560,
+              maxHeight: "88%",
+              backgroundColor: "#fff",
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              padding: 20,
+            }}
+          >
+            <SheetHeader title={title} description={description} onClose={onClose} />
+            {children}
+          </Pressable>
+        </Pressable>
+      </Modal>
     );
   }
   return (

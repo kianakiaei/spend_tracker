@@ -173,7 +173,7 @@ export default function HomeScreen() {
             </View>
 
             <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-              {vm.tiles.map((tile) => (
+              {vm.tiles.map((tile, index) => (
                 <Link
                   key={tile.categoryId}
                   href={tile.drilldown as "/category/[id]"}
@@ -182,7 +182,11 @@ export default function HomeScreen() {
                   <Pressable
                     style={{
                       flexGrow: 1,
-                      flexBasis: "45%",
+                      // Web mosaic parity on the two-column phone grid: the
+                      // largest tile is the full-width anchor, ≥25% tiles go
+                      // full width too, the rest share a row.
+                      flexBasis: index === 0 || tile.share >= 0.25 ? "100%" : "45%",
+                      minHeight: index === 0 ? 128 : undefined,
                       borderWidth: 1,
                       borderColor: "#d8d3c8",
                       borderRadius: 16,
@@ -192,7 +196,17 @@ export default function HomeScreen() {
                       backgroundColor: tintOf(tile.color),
                     }}
                   >
-                    <Text style={{ fontSize: 13, fontWeight: "700" }}>{tile.name}</Text>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                      <View
+                        style={{
+                          width: 9,
+                          height: 9,
+                          borderRadius: 4.5,
+                          backgroundColor: tile.color ?? FALLBACK_CATEGORY_COLOR,
+                        }}
+                      />
+                      <Text style={{ fontSize: 13, fontWeight: "700" }}>{tile.name}</Text>
+                    </View>
                     <Text style={{ fontSize: 16.5, fontWeight: "800" }}>
                       {formatNumber(tile.totalToman)}
                     </Text>

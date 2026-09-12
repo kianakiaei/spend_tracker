@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@expo/metro-runtime": "~57.0.15",
+    "@expo/vector-icons": "^15.1.1",
     "@spend-tracker/shared": "workspace:*",
     "@tanstack/react-query": "^5.80.0",
     "expo": "57.0.22",
