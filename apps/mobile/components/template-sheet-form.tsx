@@ -140,7 +140,7 @@ export function TemplateSheetModal({
       description={TEMPLATE_MESSAGES.sheetDescription}
     >
       <BottomSheetScrollView
-        style={{ gap: 12, direction: "rtl" }}
+        style={{ gap: 12 }}
         keyboardShouldPersistTaps="handled"
       >
         <SheetField label="عنوان">
@@ -149,6 +149,8 @@ export function TemplateSheetModal({
             onChangeText={(v) => set("title", v)}
             placeholder="مثلاً قسط وام"
             style={inputStyle}
+            // Create opens ready to type; edit leaves focus alone.
+            autoFocus={!isEdit}
           />
         </SheetField>
 
@@ -183,7 +185,7 @@ export function TemplateSheetModal({
         </SheetField>
 
         <SheetField label="دسته">
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, direction: "rtl" }}>
             {categories.map((c) => (
               <Pressable
                 key={c.id}
@@ -286,7 +288,7 @@ export function TemplateSheetModal({
           </Text>
         ) : null}
 
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={{ flexDirection: "row", gap: 8, direction: "rtl" }}>
           <Pressable onPress={onClose} style={ghostButton}>
             <Text>انصراف</Text>
           </Pressable>

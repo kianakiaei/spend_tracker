@@ -188,11 +188,12 @@ export default function HomeScreen() {
                 >
                   <Pressable
                     style={{
-                      flexGrow: 1,
-                      // Percentage sizing breaks tile content on phones: the
-                      // largest tile is the full-width anchor, the rest share
+                      // Largest tile is the full-width anchor, the rest share
                       // rows (ticket 12). Tiles arrive largest-first.
-                      flexBasis: index === 0 ? "100%" : "45%",
+                      // flexGrow stays 0: with grow, a lone tile on the last
+                      // row would stretch full-width regardless of rank.
+                      flexGrow: 0,
+                      flexBasis: index === 0 ? "100%" : "48%",
                       minHeight: index === 0 ? 128 : undefined,
                       borderWidth: 1,
                       borderColor: "#d8d3c8",

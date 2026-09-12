@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { T as Text } from "../../components/app-text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useLocalSearchParams, useNavigation } from "expo-router";
+import { useLocalSearchParams, useNavigation } from "expo-router";
 import {
   currentJalaliMonthKey,
   jalaliMonthKeyLabel,
@@ -136,11 +136,7 @@ export default function CategoryDetailScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={() => void onRefresh()} />
         }
       >
-        <Link href="/categories" asChild>
-          <Pressable>
-            <Text style={{ fontSize: 13, color: "#6b6259" }}>› بازگشت به دسته‌ها</Text>
-          </Pressable>
-        </Link>
+
 
         <View
           style={{ flexDirection: "row", alignItems: "center", gap: 4, justifyContent: 'space-between' }}

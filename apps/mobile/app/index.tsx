@@ -63,7 +63,7 @@ export default function WelcomeScreen() {
       {/* Temporary bundle fingerprint for device triage (ticket 16):
           proves which commit the phone is running. Remove afterwards. */}
       <Text style={{ fontSize: 10, color: "#b9b2a6", textAlign: "center" }}>
-        ساخت static-1
+        ساخت sheet-idx1
       </Text>
     </View>
   );

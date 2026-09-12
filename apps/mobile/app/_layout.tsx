@@ -15,16 +15,15 @@ import { SessionProvider, useSession } from "../src/session";
 import { loadAppFonts } from "../src/font";
 import { FONT_FAMILY_BOLD } from "../src/font-weights";
 
+// Whole app right-to-left (spec: reads like the web). Module scope — not an
+// effect — so the direction is set before the first native view (headers,
+// tab bar) mounts. iOS applies it from the next cold start: kill Expo Go
+// and reopen once after this lands.
+I18nManager.allowRTL(true);
+I18nManager.forceRTL(true);
+
 function RootNavigator() {
   const { session, status } = useSession();
-
-  useEffect(() => {
-    // Whole app right-to-left with Persian digits (spec: reads like the web).
-    if (!I18nManager.isRTL) {
-      I18nManager.allowRTL(true);
-      I18nManager.forceRTL(true);
-    }
-  }, []);
 
   if (status === "loading") {
     return (

@@ -191,10 +191,10 @@ export function ExpenseSheetModal({
       const fresh = createSheetFormState(
         lockedCategoryId || lockedEventId
           ? {
-              mode: "create",
-              ...(lockedCategoryId ? { lockedCategoryId } : {}),
-              ...(lockedEventId ? { lockedEventId } : {}),
-            }
+            mode: "create",
+            ...(lockedCategoryId ? { lockedCategoryId } : {}),
+            ...(lockedEventId ? { lockedEventId } : {}),
+          }
           : { mode: "create" },
         categories,
         monthKey,
@@ -245,6 +245,8 @@ export function ExpenseSheetModal({
             onBlur={() => void lookupSuggestion()}
             placeholder="مثلاً نان و شیر"
             style={inputStyle}
+            // Create opens ready to type; edit leaves focus alone.
+            autoFocus={!isEdit}
           />
         </SheetField>
 
@@ -464,7 +466,7 @@ export function ExpenseSheetModal({
             </View>
           </View>
         ) : (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, direction: "rtl" }}>
+          <View style={{ flexDirection: "row", paddingTop: 20, flexWrap: "wrap", gap: 8, direction: "rtl" }}>
             {isEdit ? (
               <Pressable
                 onPress={() => setConfirmingDelete(true)}

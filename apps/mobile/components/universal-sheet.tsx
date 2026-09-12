@@ -14,6 +14,8 @@ import {
 import { T as Text } from "./app-text";
 import type { UniversalSheetProps } from "../src/sheet";
 import type { ReactNode } from "react";
+const snapPoints = ["92%"];
+
 
 export function UniversalSheet({
   open,
@@ -23,14 +25,13 @@ export function UniversalSheet({
   children,
 }: UniversalSheetProps & { children: ReactNode }) {
   const ref = useRef<BottomSheetModal>(null);
-  const snapPoints = useMemo(() => ["50%", "92%"], []);
 
   // Controlled open state: presenting/dismissing follows the prop (the
   // library owns the motion between the two).
   useEffect(() => {
     if (open) ref.current?.present();
     else ref.current?.dismiss();
-  }, [open ]);
+  }, [open]);
 
   const renderBackdrop = useCallback(
     (props: BottomSheetBackdropProps) => (
