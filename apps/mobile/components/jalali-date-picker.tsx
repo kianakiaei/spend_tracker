@@ -84,6 +84,7 @@ export function JalaliDatePicker({
             borderRadius: 20,
             padding: 16,
             gap: 8,
+            direction: "rtl",
           }}
         >
           <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
