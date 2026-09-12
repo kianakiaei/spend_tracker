@@ -155,7 +155,9 @@ export function AuthField({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           blurOnSubmit={false}
-          textAlign={secure ? "left" : undefined}
+          // Latin fields stay left-aligned; Persian fields inherit the
+          // right-aligned INPUT_FONT_STYLE like every other input.
+          textAlign={secure || keyboard === "email-address" ? "left" : undefined}
           style={{
             ...INPUT_FONT_STYLE,
             flex: 1,
