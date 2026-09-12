@@ -20,6 +20,10 @@ import Svg, {
 } from "react-native-svg";
 import { formatNumber } from "@spend-tracker/shared/format";
 import {
+  FONT_FAMILY_EXTRA_BOLD,
+  FONT_FAMILY_REGULAR,
+} from "../src/font-weights";
+import {
   formatToman,
   jalaliMonthKeyLabel,
   jalaliMonthNameFromKey,
@@ -152,7 +156,7 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
                 y={Y(b.avgUnitPrice) + (above ? -12 : 20)}
                 textAnchor="middle"
                 fontSize={12}
-                fontWeight="800"
+                fontFamily={FONT_FAMILY_EXTRA_BOLD}
                 fill={INK}
               >
                 {formatNumber(b.avgUnitPrice)}
@@ -162,6 +166,7 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
                 y={H - 10}
                 textAnchor="middle"
                 fontSize={10.5}
+                fontFamily={FONT_FAMILY_REGULAR}
                 fill={MUTED}
               >
                 {jalaliMonthNameFromKey(b.monthKey)}
@@ -218,7 +223,7 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
                     y={ty + 19}
                     textAnchor="middle"
                     fontSize={15}
-                    fontWeight="900"
+                    fontFamily={FONT_FAMILY_EXTRA_BOLD}
                     fill={PAPER}
                   >
                     {formatNumber(readout.avgUnitPrice)}
@@ -228,6 +233,7 @@ export function InsightsChart({ product }: { product: ProductInsight }) {
                     y={ty + 35}
                     textAnchor="middle"
                     fontSize={11}
+                    fontFamily={FONT_FAMILY_REGULAR}
                     fill={PAPER}
                     opacity={0.75}
                   >
