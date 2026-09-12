@@ -1,8 +1,8 @@
 # دفتر هزینه — Spend Tracker
 
-اپ مدیریت هزینهٔ ماهانهٔ فارسی (راست‌چین، تقویم جلالی). هر کاربر دادهٔ خودش را دارد: هر «خرج» دقیقاً به یک «دسته» تعلق دارد، جمع‌ها بر اساس ماه جلالی گروه‌بندی می‌شوند و دسته‌بندی خودکار از انتساب‌های دستی خود کاربر یاد می‌گیرد.
+اپ مدیریت هزینهٔ ماهانهٔ فارسی (راست‌چین، تقویم جلالی) در دو نسخهٔ **وب** (Next.js) و **موبایل** (Expo). هر کاربر دادهٔ خودش را دارد: هر «خرج» دقیقاً به یک «دسته» تعلق دارد، جمع‌ها بر اساس ماه جلالی گروه‌بندی می‌شوند و دسته‌بندی خودکار از انتساب‌های دستی خود کاربر یاد می‌گیرد.
 
-**تکنولوژی‌ها:** نکست‌جی‌اس ۱۶ (App Router و RSC) · ری‌اکت ۱۹ · تیلویند ۴ · Drizzle ORM + libSQL/Turso · better-auth (ایمیل و رمز) · Zod 4 · pnpm workspaces · Vitest + Playwright.
+**تکنولوژی‌ها:** نکست‌جی‌اس ۱۶ (App Router و RSC) · ری‌اکت ۱۹ · تیلویند ۴ · Drizzle ORM + libSQL/Turso · better-auth (ایمیل و رمز) · Zod 4 · pnpm workspaces · Vitest + Playwright · اپ موبایل با Expo 57 + expo-router + TanStack Query، با منطق مشترک دامنه در `@spend-tracker/shared`.
 
 ## ویژگی‌ها
 
@@ -14,7 +14,8 @@
 - **رویدادها** (`/events`) — حوضچهٔ نام‌دار اختیاری (مثل سفر یا مهمانی) به‌عنوان محور دوم: خرج دسته و ماه خودش را نگه می‌دارد و رویداد فقط یک لایهٔ اضافه است. حذف رویداد فقط پیوند را برمی‌دارد، نه خود خرج‌ها را.
 - **جست‌وجو** (`/search`) — تطبیق نرمال‌شدهٔ فارسی در همهٔ ماه‌ها (ی عربی/فارسی، ارقام فارسی/لاتین، نیم‌فاصله) با نمایش قیمت، ماه جلالی وقوع و دسته.
 - **بینش‌ها** (`/insights`) — آمار قیمت واحد هر محصول (میانگین وزنی ماهانه = جمع مبالغ ÷ جمع تعدادها).
-- **احراز هویت** — ایمیل و رمز با better-auth، همراه تأیید ایمیل و بازیابی رمز (ارسال با Resend؛ بدون کلید، لینک‌ها در محیط توسعه فقط در کنسول سرور چاپ می‌شوند).
+- **احراز هویت** — ایمیل و رمز با better-auth، همراه تأیید ایمیل و بازیابی رمز (ارسال با Resend؛ بدون کلید، لینک‌ها در محیط توسعه فقط در کنسول سرور چاپ می‌شوند). همین حساب در اپ موبایل هم کار می‌کند.
+- **اپ موبایل** (`apps/mobile`) — نسخهٔ Expo (اندروید/iOS) با همان امکانات وب: داشبورد ماهانه، دسته‌ها، الگوها، رویدادها، جست‌وجو و بینش‌ها در قالب ۵ تب + باتم‌شیت ثبت خرج. فقط با API نسخه‌دار (`/api/v1`) و `/api/auth` حرف می‌زند؛ جزئیات در بخش «اپ موبایل».
 
 ## شروع سریع
 
@@ -24,8 +25,16 @@
 pnpm install
 cp .env.example .env   # پیش‌فرض‌ها به دیتابیس فایل محلی اشاره می‌کنند
 pnpm db:migrate        # ساخت اسکیمای local.db با drizzle-kit
-pnpm dev               # http://localhost:3000
+pnpm dev               # وب: http://localhost:3000
 ```
+
+اجرای اپ موبایل (بک‌اند وب بالا باید روشن باشد):
+
+```bash
+pnpm --filter @spend-tracker/mobile dev   # اجرای Expo (اسکن QR با Expo Go یا شبیه‌ساز)
+```
+
+تست تایپ موبایل: `pnpm --filter @spend-tracker/mobile typecheck`.
 
 اسکریپت‌های کاربردی (`package.json`):
 
@@ -50,30 +59,43 @@ pnpm dev               # http://localhost:3000
 | `BETTER_AUTH_SECRET` | — | **اجباری** (بدون آن اپ خطا می‌دهد). ساخت: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
 | `BETTER_AUTH_URL` | `http://localhost:3000` | آدرس عمومی سایت (برای کال‌بک‌های پایدار احراز هویت) |
 | `RESEND_API_KEY` / `RESEND_FROM` | خالی ← لینک‌ها در کنسول چاپ می‌شوند | برای ایمیل واقعی ثبت‌نام/بازیابی رمز لازم است (دامنهٔ تأییدشده در Resend) |
+| `EXPO_PUBLIC_API_URL` | `/api/v1` (همان origin وب) | آدرس کامل API بک‌اند برای اپ موبایل، مثل `https://example.com/api/v1` (مسیر احراز هویت `/api/auth` از همین مقدار مشتق می‌شود) |
 
 ## ساختار پروژه
 
 ```text
-src/
+src/                  # اپ وب (Next.js)
   app/
     (app)/            # صفحات لاگین‌کرده: داشبورد، دسته‌ها، الگوها، رویدادها، جست‌وجو، بینش‌ها
-    api/              # هندلرهای API (احراز هویت و دامنه؛ RSCها مستقیم از سرویس‌ها می‌خوانند)
+    api/
+      auth/           # better-auth (وب و موبایل مشترک)
+      v1/             # API نسخه‌دار JSON برای اپ موبایل (خلاصه‌ها، خرج‌ها، دسته‌ها، الگوها، رویدادها، جست‌وجو، classify)
     login/ forgot-password/ reset-password/
   components/         # ledger، summary-tiles، month-nav، expense-sheet و …
   db/                 # اسکیما و کلاینت drizzle (کاربر، دسته، خرج، رویداد، الگوی تکرار، کلید یادگرفته)
   lib/                # auth، jalali، categorization، recurring، services، schemas، format
-packages/shared/      # پکیج مشترک ورک‌اسپیس (@spend-tracker/shared)
+apps/mobile/          # اپ موبایل Expo (expo-router): app/ (روت‌ها و ۵ تب)، src/ (کوئری‌ها و کلاینت API)، components/
+packages/shared/      # منطق خالص مشترک وب و موبایل (@spend-tracker/shared): کلاینت API نسخه v1، شکل DTOها، تقویم جلالی، نرمال‌سازی فارسی، فرمت و حساب تعداد
 drizzle/              # مایگریشن‌های تولیدشده
-e2e/                  # سناریوهای Playwright (احراز هویت، خرج، الگو، جست‌وجو، بینش)
-tests/                # تست‌های Vitest: unit / integration / components
+e2e/                  # سناریوهای Playwright وب (احراز هویت، خرج، الگو، جست‌وجو، بینش)
+tests/                # تست‌های Vitest وب: unit / integration / components
 docs/adr/             # تصمیم‌های معماری
 ```
 
 واژه‌نامهٔ دامنه (زبان همه‌جاحاضر فارسی — خرج، دسته، الگو، پیش‌بینی، رویداد، …) در `CONTEXT.md` است؛ تصمیم‌های معماری در `docs/adr/`.
 
+## اپ موبایل
+
+پوشهٔ `apps/mobile` یک اپ Expo 57 با expo-router است (نام نمایشی «دفتر هزینه»، کاملاً راست‌چین با فونت وزیرمتن):
+
+- **ناوبری:** صفحهٔ فرود (`/`) + گارد احراز هویت؛ کاربران واردشده وارد شل ۵ تبه می‌شوند: داشبورد، دسته‌ها، الگوها، رویدادها، بینش‌ها (+ صفحات جزئیات دسته/رویداد و جست‌وجو). صفحات ورود/ثبت‌نام/فراموشی/بازیابی رمز داخل خود اپ است.
+- **داده:** فقط از طریق کلاینت تایپ‌شدهٔ `@spend-tracker/shared` به `GET/POST/PATCH/DELETE` های `/api/v1/*` (با TanStack Query برای کش و ابطال)؛ نشست با better-auth روی `/api/auth` و ذخیرهٔ امن توکن با expo-secure-store.
+- **پیکربندی آدرس بک‌اند:** مقدار صریح > `EXPO_PUBLIC_API_URL` > همان origin وب (`/api/v1`). برای اتصال گوشی واقعی به بک‌اند لوکال، آدرس LAN سیستم را بدهید، مثلاً `EXPO_PUBLIC_API_URL=http://192.168.1.10:3000/api/v1`.
+- **بیلد موبایل:** توسعه با Expo Go (`dev`)؛ بیلد production استاندارد اکسپو (EAS Build) — بک‌اند وب باید روی آدرس عمومی مستقر باشد و `EXPO_PUBLIC_API_URL` به همان اشاره کند.
+
 ## استقرار (Deployment)
 
-اپ یک بیلد استاندارد Next.js است و هر جایی که Node اجرا شود مستقر می‌شود. مسیر پیشنهادی **Vercel + Turso** است:
+وب یک بیلد استاندارد Next.js است و هر جایی که Node اجرا شود مستقر می‌شود. مسیر پیشنهادی **Vercel + Turso** است:
 
 1. در Turso یک دیتابیس بسازید و آدرس `libsql://` و توکن آن را بردارید.
 2. در هاست، متغیرها را ست کنید: `TURSO_DATABASE_URL`، `TURSO_AUTH_TOKEN`، `BETTER_AUTH_SECRET`، `BETTER_AUTH_URL` (آدرس عمومی سایت) و `RESEND_API_KEY`/`RESEND_FROM` برای ایمیل.
@@ -89,3 +111,4 @@ docs/adr/             # تصمیم‌های معماری
 
 - [مستندات Next.js](https://nextjs.org/docs)
 - [مستندات Drizzle + Turso](https://orm.drizzle.team/) · [مستندات better-auth](https://www.better-auth.com/docs) · [مستندات Resend](https://resend.com/docs)
+- [مستندات Expo](https://docs.expo.dev/) · [مستندات expo-router](https://docs.expo.dev/router/introduction/)
