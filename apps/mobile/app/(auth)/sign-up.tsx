@@ -1,11 +1,17 @@
 // Sign-up (expo-mobile ticket 02): never signs in directly — the account
 // stays unverified until the emailed link is opened (same as web).
 
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
-import { T as Text } from "../../components/app-text";
 import { useSession } from "../../src/session";
-import { AuthButton, AuthErrorText, AuthField, AuthNote, AuthScreen } from "./_forms";
+import {
+  AuthButton,
+  AuthErrorText,
+  AuthField,
+  AuthLink,
+  AuthNote,
+  AuthScreen,
+} from "./_forms";
 
 export default function SignUpScreen() {
   const { auth } = useSession();
@@ -35,15 +41,31 @@ export default function SignUpScreen() {
   }
 
   return (
-    <AuthScreen title="ساخت حساب در دفتر هزینه">
-      <AuthField label="ایمیل" value={email} onChangeText={setEmail} keyboard="email-address" />
-      <AuthField label="رمز" value={password} onChangeText={setPassword} secure />
+    <AuthScreen title="ساخت حساب" subtitle="یک حساب بساز؛ پیوند تأیید به ایمیلت می‌آید.">
+      <AuthField
+        label="ایمیل"
+        value={email}
+        onChangeText={setEmail}
+        keyboard="email-address"
+        autoFocus
+        disabled={pending}
+        returnKeyType="next"
+        textContentType="username"
+      />
+      <AuthField
+        label="رمز"
+        value={password}
+        onChangeText={setPassword}
+        secure
+        disabled={pending}
+        returnKeyType="done"
+        textContentType="newPassword"
+        onSubmitEditing={() => void onSubmit()}
+      />
       <AuthErrorText error={error} />
       {notice && <AuthNote>{notice}</AuthNote>}
       <AuthButton title="ساخت حساب" onPress={onSubmit} pending={pending} />
-      <Link href="/(auth)/sign-in">
-        <Text>حساب داری؟ ورود</Text>
-      </Link>
+      <AuthLink href="/(auth)/sign-in">حساب داری؟ وارد شو</AuthLink>
     </AuthScreen>
   );
 }

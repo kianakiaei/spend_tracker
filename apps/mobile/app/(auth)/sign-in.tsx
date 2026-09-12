@@ -1,13 +1,19 @@
 // Sign-in (expo-mobile ticket 02): verified users in, unverified users get the
 // clear block + resend path, everyone else the generic voice (no enumeration).
 
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { View } from "react-native";
-import { T as Text } from "../../components/app-text";
 import { MobileAuthError } from "../../src/auth-client";
 import { useSession } from "../../src/session";
-import { AuthButton, AuthErrorText, AuthField, AuthNote, AuthScreen } from "./_forms";
+import {
+  AuthButton,
+  AuthErrorText,
+  AuthField,
+  AuthLink,
+  AuthNote,
+  AuthScreen,
+} from "./_forms";
 
 export default function SignInScreen() {
   const { auth, refreshSession } = useSession();
@@ -47,9 +53,27 @@ export default function SignInScreen() {
   const unverified = error instanceof MobileAuthError && error.code === "unverified";
 
   return (
-    <AuthScreen title="ورود به دفتر هزینه">
-      <AuthField label="ایمیل" value={email} onChangeText={setEmail} keyboard="email-address" />
-      <AuthField label="رمز" value={password} onChangeText={setPassword} secure />
+    <AuthScreen title="ورود به دفتر هزینه" subtitle="ایمیل و رمزت را بزن تا وارد شوی.">
+      <AuthField
+        label="ایمیل"
+        value={email}
+        onChangeText={setEmail}
+        keyboard="email-address"
+        autoFocus
+        disabled={pending}
+        returnKeyType="next"
+        textContentType="username"
+      />
+      <AuthField
+        label="رمز"
+        value={password}
+        onChangeText={setPassword}
+        secure
+        disabled={pending}
+        returnKeyType="done"
+        textContentType="password"
+        onSubmitEditing={() => void onSubmit()}
+      />
       <AuthErrorText error={error} />
       {unverified && (
         <View style={{ gap: 8 }}>
@@ -57,7 +81,7 @@ export default function SignInScreen() {
             <AuthNote>پیوند تازه فرستاده شد؛ ایمیلت را باز کن.</AuthNote>
           ) : (
             <AuthButton
-              title={resending ? "…" : "فرستادن دوبارهٔ پیوند تأیید"}
+              title="فرستادن دوبارهٔ پیوند تأیید"
               onPress={onResend}
               pending={resending}
             />
@@ -65,12 +89,8 @@ export default function SignInScreen() {
         </View>
       )}
       <AuthButton title="ورود" onPress={onSubmit} pending={pending} />
-      <Link href="/(auth)/sign-up">
-        <Text>حساب نداری؟ ثبت‌نام</Text>
-      </Link>
-      <Link href="/(auth)/forgot">
-        <Text>فراموشی رمز؟</Text>
-      </Link>
+      <AuthLink href="/(auth)/sign-up">حساب نداری؟ ثبت‌نام</AuthLink>
+      <AuthLink href="/(auth)/forgot">رمزت را فراموش کردی؟</AuthLink>
     </AuthScreen>
   );
 }

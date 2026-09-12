@@ -27,8 +27,18 @@ export default function ForgotScreen() {
   }
 
   return (
-    <AuthScreen title="فراموشی رمز">
-      <AuthField label="ایمیل" value={email} onChangeText={setEmail} keyboard="email-address" />
+    <AuthScreen title="فراموشی رمز" subtitle="ایمیلت را بزن؛ اگر ثبت شده باشد لینک ریست می‌فرستیم.">
+      <AuthField
+        label="ایمیل"
+        value={email}
+        onChangeText={setEmail}
+        keyboard="email-address"
+        autoFocus
+        disabled={pending}
+        returnKeyType="done"
+        textContentType="username"
+        onSubmitEditing={() => void onSubmit()}
+      />
       <AuthErrorText error={error} />
       {note && <AuthNote>{note}</AuthNote>}
       <AuthButton title="فرستادن لینک ریست" onPress={onSubmit} pending={pending} />

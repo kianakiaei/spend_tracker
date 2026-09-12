@@ -32,10 +32,20 @@ export default function ResetScreen() {
   }
 
   return (
-    <AuthScreen title="تعیین رمز تازه">
-      <AuthField label="رمز تازه" value={password} onChangeText={setPassword} secure />
+    <AuthScreen title="رمز تازه" subtitle="رمز تازه‌ات را بنویس تا حسابت باز شود.">
+      <AuthField
+        label="رمز تازه"
+        value={password}
+        onChangeText={setPassword}
+        secure
+        autoFocus
+        disabled={pending || !token}
+        returnKeyType="done"
+        textContentType="newPassword"
+        onSubmitEditing={() => void onSubmit()}
+      />
       <AuthErrorText error={error} />
-      <AuthButton title="ثبت رمز تازه" onPress={onSubmit} pending={pending || !token} />
+      <AuthButton title="ثبت رمز تازه" onPress={onSubmit} pending={pending} disabled={!token} />
     </AuthScreen>
   );
 }
