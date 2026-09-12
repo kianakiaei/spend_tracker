@@ -264,19 +264,23 @@ describe("mobile auth client (ticket 02)", () => {
   });
 });
 
-describe("mobile shell routes (ticket 02)", () => {
-  it("exposes five bottom tabs: Home, Categories, Events, Search, More", () => {
+describe("mobile shell routes (tickets 02 + 10)", () => {
+  it("exposes three bottom tabs: Home, Categories, Events (search lives in the header, the More tab is gone)", () => {
     expect(MOBILE_TABS.map((t) => t.name)).toEqual([
       "index",
       "categories",
       "events",
-      "search",
-      "more",
     ]);
   });
 
-  it("exposes stack drilldowns for a category and an event", () => {
-    expect(MOBILE_STACK_ROUTES).toEqual(["category/[id]", "event/[id]"]);
+  it("exposes stack screens for the drilldowns plus search, templates, and insights", () => {
+    expect(MOBILE_STACK_ROUTES).toEqual([
+      "category/[id]",
+      "event/[id]",
+      "search",
+      "templates",
+      "insights",
+    ]);
   });
 
   it("exposes the four in-app auth screens", () => {

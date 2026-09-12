@@ -25,21 +25,21 @@ import type {
   EventDto,
   SearchResultDto,
 } from "@spend-tracker/shared/schemas/api";
-import { useSession } from "../../src/session";
+import { useSession } from "../src/session";
 import {
   SEARCH_MESSAGES,
   buildSearchViewModel,
   narrowHits,
   type SearchHit,
   type SearchRow,
-} from "../../src/search";
+} from "../src/search";
 import {
   loadSearchScreen,
   searchKey,
   type SearchScreenData,
-} from "../../src/search-queries";
-import type { SheetOpen } from "../../src/expense-sheet";
-import { ExpenseSheetModal } from "../../components/expense-sheet-form";
+} from "../src/search-queries";
+import type { SheetOpen } from "../src/expense-sheet";
+import { ExpenseSheetModal } from "../components/expense-sheet-form";
 
 interface SearchData extends SearchScreenData {
   hits: SearchResultDto[];
