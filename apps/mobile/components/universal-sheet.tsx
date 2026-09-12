@@ -16,6 +16,7 @@ import {
   Pressable,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { T as Text } from "./app-text";
 import type { UniversalSheetProps } from "../src/sheet";
 import type { ReactNode } from "react";
@@ -34,6 +35,10 @@ function AnimatedSheet({
   testID,
   children,
 }: UniversalSheetProps & { children: ReactNode }) {
+  // Bleed the panel under the home indicator to the physical screen edge:
+  // a panel that ends at the safe area leaves a dead strip with the tab bar
+  // showing below it. Content keeps its clearance via padding.
+  const bottomBleed = useSafeAreaInsets().bottom;
   // Animation instances live in state (lazy init): the v6 refs rule forbids
   // reading `.current` during render, and these values are only ever set up
   // once and driven imperatively afterwards.
@@ -139,7 +144,8 @@ function AnimatedSheet({
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               paddingHorizontal: 20,
-              paddingBottom: 20,
+              paddingBottom: 20 + bottomBleed,
+              marginBottom: -bottomBleed,
               direction: "rtl",
             }}
           >
