@@ -1,23 +1,23 @@
-// Universal sheet (expo-mobile tickets 03 + 16): one prop contract, one
-// physics implementation — a fading scrim plus a spring-driven panel with a
-// grabber handle and drag-to-dismiss, on iOS, Android, and expo web (the
-// Modal portal also keeps the web sheet above the tab bar). Ticket 16
-// rebuilt this because the old native variant wrapped scrim and panel in a
-// single `slide` Modal animation: the backdrop slid up _with_ the sheet,
-// which reads as cheap. Now the scrim only ever fades and the panel only
-// ever springs/slides, with velocity-aware dismiss vs snap-back.
+// Universal sheet (expo-mobile tickets 03 + 16): one prop contract — a
+// fading scrim plus a spring-driven panel with a grabber handle and
+// drag-to-dismiss. The sheet mounts through the root sheet host (a portal
+// above the navigator) instead of an iOS Modal, whose presentation behavior
+// proved unfixable by remote control: paint order does the covering here,
+// so no tab bar, header, or screen edge can ever show through or below a
+// sheet. Ticket 16's spring/grabber physics carry over unchanged.
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Animated,
+  BackHandler,
   Easing,
-  Modal,
   PanResponder,
   Pressable,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { T as Text } from "./app-text";
+import { useSheetHost } from "./sheet-host";
 import type { UniversalSheetProps } from "../src/sheet";
 import type { ReactNode } from "react";
 
@@ -28,13 +28,48 @@ const ENTRY_OFFSET = 520;
 const DISMISS_DISTANCE = 120;
 const DISMISS_VELOCITY = 0.9;
 
-function AnimatedSheet({
+export function UniversalSheet({
+  open,
   onClose,
   title,
   description,
   testID,
   children,
 }: UniversalSheetProps & { children: ReactNode }) {
+  const host = useSheetHost();
+  // Portal into the root host: screens keep rendering this component exactly
+  // as before, but the content mounts above the navigator. The node identity
+  // only changes when the screen re-renders, and host updates converge
+  // without remounting SheetContent (same type + position), so form state,
+  // focus, and the entry animation survive parent renders.
+  const node = useMemo(
+    () => (
+      <SheetContent
+        onClose={onClose}
+        title={title}
+        description={description}
+        testID={testID}
+      >
+        {children}
+      </SheetContent>
+    ),
+    [onClose, title, description, testID, children],
+  );
+  useEffect(() => {
+    if (!open) return;
+    host.present(node);
+    return () => host.dismiss();
+  }, [open, host, node]);
+  return null;
+}
+
+function SheetContent({
+  onClose,
+  title,
+  description,
+  testID,
+  children,
+}: Omit<UniversalSheetProps, "open"> & { children: ReactNode }) {
   // Bleed the panel under the home indicator to the physical screen edge:
   // a panel that ends at the safe area leaves a dead strip with the tab bar
   // showing below it. Content keeps its clearance via padding.
@@ -43,9 +78,10 @@ function AnimatedSheet({
   // reading `.current` during render, and these values are only ever set up
   // once and driven imperatively afterwards.
   const [scrim] = useState(() => new Animated.Value(0));
-  const [entry] = useState(() => new Animated.Value(ENTRY_OFFSET));
   // Gesture: drag offset of the panel (0 at rest, positive going down).
-  const [drag] = useState(() => new Animated.Value(0));
+  // Single value for entry + drag (no derived nodes): entry springs it to
+  // rest, the gesture drives it after that.
+  const [offset] = useState(() => new Animated.Value(ENTRY_OFFSET));
 
   useEffect(() => {
     // Entry: scrim fades in while the panel springs up from below.
@@ -56,7 +92,7 @@ function AnimatedSheet({
         easing: Easing.out(Easing.quad),
         useNativeDriver: true,
       }),
-      Animated.spring(entry, {
+      Animated.spring(offset, {
         toValue: 0,
         useNativeDriver: true,
         damping: 30,
@@ -64,7 +100,7 @@ function AnimatedSheet({
         mass: 0.9,
       }),
     ]).start();
-  }, [scrim, entry]);
+  }, [scrim, offset]);
 
   const dismiss = useCallback(() => {
     Animated.parallel([
@@ -74,14 +110,23 @@ function AnimatedSheet({
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
-      Animated.timing(drag, {
+      Animated.timing(offset, {
         toValue: ENTRY_OFFSET,
         duration: 180,
         easing: Easing.in(Easing.quad),
         useNativeDriver: true,
       }),
     ]).start(() => onClose());
-  }, [onClose, scrim, drag]);
+  }, [onClose, scrim, offset]);
+
+  // Android back button (the Modal's onRequestClose used to own this).
+  useEffect(() => {
+    const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+      dismiss();
+      return true;
+    });
+    return () => sub.remove();
+  }, [dismiss]);
 
   const pan = useMemo(
     () =>
@@ -90,12 +135,12 @@ function AnimatedSheet({
         onMoveShouldSetPanResponder: (_, gesture) =>
           gesture.dy > 8 && Math.abs(gesture.dy) > Math.abs(gesture.dx),
         onPanResponderMove: (_, gesture) =>
-          drag.setValue(Math.max(gesture.dy, -48)),
+          offset.setValue(Math.max(gesture.dy, -48)),
         onPanResponderRelease: (_, gesture) => {
           if (gesture.dy > DISMISS_DISTANCE || gesture.vy > DISMISS_VELOCITY) {
             dismiss();
           } else {
-            Animated.spring(drag, {
+            Animated.spring(offset, {
               toValue: 0,
               useNativeDriver: true,
               damping: 30,
@@ -104,98 +149,63 @@ function AnimatedSheet({
           }
         },
       }),
-    [dismiss, drag],
+    [dismiss, offset],
   );
 
   return (
-    <Modal
-      visible
-      transparent
-      animationType="none"
-      // Transparent overlays must present over-full-screen: anything else
-      // lets the OS float the sheet as a card with the tab bar visible
-      // below it.
-      presentationStyle="overFullScreen"
-      statusBarTranslucent
-      onRequestClose={dismiss}
-      testID={testID}
-    >
-      <View style={{ flex: 1 }}>
-        <Animated.View
-          style={{ flex: 1, opacity: scrim, backgroundColor: SCRIM_COLOR }}
-        >
-          <Pressable
-            accessibilityLabel="بستن"
-            onPress={dismiss}
-            style={{ flex: 1 }}
-          />
-        </Animated.View>
-        <Animated.View
+    <View style={{ flex: 1 }} testID={testID}>
+      <Animated.View
+        style={{ flex: 1, opacity: scrim, backgroundColor: SCRIM_COLOR }}
+      >
+        <Pressable
+          accessibilityLabel="بستن"
+          onPress={dismiss}
+          style={{ flex: 1 }}
+        />
+      </Animated.View>
+      <Animated.View
+        style={{
+          position: "absolute",
+          left: 0,
+          right: 0,
+          bottom: 0,
+          alignItems: "center",
+          transform: [{ translateY: offset }],
+        }}
+      >
+        <View
           style={{
-            position: "absolute",
-            left: 0,
-            right: 0,
-            bottom: 0,
-            alignItems: "center",
-            transform: [{ translateY: Animated.add(entry, drag) }],
+            width: "100%",
+            maxWidth: 560,
+            maxHeight: "88%",
+            backgroundColor: "#fff",
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            paddingHorizontal: 20,
+            paddingBottom: 20 + bottomBleed,
+            marginBottom: -bottomBleed,
+            direction: "rtl",
           }}
         >
           <View
-            style={{
-              width: "100%",
-              maxWidth: 560,
-              maxHeight: "88%",
-              backgroundColor: "#fff",
-              borderTopLeftRadius: 20,
-              borderTopRightRadius: 20,
-              paddingHorizontal: 20,
-              paddingBottom: 20 + bottomBleed,
-              marginBottom: -bottomBleed,
-              direction: "rtl",
-            }}
+            {...pan.panHandlers}
+            accessibilityLabel="کشیدن برای بستن"
+            style={{ alignItems: "center", paddingVertical: 8 }}
           >
             <View
-              {...pan.panHandlers}
-              accessibilityLabel="کشیدن برای بستن"
-              style={{ alignItems: "center", paddingVertical: 8 }}
-            >
-              <View
-                style={{
-                  width: 40,
-                  height: 4,
-                  borderRadius: 2,
-                  backgroundColor: "#d8d3c8",
-                }}
-              />
-            </View>
-            <SheetHeader title={title} description={description} onClose={dismiss} />
-            {children}
+              style={{
+                width: 40,
+                height: 4,
+                borderRadius: 2,
+                backgroundColor: "#d8d3c8",
+              }}
+            />
           </View>
-        </Animated.View>
-      </View>
-    </Modal>
-  );
-}
-
-export function UniversalSheet({
-  open,
-  onClose,
-  title,
-  description,
-  testID,
-  children,
-}: UniversalSheetProps & { children: ReactNode }) {
-  if (!open) return null;
-  return (
-    <AnimatedSheet
-      open={open}
-      onClose={onClose}
-      title={title}
-      description={description}
-      testID={testID}
-    >
-      {children}
-    </AnimatedSheet>
+          <SheetHeader title={title} description={description} onClose={dismiss} />
+          {children}
+        </View>
+      </Animated.View>
+    </View>
   );
 }
 

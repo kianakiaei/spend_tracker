@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, I18nManager, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession } from "../src/session";
+import { SheetHostProvider } from "../components/sheet-host";
 import { loadAppFonts } from "../src/font";
 import { FONT_FAMILY_BOLD } from "../src/font-weights";
 
@@ -18,10 +19,10 @@ function RootNavigator() {
 
   useEffect(() => {
     // Whole app right-to-left with Persian digits (spec: reads like the web).
-    if (!I18nManager.isRTL) {
-      I18nManager.allowRTL(true);
-      I18nManager.forceRTL(true);
-    }
+    // if (!I18nManager.isRTL) {
+    // I18nManager.allowRTL(true);
+    // I18nManager.forceRTL(true);
+    // }
   }, []);
 
   if (status === "loading") {
@@ -67,7 +68,7 @@ export default function RootLayout() {
   useEffect(() => {
     let live = true;
     loadAppFonts()
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => {
         if (live) setFontsLoaded(true);
       });
@@ -86,9 +87,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <SessionProvider>
-          <RootNavigator />
-        </SessionProvider>
+        <SheetHostProvider>
+          <SessionProvider>
+            <RootNavigator />
+          </SessionProvider>
+        </SheetHostProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

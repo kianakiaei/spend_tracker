@@ -60,6 +60,11 @@ export default function WelcomeScreen() {
       <Text style={{ fontSize: 12, color: "#6b6259", textAlign: "center", marginTop: 8 }}>
         دسته‌بندی فارسی · پیش‌بینی الگوها · تقویم جلالی
       </Text>
+      {/* Temporary bundle fingerprint for device triage (ticket 16):
+          proves which commit the phone is running. Remove afterwards. */}
+      <Text style={{ fontSize: 10, color: "#b9b2a6", textAlign: "center" }}>
+        ساخت 16-overlay
+      </Text>
     </View>
   );
 }
