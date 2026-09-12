@@ -167,7 +167,7 @@ describe("dashboard view model (ticket 03)", () => {
       categories: cats,
     });
     expect(vm.tiles.map((t) => t.categoryId)).toEqual([v7(1), v7(2)]);
-    expect(vm.tiles[0]).toMatchObject({ share: 0.8, drilldown: `/categories/${v7(1)}` });
+    expect(vm.tiles[0]).toMatchObject({ share: 0.8, drilldown: `/category/${v7(1)}` });
     expect(vm.tiles[1]).toMatchObject({ share: 0.2 });
   });
 
@@ -341,10 +341,7 @@ describe("expense sheet suggestion (ticket 03)", () => {
   });
 
   it("stays freely changeable: a hand pick wins and silences the engine", () => {
-    const after = pickSheetCategory(
-      { manual: false, pickedId: null } as never,
-      v7(1),
-    );
+    const after = pickSheetCategory(v7(1));
     expect(after.manual).toBe(true);
     expect(after.pickedId).toBe(v7(1));
     expect(resolveActiveCategoryId({

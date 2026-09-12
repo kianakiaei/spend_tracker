@@ -171,7 +171,7 @@ export default function HomeScreen() {
               {vm.tiles.map((tile) => (
                 <Link
                   key={tile.categoryId}
-                  href={{ pathname: "/category/[id]", params: { id: tile.categoryId } }}
+                  href={tile.drilldown as "/category/[id]"}
                   asChild
                 >
                   <Pressable

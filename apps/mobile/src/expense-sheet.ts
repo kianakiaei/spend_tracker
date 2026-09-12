@@ -215,11 +215,10 @@ export function resolveActiveCategoryId(args: {
 
 /** A hand pick wins and silences the suggestion engine for the rest of the
  * form (the badge drops). */
-export function pickSheetCategory(
-  state: { manual: boolean; pickedId: string | null },
-  categoryId: string,
-): { manual: boolean; pickedId: string } {
-  void state;
+export function pickSheetCategory(categoryId: string): {
+  manual: boolean;
+  pickedId: string;
+} {
   return { manual: true, pickedId: categoryId };
 }
 
@@ -236,10 +235,7 @@ export interface SheetExpenseRef {
 }
 
 export type SheetOpen =
-  | { mode: "create" }
-  | { mode: "create"; lockedCategoryId: string }
-  | { mode: "create"; lockedEventId: string }
-  | { mode: "create"; lockedCategoryId: string; lockedEventId: string }
+  | { mode: "create"; lockedCategoryId?: string; lockedEventId?: string }
   | { mode: "edit"; expense: SheetExpenseRef };
 
 export interface SheetFormState {
@@ -274,9 +270,8 @@ export function createSheetFormState(
       pickedId: row.categoryId,
     };
   }
-  const lockedCategoryId =
-    "lockedCategoryId" in open ? open.lockedCategoryId : undefined;
-  const lockedEventId = "lockedEventId" in open ? open.lockedEventId : undefined;
+  const lockedCategoryId = open.lockedCategoryId;
+  const lockedEventId = open.lockedEventId;
   const categoryId = lockedCategoryId ?? categories[0]?.id ?? "";
   return {
     form: {

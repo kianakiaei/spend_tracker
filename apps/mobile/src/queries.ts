@@ -8,7 +8,7 @@
 // the wire shape and the invalidation fan-out directly (no restart —
 // invalidation is the refresh).
 
-import { effectiveMonthKey } from "./expense-sheet";
+import { affectedMonthsForSave } from "./expense-sheet";
 
 export interface DashboardReadClient {
   summaries: { getByMonth(month: string): Promise<unknown> };
@@ -63,17 +63,8 @@ export function affectedScopesForExpenseSave(args: {
   previousOccurredAt: string | null;
   nextOccurredAt: string;
 }): ExpenseSaveScopes {
-  const next = effectiveMonthKey(args.nextOccurredAt);
-  const months =
-    args.previousOccurredAt === null ||
-    args.previousOccurredAt === args.nextOccurredAt
-      ? [next]
-      : (() => {
-          const previous = effectiveMonthKey(args.previousOccurredAt);
-          return previous === next ? [next] : [previous, next];
-        })();
   return {
-    months,
+    months: affectedMonthsForSave(args.previousOccurredAt, args.nextOccurredAt),
     lists: [categoriesScope, eventsScope, searchScope, insightsScope],
   };
 }

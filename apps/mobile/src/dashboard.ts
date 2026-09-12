@@ -153,7 +153,7 @@ export function buildDashboardViewModel(args: {
       count: row.count,
       share: total > 0 ? row.totalToman / total : 0,
       color: colorOf.get(row.categoryId) ?? null,
-      drilldown: `/categories/${row.categoryId}`,
+      drilldown: `/category/${row.categoryId}`,
     }));
 
   const monthName = jalaliMonthNameFromKey(monthKey);

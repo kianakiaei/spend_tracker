@@ -72,13 +72,9 @@ export function ExpenseSheetModal({
   const isEdit = open.mode === "edit";
   const editRow = isEdit ? open.expense : null;
   const lockedCategoryId =
-    open.mode === "create" && "lockedCategoryId" in open
-      ? open.lockedCategoryId
-      : undefined;
+    open.mode === "create" ? open.lockedCategoryId : undefined;
   const lockedEventId =
-    open.mode === "create" && "lockedEventId" in open
-      ? open.lockedEventId
-      : undefined;
+    open.mode === "create" ? open.lockedEventId : undefined;
 
   const [form, setForm] = useState<ExpenseFormState>(initial.form);
   const [manual, setManual] = useState(initial.manual);
@@ -328,7 +324,7 @@ export function ExpenseSheetModal({
                       key={c.id}
                       accessibilityLabel={c.name}
                       onPress={() => {
-                        const next = pickSheetCategory({ manual, pickedId }, c.id);
+                        const next = pickSheetCategory(c.id);
                         setManual(next.manual);
                         setPickedId(next.pickedId);
                         setForm((prev) => ({ ...prev, categoryId: c.id }));
