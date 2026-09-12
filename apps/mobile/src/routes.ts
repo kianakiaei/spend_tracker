@@ -30,3 +30,10 @@ export const MOBILE_AUTH_ROUTES: string[] = [
   "(auth)/forgot",
   "(auth)/reset",
 ];
+
+/** Root landing: the welcome/intro screen. Declared first in the root Stack
+ * so `/` always lands here — signed-out users get the intro with login and
+ * signup links, signed-in users redirect straight into the tabs. Without an
+ * explicit first screen the initial route fell through to the last-declared
+ * auth screen (reset). */
+export const WELCOME_ROUTE = "index";

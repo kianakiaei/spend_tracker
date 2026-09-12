@@ -26,6 +26,7 @@ import {
   MOBILE_AUTH_ROUTES,
   MOBILE_STACK_ROUTES,
   MOBILE_TABS,
+  WELCOME_ROUTE,
 } from "../../apps/mobile/src/routes";
 
 function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
@@ -285,5 +286,10 @@ describe("mobile shell routes (ticket 02)", () => {
       "(auth)/forgot",
       "(auth)/reset",
     ]);
+  });
+
+  it("lands `/` on the welcome screen, never on reset", () => {
+    expect(WELCOME_ROUTE).toBe("index");
+    expect(MOBILE_AUTH_ROUTES).not.toContain(WELCOME_ROUTE);
   });
 });

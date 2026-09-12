@@ -33,6 +33,9 @@ function RootNavigator() {
   return (
     <>
       <Stack screenOptions={{ headerShown: false }}>
+        {/* Landing first: `/` always resolves here (intro + login/signup
+            links, or a redirect into the tabs when signed in). */}
+        <Stack.Screen name="index" />
         <Stack.Protected guard={!!session}>
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="category/[id]" options={{ headerShown: true, title: "دسته" }} />
