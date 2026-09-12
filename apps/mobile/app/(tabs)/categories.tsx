@@ -15,10 +15,10 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  Text,
   TextInput,
   View,
 } from "react-native";
+import { T as Text } from "../../components/app-text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "expo-router";
 import { currentJalaliMonthKey } from "@spend-tracker/shared/jalali";

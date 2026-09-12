@@ -4,17 +4,26 @@
 // entries live in the header «…» menu. Every tab shows its native header.
 
 import { Tabs } from "expo-router";
+import { FONT_FAMILY_BOLD } from "../../src/font-weights";
 import { MOBILE_TABS } from "../../src/routes";
 import { HeaderActions } from "../../components/header-actions";
 
 const TITLES = Object.fromEntries(MOBILE_TABS.map((t) => [t.name, t.title]));
+
+// Native headers carry the search shortcut + «…» menu; native tab labels and
+// header titles wear Vazirmatn Bold explicitly (they are not RN Text, so the
+// T wrapper cannot reach them).
+const headerTitleStyle = { fontFamily: FONT_FAMILY_BOLD };
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: true,
+        headerTitleStyle,
         headerRight: () => <HeaderActions />,
+        tabBarLabelStyle: { fontFamily: FONT_FAMILY_BOLD, fontSize: 12 },
+        tabBarActiveTintColor: "#1a7a5c",
       }}
     >
       <Tabs.Screen name="index" options={{ title: TITLES["index"] }} />

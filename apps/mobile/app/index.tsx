@@ -4,7 +4,8 @@
 // root Stack so the initial route can never fall through to reset again.
 
 import { Link, Redirect } from "expo-router";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, View } from "react-native";
+import { T as Text } from "../components/app-text";
 import { WELCOME_ROUTE } from "../src/routes";
 import { useSession } from "../src/session";
 

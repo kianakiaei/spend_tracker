@@ -3,7 +3,7 @@
 
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import { Text } from "react-native";
+import { T as Text } from "../../components/app-text";
 import { useSession } from "../../src/session";
 import { AuthButton, AuthErrorText, AuthField, AuthNote, AuthScreen } from "./_forms";
 

@@ -5,7 +5,8 @@
 // in a browser.
 
 import type { ReactNode } from "react";
-import { Modal, Platform, Pressable, Text, View } from "react-native";
+import { Modal, Platform, Pressable, View } from "react-native";
+import { T as Text } from "./app-text";
 import { resolveSheetVariant, type UniversalSheetProps } from "../src/sheet";
 
 export function UniversalSheet({

@@ -3,7 +3,8 @@
 
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
+import { T as Text } from "../../components/app-text";
 import { MobileAuthError } from "../../src/auth-client";
 import { useSession } from "../../src/session";
 import { AuthButton, AuthErrorText, AuthField, AuthNote, AuthScreen } from "./_forms";

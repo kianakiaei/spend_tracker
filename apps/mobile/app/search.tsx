@@ -14,10 +14,10 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  Text,
   TextInput,
   View,
 } from "react-native";
+import { T as Text } from "../components/app-text";
 import { useQuery } from "@tanstack/react-query";
 import { currentJalaliMonthKey } from "@spend-tracker/shared/jalali";
 import type {

@@ -2,7 +2,8 @@
 // one form shape; screens below compose these with the mobile auth client.
 
 import type { ReactNode } from "react";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { TextInput, TouchableOpacity, View } from "react-native";
+import { T as Text } from "../../components/app-text";
 import { MOBILE_AUTH_MESSAGES, MobileAuthError } from "../../src/auth-client";
 
 export function AuthScreen({ title, children }: { title: string; children: ReactNode }) {

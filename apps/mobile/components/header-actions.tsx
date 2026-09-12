@@ -5,7 +5,8 @@
 // default back header; these actions sit on the tabs header only.
 
 import { useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Modal, Pressable, View } from "react-native";
+import { T as Text } from "./app-text";
 import { useRouter } from "expo-router";
 import { useSession } from "../src/session";
 

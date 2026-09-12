@@ -12,9 +12,9 @@ import {
   Pressable,
   RefreshControl,
   ScrollView,
-  Text,
   View,
 } from "react-native";
+import { T as Text } from "../../components/app-text";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "expo-router";
 import { currentJalaliMonthKey, formatToman } from "@spend-tracker/shared/jalali";

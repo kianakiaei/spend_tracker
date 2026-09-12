@@ -10,10 +10,10 @@ import {
   ActivityIndicator,
   Pressable,
   ScrollView,
-  Text,
   TextInput,
   View,
 } from "react-native";
+import { T as Text } from "./app-text";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatToman } from "@spend-tracker/shared/jalali";
 import type { CategoryDto } from "@spend-tracker/shared/schemas/api";

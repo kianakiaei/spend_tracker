@@ -10,6 +10,8 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, I18nManager, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { SessionProvider, useSession } from "../src/session";
+import { loadAppFonts } from "../src/font";
+import { FONT_FAMILY_BOLD } from "../src/font-weights";
 
 function RootNavigator() {
   const { session, status } = useSession();
@@ -38,11 +40,11 @@ function RootNavigator() {
         <Stack.Screen name="index" />
         <Stack.Protected guard={!!session}>
           <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="category/[id]" options={{ headerShown: true, title: "دسته" }} />
-          <Stack.Screen name="event/[id]" options={{ headerShown: true, title: "رویداد" }} />
-          <Stack.Screen name="templates" options={{ headerShown: true, title: "الگوها" }} />
-          <Stack.Screen name="insights" options={{ headerShown: true, title: "بینش محصول‌ها" }} />
-          <Stack.Screen name="search" options={{ headerShown: true, title: "جست‌وجو" }} />
+          <Stack.Screen name="category/[id]" options={{ headerShown: true, title: "دسته", headerTitleStyle: { fontFamily: FONT_FAMILY_BOLD } }} />
+          <Stack.Screen name="event/[id]" options={{ headerShown: true, title: "رویداد", headerTitleStyle: { fontFamily: FONT_FAMILY_BOLD } }} />
+          <Stack.Screen name="templates" options={{ headerShown: true, title: "الگوها", headerTitleStyle: { fontFamily: FONT_FAMILY_BOLD } }} />
+          <Stack.Screen name="insights" options={{ headerShown: true, title: "بینش محصول‌ها", headerTitleStyle: { fontFamily: FONT_FAMILY_BOLD } }} />
+          <Stack.Screen name="search" options={{ headerShown: true, title: "جست‌وجو", headerTitleStyle: { fontFamily: FONT_FAMILY_BOLD } }} />
         </Stack.Protected>
         <Stack.Protected guard={!session}>
           <Stack.Screen name="(auth)/sign-in" />
@@ -60,6 +62,29 @@ export default function RootLayout() {
   // One cache for the ticket-03 dashboard scopes (per-month dashboard reads
   // plus the category/event/search/insight lists mutations invalidate).
   const [queryClient] = useState(() => new QueryClient());
+  // Vazirmatn first: every Text renders through the T wrapper's families,
+  // so hold first paint until expo-font has them (ticket 10).
+  const [fontsLoaded, setFontsLoaded] = useState(false);
+
+  useEffect(() => {
+    let live = true;
+    loadAppFonts()
+      .catch(() => {})
+      .finally(() => {
+        if (live) setFontsLoaded(true);
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator />
+      </View>
+    );
+  }
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
