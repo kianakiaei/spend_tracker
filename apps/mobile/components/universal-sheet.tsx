@@ -112,6 +112,11 @@ function AnimatedSheet({
       visible
       transparent
       animationType="none"
+      // Transparent overlays must present over-full-screen: anything else
+      // lets the OS float the sheet as a card with the tab bar visible
+      // below it.
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
       onRequestClose={dismiss}
       testID={testID}
     >
