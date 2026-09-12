@@ -31,6 +31,7 @@ import { canonical } from "@spend-tracker/shared/normalize";
 import type { ExpenseDto } from "@spend-tracker/shared/schemas/api";
 import { useSession } from "../../src/session";
 import { INPUT_FONT_STYLE } from "../../components/app-text";
+import { InsightsChart } from "../../components/insights-chart";
 import {
   INSIGHT_MESSAGES,
   buildProductInsights,
@@ -85,15 +86,6 @@ export default function InsightsScreen() {
     filtered.find((p) => p.key === openKey) ?? filtered[0] ?? null;
   const history = useMemo(
     () => (active ? historyFor(active) : []),
-    [active],
-  );
-  // Bar scale: the hottest month fills the track; every value stays readable
-  // in Persian digits next to its bar (web parity: readable values).
-  const maxBucketAvg = useMemo(
-    () =>
-      active
-        ? Math.max(...active.monthly.map((b) => b.avgUnitPrice), 1)
-        : 1,
     [active],
   );
 
@@ -187,45 +179,18 @@ export default function InsightsScreen() {
                   {formatToman(active.overallAvgUnit)}
                 </Text>
 
-                <View accessibilityLabel={`میانگین ماهانه ${active.displayTitle}`} style={{ gap: 10 }}>
-                  {active.monthly.map((bucket) => (
-                    <View key={bucket.monthKey} style={{ gap: 3 }}>
-                      <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
-                        <Text style={{ flex: 1, fontSize: 12.5 }}>
-                          {jalaliMonthKeyLabel(bucket.monthKey)} ·{" "}
-                          {toPersianDigits(bucket.count)} خرید
-                        </Text>
-                        <Text style={{ fontSize: 13, fontWeight: "800" }}>
-                          {formatToman(bucket.avgUnitPrice)}
-                        </Text>
-                      </View>
-                      <View
-                        style={{
-                          height: 10,
-                          borderRadius: 5,
-                          backgroundColor: "#ece7db",
-                          overflow: "hidden",
-                        }}
-                      >
-                        <View
-                          style={{
-                            height: 10,
-                            borderRadius: 5,
-                            backgroundColor: "#1a7a5c",
-                            width: `${Math.max(Math.round((bucket.avgUnitPrice / maxBucketAvg) * 100), 4)}%`,
-                          }}
-                        />
-                      </View>
-                    </View>
-                  ))}
-                  <View style={ledgerRow}>
-                    <Text style={{ flex: 1, fontSize: 13, color: "#6b6259" }}>
-                      میانگین کل (۱۲ ماه اخیر)
-                    </Text>
-                    <Text style={{ fontSize: 13.5, fontWeight: "800", color: "#1a7a5c" }}>
-                      {formatToman(active.overallAvgUnit)}
-                    </Text>
-                  </View>
+                <View
+                  accessibilityLabel={`میانگین ماهانه ${active.displayTitle}`}
+                  style={{
+                    marginTop: 4,
+                    borderWidth: 1,
+                    borderColor: "#e7e2d8",
+                    borderRadius: 16,
+                    backgroundColor: "#fffdf9",
+                    padding: 12,
+                  }}
+                >
+                  <InsightsChart product={active} />
                 </View>
 
                 <Text style={{ fontSize: 14, fontWeight: "800", marginTop: 4 }}>
