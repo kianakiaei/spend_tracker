@@ -38,6 +38,7 @@ import {
   affectedScopesForExpenseSave,
   invalidateDashboardScopes,
 } from "../src/queries";
+import { saveErrorMessage } from "../src/server-errors";
 import { jalaliMonthKeyLabel } from "@spend-tracker/shared/jalali";
 import type {
   CategoryDto,
@@ -152,8 +153,8 @@ export function ExpenseSheetModal({
         await refresh(null, form.occurredAt);
       }
       onClose();
-    } catch {
-      setError(EXPENSE_SHEET_MESSAGES.saveFailed);
+    } catch (error) {
+      setError(saveErrorMessage(error, EXPENSE_SHEET_MESSAGES.saveFailed));
     } finally {
       setPending(false);
     }
@@ -187,8 +188,8 @@ export function ExpenseSheetModal({
       setSuggestion(null);
       setOptsOpen(false);
       setError(null);
-    } catch {
-      setError(EXPENSE_SHEET_MESSAGES.saveFailed);
+    } catch (error) {
+      setError(saveErrorMessage(error, EXPENSE_SHEET_MESSAGES.saveFailed));
     } finally {
       setPending(false);
     }

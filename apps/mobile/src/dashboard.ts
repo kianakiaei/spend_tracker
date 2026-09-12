@@ -211,3 +211,7 @@ export function buildDashboardViewModel(args: {
     isEmpty: expenses.length === 0 && forecast.length === 0,
   };
 }
+/** Ledger quantity in Persian digits (display only). */
+export function formatLedgerQuantity(quantity: number): string {
+  return toPersianDigits(quantity);
+}

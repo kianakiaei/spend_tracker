@@ -69,10 +69,13 @@ export interface EventMutationScopes {
 
 /** An event mutation touches the events surface plus every dashboard month
  * (ledger rows wear the event title), search hits (eventTitle rides along),
- * and insights (the locked-event Expense sheet writes a خرج). Invalidation
- * is by prefix, so one "dashboard" scope refreshes every open month. */
+ * the categories list (the drilldown reads events for the sheet's attach),
+ * the templates list (the templates screen reads events for the jump sheet),
+ * and insights (the locked-event Expense sheet writes an expense).
+ * Invalidation is by prefix, so one "dashboard" scope refreshes every open
+ * month. */
 export function affectedScopesForEventMutation(): EventMutationScopes {
-  return { lists: ["events", "dashboard", "search", "insights"] };
+  return { lists: ["events", "dashboard", "search", "insights", "categories", "templates"] };
 }
 
 export interface QueryInvalidator {

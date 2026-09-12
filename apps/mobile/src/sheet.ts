@@ -17,6 +17,9 @@ export interface UniversalSheetProps {
   title: string;
   description?: string;
   testID?: string;
+  /** Sheet body — on the type so the contract lives in one place (the
+   * component narrows it to ReactNode). */
+  children?: unknown;
 }
 
 /** Native bottom sheet on iOS/Android, the web sheet primitive on expo web. */

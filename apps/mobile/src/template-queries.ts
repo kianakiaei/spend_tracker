@@ -74,10 +74,12 @@ export interface TemplateMutationScopes {
 
 /** A template mutation touches the templates surface plus every dashboard
  * month (forecast tiles and ledger rows read previews), the categories list
- * (الگو counts group from the templates list), and insights. Invalidation
+ * (template counts group from the templates list), search hits (ledger
+ * titles/amounts surface in hits), the events list (the templates screen
+ * reads events for the jump sheet), and insights. Invalidation
  * is by prefix, so one "dashboard" scope refreshes every open month. */
 export function affectedScopesForTemplateMutation(): TemplateMutationScopes {
-  return { lists: ["templates", "dashboard", "categories", "insights"] };
+  return { lists: ["templates", "dashboard", "categories", "insights", "search", "events"] };
 }
 
 export interface QueryInvalidator {

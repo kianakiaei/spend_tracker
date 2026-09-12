@@ -83,10 +83,11 @@ export interface CategoryMutationScopes {
 
 /** A category mutation touches the list surface plus every dashboard month
  * (tiles, the sheet's category options, and drilldown totals all read
- * categories). Invalidation is by prefix, so one "dashboard" scope refreshes
- * every open month. */
+ * categories), search hits (they carry category names), and the events list
+ * (the drilldown reads events for the sheet's attach). Invalidation is by
+ * prefix, so one "dashboard" scope refreshes every open month. */
 export function affectedScopesForCategoryMutation(): CategoryMutationScopes {
-  return { lists: ["categories", "dashboard", "templates", "insights"] };
+  return { lists: ["categories", "dashboard", "templates", "insights", "search", "events"] };
 }
 
 export interface QueryInvalidator {

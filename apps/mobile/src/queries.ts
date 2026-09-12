@@ -58,14 +58,15 @@ export interface ExpenseSaveScopes {
 }
 
 /** Invalidation fan-out for an expense save: the affected ledger month(s)
- * plus every list, summary, and insight scope that reads expenses. */
+ * plus every list, summary, and insight scope that reads expenses (templates
+ * included — forecast tiles and ledger rows read previews). */
 export function affectedScopesForExpenseSave(args: {
   previousOccurredAt: string | null;
   nextOccurredAt: string;
 }): ExpenseSaveScopes {
   return {
     months: affectedMonthsForSave(args.previousOccurredAt, args.nextOccurredAt),
-    lists: [categoriesScope, eventsScope, searchScope, insightsScope],
+    lists: [categoriesScope, eventsScope, searchScope, insightsScope, "templates"],
   };
 }
 

@@ -29,6 +29,7 @@ import type {
 import { useSession } from "../../src/session";
 import {
   buildDashboardViewModel,
+  formatLedgerQuantity,
   shiftDashboardMonth,
   type DashboardLedgerRow,
 } from "../../src/dashboard";
@@ -278,8 +279,8 @@ function LedgerRowBody({ row }: { row: DashboardLedgerRow }) {
         {row.kind === "expense" && (row.quantity !== 1 || row.unit === "kg") ? (
           <Text style={{ fontSize: 11.5, color: "#6b6259" }}>
             {row.unit === "kg"
-              ? `${row.quantity} کیلو · هر کیلو ${formatToman(Math.round(row.amountToman / row.quantity))}`
-              : `×${row.quantity} · هر عدد ${formatToman(Math.round(row.amountToman / row.quantity))}`}
+              ? `${formatLedgerQuantity(row.quantity)} کیلو · هر کیلو ${formatToman(Math.round(row.amountToman / row.quantity))}`
+              : `×${formatLedgerQuantity(row.quantity)} · هر عدد ${formatToman(Math.round(row.amountToman / row.quantity))}`}
           </Text>
         ) : null}
       </View>

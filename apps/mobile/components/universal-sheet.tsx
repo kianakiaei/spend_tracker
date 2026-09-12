@@ -1,8 +1,8 @@
 // Universal sheet (expo-mobile ticket 03): one prop contract behind two
-// primitives — the native bottom sheet (a bottom-anchored Modal) on
-// iOS/Android and a centered dialog over a scrim on expo web. The variant
-// resolves in the pure src/sheet.ts seam so behavior stays testable in a
-// browser.
+// primitives — a bottom-anchored sheet on iOS/Android (a bottom-anchored
+// Modal) and the same bottom-anchored sheet over a scrim on expo web. The
+// variant resolves in the pure src/sheet.ts seam so behavior stays testable
+// in a browser.
 
 import type { ReactNode } from "react";
 import { Modal, Platform, Pressable, Text, View } from "react-native";
