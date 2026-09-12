@@ -70,3 +70,6 @@ Thumbs.db
 # Next.js scaffold
 next-env.d.ts
 .vercel
+
+# Expo mobile app (ticket 02): dev-server cache, web bundles, signing scratch
+.expo/
