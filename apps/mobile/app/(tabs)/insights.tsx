@@ -8,7 +8,7 @@
 // read-only like the web board; every expense mutation invalidates the
 // "insights" scope (no restart). Web parity: insights/page.tsx + board.
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -29,7 +29,9 @@ import {
 import { formatNumber } from "@spend-tracker/shared/format";
 import { canonical } from "@spend-tracker/shared/normalize";
 import type { ExpenseDto } from "@spend-tracker/shared/schemas/api";
+import { useFocusEffect } from "expo-router";
 import { useSession } from "../../src/session";
+import { setLastTabLabel } from "../../src/last-tab";
 import { INPUT_FONT_STYLE } from "../../components/app-text";
 import { InsightsChart } from "../../components/insights-chart";
 import {
@@ -51,6 +53,12 @@ interface InsightsData extends InsightsScreenData {
 
 export default function InsightsScreen() {
   const { api } = useSession();
+  // Origin tracking for truthful back titles (ticket 18).
+  useFocusEffect(
+    useCallback(() => {
+      setLastTabLabel("بینش‌ها");
+    }, []),
+  );
   const [currentMonthKey] = useState(() => currentJalaliMonthKey());
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [filter, setFilter] = useState("");

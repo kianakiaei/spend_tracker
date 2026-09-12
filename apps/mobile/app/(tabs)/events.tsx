@@ -10,7 +10,7 @@
 // client-side — the API exposes no event-summary read) and say so; the
 // detail carries the unbounded month navigator for the rest.
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -21,13 +21,14 @@ import {
 } from "react-native";
 import { T as Text } from "../../components/app-text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "expo-router";
+import { Link, useFocusEffect } from "expo-router";
 import { currentJalaliMonthKey } from "@spend-tracker/shared/jalali";
 import type {
   EventDto,
   ExpenseDto,
 } from "@spend-tracker/shared/schemas/api";
 import { useSession } from "../../src/session";
+import { setLastTabLabel } from "../../src/last-tab";
 import { INPUT_FONT_STYLE } from "../../components/app-text";
 import {
   EVENT_MESSAGES,
@@ -46,6 +47,12 @@ import {
 
 export default function EventsScreen() {
   const { api } = useSession();
+  // Origin tracking for truthful back titles (ticket 18).
+  useFocusEffect(
+    useCallback(() => {
+      setLastTabLabel("رویدادها");
+    }, []),
+  );
   const queryClient = useQueryClient();
   const [monthKey] = useState(() => currentJalaliMonthKey());
   const [formOpen, setFormOpen] = useState(false);

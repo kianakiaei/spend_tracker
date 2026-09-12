@@ -6,7 +6,7 @@
 // Tapping a خرج opens its edit sheet; forecast rows stay display-only
 // estimates. Web parity: categories/[id]/page.tsx + drilldown panel.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { T as Text } from "../../components/app-text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useLocalSearchParams } from "expo-router";
+import { Link, useLocalSearchParams, useNavigation } from "expo-router";
 import {
   currentJalaliMonthKey,
   jalaliMonthKeyLabel,
@@ -38,11 +38,17 @@ import {
   loadCategoryDrilldown,
 } from "../../src/category-queries";
 import { shiftDashboardMonth } from "../../src/dashboard";
+import { getLastTabLabel } from "../../src/last-tab";
 import type { SheetExpenseRef, SheetOpen } from "../../src/expense-sheet";
 import { ExpenseSheetModal } from "../../components/expense-sheet-form";
 
 export default function CategoryDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const navigation = useNavigation();
+  // Truthful back title (ticket 18): the focused origin tab at push time.
+  useEffect(() => {
+    navigation.setOptions({ headerBackTitle: getLastTabLabel() });
+  }, [navigation]);
   const { api } = useSession();
   const queryClient = useQueryClient();
   const [monthKey, setMonthKey] = useState(() => currentJalaliMonthKey());

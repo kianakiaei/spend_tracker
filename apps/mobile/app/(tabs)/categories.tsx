@@ -9,7 +9,7 @@
 // API exposes no all-time GROUP-BY read) and say so; الگو counts are
 // all-time, grouped client-side from the templates list.
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -20,7 +20,7 @@ import {
 } from "react-native";
 import { T as Text } from "../../components/app-text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "expo-router";
+import { Link, useFocusEffect } from "expo-router";
 import { currentJalaliMonthKey } from "@spend-tracker/shared/jalali";
 import type {
   CategoryDto,
@@ -28,6 +28,7 @@ import type {
   RecurringTemplateDto,
 } from "@spend-tracker/shared/schemas/api";
 import { useSession } from "../../src/session";
+import { setLastTabLabel } from "../../src/last-tab";
 import { INPUT_FONT_STYLE } from "../../components/app-text";
 import {
   CATEGORY_MESSAGES,
@@ -53,6 +54,12 @@ import {
 
 export default function CategoriesScreen() {
   const { api } = useSession();
+  // Origin tracking for truthful back titles (ticket 18).
+  useFocusEffect(
+    useCallback(() => {
+      setLastTabLabel("دسته‌ها");
+    }, []),
+  );
   const queryClient = useQueryClient();
   const [monthKey] = useState(() => currentJalaliMonthKey());
   const [formOpen, setFormOpen] = useState(false);

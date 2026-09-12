@@ -6,7 +6,7 @@
 // sheet; forecast rows stay display-only estimates (their edit lives in the
 // ticket-05 templates surface).
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { T as Text } from "../../components/app-text";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "expo-router";
+import { Link, useFocusEffect } from "expo-router";
 import { currentJalaliMonthKey, formatToman } from "@spend-tracker/shared/jalali";
 import { formatNumber, formatPercent } from "@spend-tracker/shared/format";
 import {
@@ -31,6 +31,7 @@ import type {
   MonthSummaryDto,
 } from "@spend-tracker/shared/schemas/api";
 import { useSession } from "../../src/session";
+import { setLastTabLabel } from "../../src/last-tab";
 import {
   buildDashboardViewModel,
   formatLedgerQuantity,
@@ -47,6 +48,12 @@ import { ExpenseSheetModal } from "../../components/expense-sheet-form";
 
 export default function HomeScreen() {
   const { api } = useSession();
+  // Origin tracking for truthful back titles (ticket 18).
+  useFocusEffect(
+    useCallback(() => {
+      setLastTabLabel("خانه");
+    }, []),
+  );
   const [monthKey, setMonthKey] = useState(() => currentJalaliMonthKey());
   const [sheet, setSheet] = useState<SheetOpen | null>(null);
 

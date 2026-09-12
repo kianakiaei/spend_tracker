@@ -25,7 +25,9 @@ import type {
   EventDto,
   SearchResultDto,
 } from "@spend-tracker/shared/schemas/api";
+import { useNavigation } from "expo-router";
 import { useSession } from "../src/session";
+import { getLastTabLabel } from "../src/last-tab";
 import { INPUT_FONT_STYLE } from "../components/app-text";
 import {
   SEARCH_MESSAGES,
@@ -53,6 +55,11 @@ const DEBOUNCE_MS = 300;
 
 export default function SearchScreen() {
   const { api } = useSession();
+  const navigation = useNavigation();
+  // Truthful back title (ticket 18): the focused origin tab at push time.
+  useEffect(() => {
+    navigation.setOptions({ headerBackTitle: getLastTabLabel() });
+  }, [navigation]);
   const [query, setQuery] = useState("");
   const [debounced, setDebounced] = useState("");
   const [sheet, setSheet] = useState<SheetOpen | null>(null);

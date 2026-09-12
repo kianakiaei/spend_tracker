@@ -6,7 +6,7 @@
 // drilldown; tapping a خرج opens its edit sheet. Web parity:
 // events/[id]/page.tsx + detail panel.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { T as Text } from "../../components/app-text";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link, useLocalSearchParams, useRouter } from "expo-router";
+import { Link, useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import {
   currentJalaliMonthKey,
   formatJalali,
@@ -39,10 +39,16 @@ import {
   loadEventDetail,
 } from "../../src/event-queries";
 import { shiftDashboardMonth } from "../../src/dashboard";
+import { getLastTabLabel } from "../../src/last-tab";
 import type { SheetExpenseRef, SheetOpen } from "../../src/expense-sheet";
 import { ExpenseSheetModal } from "../../components/expense-sheet-form";
 
 export default function EventDetailScreen() {
+  const navigation = useNavigation();
+  // Truthful back title (ticket 18): the focused origin tab at push time.
+  useEffect(() => {
+    navigation.setOptions({ headerBackTitle: getLastTabLabel() });
+  }, [navigation]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const { api } = useSession();
   const queryClient = useQueryClient();

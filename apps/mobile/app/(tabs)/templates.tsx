@@ -7,7 +7,7 @@
 // island. The jump opens the generated خرج inline (mobile has no
 // cross-screen ?expense= deep-link) — same destination, one tap.
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -30,7 +30,9 @@ import type {
   ForecastRowDto,
   RecurringTemplateDto,
 } from "@spend-tracker/shared/schemas/api";
+import { useFocusEffect } from "expo-router";
 import { useSession } from "../../src/session";
+import { setLastTabLabel } from "../../src/last-tab";
 import {
   TEMPLATE_MESSAGES,
   buildGeneratedThisMonth,
@@ -65,6 +67,12 @@ interface TemplatesScreenData {
 
 export default function TemplatesScreen() {
   const { api } = useSession();
+  // Origin tracking for truthful back titles (ticket 18).
+  useFocusEffect(
+    useCallback(() => {
+      setLastTabLabel("الگوها");
+    }, []),
+  );
   const queryClient = useQueryClient();
   const [currentMonthKey] = useState(() => currentJalaliMonthKey());
   const [sheet, setSheet] = useState<TemplateSheetOpen | null>(null);

@@ -19,10 +19,10 @@ function RootNavigator() {
 
   useEffect(() => {
     // Whole app right-to-left with Persian digits (spec: reads like the web).
-    // if (!I18nManager.isRTL) {
-    // I18nManager.allowRTL(true);
-    // I18nManager.forceRTL(true);
-    // }
+    if (!I18nManager.isRTL) {
+      I18nManager.allowRTL(true);
+      I18nManager.forceRTL(true);
+    }
   }, []);
 
   if (status === "loading") {
