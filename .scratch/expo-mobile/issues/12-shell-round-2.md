@@ -47,3 +47,8 @@ props for `onPress`. Dots now take `onClick` on web and `onPress` on native
 (verified in the installed `prepare.js`: without touchable props no
 responder mixin attaches, and a direct `onClick` flows through `...rest` to
 the DOM node).
+
+Follow-up 2026-09-12 (2): the tab bar laid out LTR on expo web (Home on
+the left) — screens set `direction: "rtl"` explicitly but the bar container
+never got it. `tabBarStyle` now carries `direction: "rtl"` so the first tab
+renders rightmost; native is unchanged (already RTL via I18nManager).

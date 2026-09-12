@@ -50,7 +50,10 @@ export default function TabsLayout() {
         headerLeft: () => <HeaderSearchAction />,
         tabBarLabelStyle: { fontFamily: FONT_FAMILY_BOLD, fontSize: 11 },
         tabBarActiveTintColor: "#1a7a5c",
-        tabBarStyle: { height: 64, paddingTop: 6, paddingBottom: 8 },
+        // RTL bar: the screens set direction explicitly, but the tab bar
+        // container never got it — on expo web it laid out LTR (Home on the
+        // left). First tab renders rightmost.
+        tabBarStyle: { height: 64, paddingTop: 6, paddingBottom: 8, direction: "rtl" },
       }}
     >
       <Tabs.Screen
