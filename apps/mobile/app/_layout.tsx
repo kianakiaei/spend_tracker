@@ -8,9 +8,10 @@ import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useState } from "react";
 import { ActivityIndicator, I18nManager, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { SessionProvider, useSession } from "../src/session";
-import { SheetHostProvider } from "../components/sheet-host";
 import { loadAppFonts } from "../src/font";
 import { FONT_FAMILY_BOLD } from "../src/font-weights";
 
@@ -85,14 +86,16 @@ export default function RootLayout() {
     );
   }
   return (
-    <SafeAreaProvider>
-      <QueryClientProvider client={queryClient}>
-        <SheetHostProvider>
-          <SessionProvider>
-            <RootNavigator />
-          </SessionProvider>
-        </SheetHostProvider>
-      </QueryClientProvider>
-    </SafeAreaProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <QueryClientProvider client={queryClient}>
+          <BottomSheetModalProvider>
+            <SessionProvider>
+              <RootNavigator />
+            </SessionProvider>
+          </BottomSheetModalProvider>
+        </QueryClientProvider>
+      </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }

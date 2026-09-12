@@ -9,10 +9,12 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
-  TextInput,
   View,
 } from "react-native";
+import {
+  BottomSheetScrollView,
+  BottomSheetTextInput,
+} from "@gorhom/bottom-sheet";
 import { T as Text } from "./app-text";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -137,9 +139,12 @@ export function TemplateSheetModal({
       title={isEdit ? "ویرایش الگو" : "الگوی تکرار"}
       description={TEMPLATE_MESSAGES.sheetDescription}
     >
-      <ScrollView style={{ gap: 12, direction: "rtl" }}>
+      <BottomSheetScrollView
+        style={{ gap: 12, direction: "rtl" }}
+        keyboardShouldPersistTaps="handled"
+      >
         <SheetField label="عنوان">
-          <TextInput
+          <BottomSheetTextInput
             value={form.title}
             onChangeText={(v) => set("title", v)}
             placeholder="مثلاً قسط وام"
@@ -148,7 +153,7 @@ export function TemplateSheetModal({
         </SheetField>
 
         <SheetField label="مبلغ (تومان)">
-          <TextInput
+          <BottomSheetTextInput
             value={formatAmountInput(form.amountRaw)}
             onChangeText={(v) => set("amountRaw", normalizeAmountInput(v))}
             placeholder="به تومان"
@@ -163,7 +168,7 @@ export function TemplateSheetModal({
         </SheetField>
 
         <SheetField label="روز ماه (۱ تا ۳۱)">
-          <TextInput
+          <BottomSheetTextInput
             value={toPersianDigits(normalizeAmountInput(form.dayRaw))}
             onChangeText={(v) => set("dayRaw", normalizeAmountInput(v))}
             placeholder="مثلاً ۵"
@@ -299,7 +304,7 @@ export function TemplateSheetModal({
             )}
           </Pressable>
         </View>
-      </ScrollView>
+      </BottomSheetScrollView>
     </UniversalSheet>
   );
 }

@@ -129,7 +129,7 @@ export default function CategoryDetailScreen() {
         : `create-${panel?.lockedCategoryId ?? "open"}`;
 
   return (
-    <View style={{ flex: 1, direction: "rtl" }}>
+    <View style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 96, gap: 12 }}
         refreshControl={
@@ -143,7 +143,7 @@ export default function CategoryDetailScreen() {
         </Link>
 
         <View
-          style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+          style={{ flexDirection: "row", alignItems: "center", gap: 4, justifyContent: 'space-between' }}
           accessibilityLabel="ناوبری ماه"
         >
           <Pressable
@@ -196,9 +196,10 @@ export default function CategoryDetailScreen() {
                 gap: 4,
                 // The panel wears the washed tint (web drilldown parity).
                 backgroundColor: tintOf(panel.category.color),
+                direction: 'rtl'
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, direction: 'rtl' }}>
                 <View
                   style={{
                     width: 12,
@@ -283,23 +284,25 @@ export default function CategoryDetailScreen() {
         )}
       </ScrollView>
 
-      {sheet && data ? (
-        <ExpenseSheetModal
-          key={sheetKey}
-          open={sheet}
-          monthKey={monthKey}
-          categories={data.categories}
-          events={data.events}
-          onClose={async () => {
-            setSheet(null);
-            await invalidateCategoryScopes(
-              queryClient,
-              affectedScopesForCategoryMutation(),
-            );
-          }}
-        />
-      ) : null}
-    </View>
+      {
+        sheet && data ? (
+          <ExpenseSheetModal
+            key={sheetKey}
+            open={sheet}
+            monthKey={monthKey}
+            categories={data.categories}
+            events={data.events}
+            onClose={async () => {
+              setSheet(null);
+              await invalidateCategoryScopes(
+                queryClient,
+                affectedScopesForCategoryMutation(),
+              );
+            }}
+          />
+        ) : null
+      }
+    </View >
   );
 }
 

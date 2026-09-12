@@ -138,7 +138,7 @@ export default function EventDetailScreen() {
     data?.categories.find((c) => c.id === categoryId)?.name ?? "";
 
   return (
-    <View style={{ flex: 1, direction: "rtl" }}>
+    <View style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 96, gap: 12 }}
         refreshControl={
@@ -152,7 +152,7 @@ export default function EventDetailScreen() {
         </Link>
 
         <View
-          style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+          style={{ flexDirection: "row", alignItems: "center", gap: 4, justifyContent: 'space-between' }}
           accessibilityLabel="ناوبری ماه"
         >
           <Pressable

@@ -98,7 +98,7 @@ export default function InsightsScreen() {
   );
 
   return (
-    <View style={{ flex: 1, direction: "rtl" }}>
+    <View style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 12 }}
         refreshControl={
@@ -148,7 +148,7 @@ export default function InsightsScreen() {
                 {INSIGHT_MESSAGES.noFilterHits}
               </Text>
             ) : (
-              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+              <View style={{ flexDirection: "row", flexWrap: "wrap", direction: 'rtl', gap: 8 }}>
                 {filtered.map((p) => {
                   const isOpen = active?.key === p.key;
                   return (
@@ -206,8 +206,8 @@ export default function InsightsScreen() {
                 </Text>
                 <View accessibilityLabel="تاریخچه خریدها">
                   {history.map((point) => (
-                    <View key={point.expenseId} style={ledgerRow}>
-                      <View style={{ flex: 1, gap: 2 }}>
+                    <View key={point.expenseId} style={{ ...ledgerRow, direction: 'rtl', alignItems: 'center', flexDirection: 'row', }}>
+                      <View style={{ flex: 1, gap: 2, direction: 'ltr' }}>
                         <Text style={{ fontSize: 13, fontWeight: "700" }}>
                           {formatJalaliISODate(point.occurredAt)}
                         </Text>

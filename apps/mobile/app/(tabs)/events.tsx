@@ -110,7 +110,7 @@ export default function EventsScreen() {
     : null;
 
   return (
-    <View style={{ flex: 1, direction: "rtl" }}>
+    <View style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 12 }}
         refreshControl={

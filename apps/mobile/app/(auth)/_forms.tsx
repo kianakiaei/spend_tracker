@@ -83,7 +83,6 @@ export function AuthScreen({
       style={{
         flex: 1,
         backgroundColor: PAPER,
-        direction: "rtl",
       }}
     >
       <View style={{ paddingHorizontal: 24, paddingTop: 72, gap: 16 }}>

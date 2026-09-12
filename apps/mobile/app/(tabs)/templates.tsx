@@ -120,18 +120,18 @@ export default function TemplatesScreen() {
   const data = screen.data;
   const vm = data
     ? buildTemplateListViewModel({
-        templates: data.templates,
-        generatedThisMonth: buildGeneratedThisMonth(data.expenses),
-      })
+      templates: data.templates,
+      generatedThisMonth: buildGeneratedThisMonth(data.expenses),
+    })
     : null;
   const sections = data
     ? buildTemplatePreviewSections({
-        currentMonthKey,
-        previews: data.previews as {
-          monthKey: string;
-          rows: ForecastRowDto[];
-        }[],
-      })
+      currentMonthKey,
+      previews: data.previews as {
+        monthKey: string;
+        rows: ForecastRowDto[];
+      }[],
+    })
     : [];
   const colorOf = new Map((data?.categories ?? []).map((c) => [c.id, c.color]));
 
@@ -166,7 +166,7 @@ export default function TemplatesScreen() {
         : "create";
 
   return (
-    <View style={{ flex: 1, direction: "rtl" }}>
+    <View style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 12 }}
         refreshControl={
@@ -204,7 +204,7 @@ export default function TemplatesScreen() {
         ) : (
           <View style={{ borderTopWidth: 2, borderTopColor: "#1c1a17" }}>
             {vm.rows.map((row) => (
-              <View key={row.id} style={rowStyle}>
+              <View key={row.id} style={{ ...rowStyle, direction: 'rtl' }}>
                 <View
                   style={{
                     width: 12,

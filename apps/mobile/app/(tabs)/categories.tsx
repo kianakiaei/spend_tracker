@@ -118,16 +118,16 @@ export default function CategoriesScreen() {
   const data = screen.data;
   const vm = data
     ? buildCategoryListViewModel({
-        categories: data.categories,
-        expenseCounts: Object.fromEntries(
-          data.summary.byCategory.map((r) => [r.categoryId, r.count]),
-        ),
-        templateCounts: countTemplatesByCategory(data.templates),
-      })
+      categories: data.categories,
+      expenseCounts: Object.fromEntries(
+        data.summary.byCategory.map((r) => [r.categoryId, r.count]),
+      ),
+      templateCounts: countTemplatesByCategory(data.templates),
+    })
     : null;
 
   return (
-    <View style={{ flex: 1, direction: "rtl" }}>
+    <View style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 12 }}
         refreshControl={

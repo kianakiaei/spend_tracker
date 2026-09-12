@@ -9,8 +9,6 @@ import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
-  ScrollView,
-  TextInput,
   View,
 } from "react-native";
 import { T as Text } from "./app-text";
@@ -59,6 +57,10 @@ import type {
 } from "@spend-tracker/shared/schemas/api";
 import { UniversalSheet } from "./universal-sheet";
 import { INPUT_FONT_STYLE } from "./app-text";
+import {
+  BottomSheetScrollView,
+  BottomSheetTextInput,
+} from "@gorhom/bottom-sheet";
 import { JalaliDatePicker } from "./jalali-date-picker";
 
 const FIELD_GAP = 12;
@@ -232,9 +234,12 @@ export function ExpenseSheetModal({
       title={isEdit ? "ویرایش خرج" : "ثبت خرج"}
       description={isEdit ? `ذخیره در ${targetMonth}` : `ثبت در ${targetMonth}`}
     >
-      <ScrollView style={{ gap: FIELD_GAP, direction: "rtl" }}>
+      <BottomSheetScrollView
+        style={{ gap: FIELD_GAP, direction: "ltr" }}
+        keyboardShouldPersistTaps="handled"
+      >
         <SheetField label="عنوان">
-          <TextInput
+          <BottomSheetTextInput
             value={form.title}
             onChangeText={(v) => set("title", v)}
             onBlur={() => void lookupSuggestion()}
@@ -244,7 +249,7 @@ export function ExpenseSheetModal({
         </SheetField>
 
         <SheetField label="مبلغ (تومان)">
-          <TextInput
+          <BottomSheetTextInput
             value={formatAmountInput(form.amountRaw)}
             onChangeText={(v) => set("amountRaw", normalizeAmountInput(v))}
             placeholder="به تومان"
@@ -254,8 +259,8 @@ export function ExpenseSheetModal({
         </SheetField>
 
         <SheetField label="تعداد">
-          <View style={{ flexDirection: "row", gap: 8 }}>
-            <TextInput
+          <View style={{ flexDirection: "row-reverse", gap: 8 }}>
+            <BottomSheetTextInput
               value={formatQuantityInput(form.quantityRaw)}
               onChangeText={(v) => set("quantityRaw", normalizeQuantityInput(v))}
               placeholder="۱"
@@ -322,7 +327,7 @@ export function ExpenseSheetModal({
               {lockedCategory.name} · دستهٔ این صفحه
             </Text>
           ) : (
-            <View style={{ gap: 8 }}>
+            <View style={{ gap: 8, direction: "rtl" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Text style={{ fontSize: 14, fontWeight: "700" }}>
                   {activeCategory?.name ?? "—"}
@@ -394,7 +399,7 @@ export function ExpenseSheetModal({
               {lockedEvent.title} · رویداد این صفحه
             </Text>
           ) : (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, direction: "rtl" }}>
               <Pressable
                 onPress={() => set("eventId", null)}
                 style={{
@@ -428,7 +433,7 @@ export function ExpenseSheetModal({
         </SheetField>
 
         {editRow && repeatNoticeFor(editRow) ? (
-          <Text style={{ fontSize: 12, lineHeight: 22, color: "#6b6259" }}>
+          <Text style={{ fontSize: 12, lineHeight: 22, color: "#6b6259", direction: "rtl" }}>
             {EXPENSE_SHEET_MESSAGES.fromTemplate}
           </Text>
         ) : null}
@@ -440,7 +445,7 @@ export function ExpenseSheetModal({
         ) : null}
 
         {confirmingDelete ? (
-          <View style={{ gap: 8 }}>
+          <View style={{ gap: 8, direction: "rtl" }}>
             <Text style={{ fontSize: 13.5 }}>{EXPENSE_SHEET_MESSAGES.deleteConfirm}</Text>
             <View style={{ flexDirection: "row", gap: 8 }}>
               <Pressable
@@ -459,7 +464,7 @@ export function ExpenseSheetModal({
             </View>
           </View>
         ) : (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, direction: "rtl" }}>
             {isEdit ? (
               <Pressable
                 onPress={() => setConfirmingDelete(true)}
@@ -492,7 +497,7 @@ export function ExpenseSheetModal({
             </Pressable>
           </View>
         )}
-      </ScrollView>
+      </BottomSheetScrollView>
     </UniversalSheet>
   );
 }

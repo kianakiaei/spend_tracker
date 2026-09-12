@@ -74,23 +74,23 @@ export default function HomeScreen() {
 
   const data = dashboard.data as
     | {
-        summary: MonthSummaryDto;
-        expenses: ExpenseDto[];
-        forecast: ForecastRowDto[];
-        categories: CategoryDto[];
-        events: EventDto[];
-      }
+      summary: MonthSummaryDto;
+      expenses: ExpenseDto[];
+      forecast: ForecastRowDto[];
+      categories: CategoryDto[];
+      events: EventDto[];
+    }
     | undefined;
 
   const vm = data
     ? buildDashboardViewModel({
-        monthKey,
-        summary: data.summary,
-        expenses: data.expenses,
-        forecast: data.forecast,
-        categories: data.categories,
-        events: data.events,
-      })
+      monthKey,
+      summary: data.summary,
+      expenses: data.expenses,
+      forecast: data.forecast,
+      categories: data.categories,
+      events: data.events,
+    })
     : null;
 
   function openEdit(row: Extract<DashboardLedgerRow, { kind: "expense" }>) {
@@ -118,7 +118,7 @@ export default function HomeScreen() {
         : "create";
 
   return (
-    <View style={{ flex: 1, direction: "rtl" }}>
+    <View style={{ flex: 1 }}>
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 96, gap: 12 }}
         refreshControl={
@@ -126,7 +126,7 @@ export default function HomeScreen() {
         }
       >
         <View
-          style={{ flexDirection: "row", alignItems: "center", gap: 4 }}
+          style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 4 }}
           accessibilityLabel="ناوبری ماه"
         >
           <Pressable
@@ -134,18 +134,16 @@ export default function HomeScreen() {
             onPress={() => setMonthKey((m) => shiftDashboardMonth(m, -1))}
             style={navButton}
           >
-            {/* RTL: previous points right. */}
             <Text style={{ fontSize: 17 }}>›</Text>
           </Pressable>
           <Text style={{ minWidth: 112, textAlign: "center", fontSize: 15, fontWeight: "700" }}>
-            {vm?.monthLabel ?? monthKey}
+            {vm?.monthLabel ?? ''}
           </Text>
           <Pressable
             accessibilityLabel="ماه بعد"
             onPress={() => setMonthKey((m) => shiftDashboardMonth(m, 1))}
             style={navButton}
           >
-            {/* RTL: next points left. */}
             <Text style={{ fontSize: 17 }}>‹</Text>
           </Pressable>
         </View>
@@ -203,6 +201,7 @@ export default function HomeScreen() {
                       gap: 6,
                       // The tile wears its own washed tint (web parity).
                       backgroundColor: tintOf(tile.color),
+                      direction: 'rtl'
                     }}
                   >
                     <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
@@ -216,7 +215,7 @@ export default function HomeScreen() {
                       />
                       <Text style={{ fontSize: 13, fontWeight: "700" }}>{tile.name}</Text>
                     </View>
-                    <Text style={{ fontSize: 16.5, fontWeight: "800" }}>
+                    <Text style={{ fontSize: 16.5, fontWeight: "800", justifyContent: 'flex-start', }}>
                       {formatNumber(tile.totalToman)}
                     </Text>
                     <Text style={{ fontSize: 11, color: "#6b6259" }}>
@@ -227,7 +226,7 @@ export default function HomeScreen() {
               ))}
             </View>
 
-            <View style={{ borderTopWidth: 2, borderTopColor: "#1c1a17" }}>
+            <View style={{ borderTopWidth: 2, borderTopColor: "#1c1a17", direction: 'rtl' }}>
               {vm.ledger.map((row) =>
                 row.kind === "expense" ? (
                   <Pressable
@@ -267,24 +266,26 @@ export default function HomeScreen() {
         <Text style={{ color: "#fff", fontSize: 27, fontWeight: "300" }}>+</Text>
       </Pressable>
 
-      {sheet && data ? (
-        <ExpenseSheetModal
-          key={sheetKey}
-          open={sheet}
-          monthKey={monthKey}
-          categories={data.categories}
-          events={data.events}
-          onClose={() => setSheet(null)}
-        />
-      ) : null}
-    </View>
+      {
+        sheet && data ? (
+          <ExpenseSheetModal
+            key={sheetKey}
+            open={sheet}
+            monthKey={monthKey}
+            categories={data.categories}
+            events={data.events}
+            onClose={() => setSheet(null)}
+          />
+        ) : null
+      }
+    </View >
   );
 }
 
 function LedgerRowBody({ row }: { row: DashboardLedgerRow }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
-      <Text style={{ width: 66, fontSize: 11.5, color: "#6b6259" }}>{row.dayLabel}</Text>
+      <Text style={{ fontSize: 11.5, color: "#6b6259" }}>{row.dayLabel}</Text>
       <View
         accessibilityElementsHidden
         importantForAccessibility="no"
@@ -316,7 +317,9 @@ function LedgerRowBody({ row }: { row: DashboardLedgerRow }) {
           ) : null}
         </View>
         {row.kind === "expense" && (row.quantity !== 1 || row.unit === "kg") ? (
-          <Text style={{ fontSize: 11.5, color: "#6b6259" }}>
+          <Text style={{
+            fontSize: 11.5, color: "#6b6259", textAlign: 'left'
+          }}>
             {row.unit === "kg"
               ? `${formatLedgerQuantity(row.quantity)} کیلو · هر کیلو ${formatToman(Math.round(row.amountToman / row.quantity))}`
               : `×${formatLedgerQuantity(row.quantity)} · هر عدد ${formatToman(Math.round(row.amountToman / row.quantity))}`}

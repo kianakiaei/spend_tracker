@@ -113,7 +113,7 @@ export default function SearchScreen() {
   }
 
   return (
-    <View style={{ flex: 1, direction: "rtl" }}>
+    <View style={{ flex: 1, direction: 'rtl' }}>
       <ScrollView
         contentContainerStyle={{ padding: 16, paddingBottom: 48, gap: 12 }}
         refreshControl={
@@ -121,7 +121,7 @@ export default function SearchScreen() {
         }
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={{ fontSize: 20, fontWeight: "800" }}>جست‌وجو در همه ماه‌ها</Text>
+        <Text style={{ fontSize: 20, fontWeight: "800", textAlign: 'left' }}>جست‌وجو در همه ماه‌ها</Text>
         <Text style={{ fontSize: 12.5, color: "#6b6259" }}>
           عنوانِ یک قلم را بنویس تا ببینی در کدام ماه و با چه قیمتی خریده شده
         </Text>
@@ -185,7 +185,7 @@ export default function SearchScreen() {
                 onPress={() => openEdit(row)}
                 style={ledgerRow}
               >
-                <View style={{ flex: 1, gap: 2 }}>
+                <View style={{ flex: 1, gap: 2, direction: 'ltr' }}>
                   <Text style={{ fontSize: 13.5, fontWeight: "700" }}>
                     {row.title}
                   </Text>
