@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DatePicker from "react-multi-date-picker";
@@ -11,7 +11,7 @@ import { CategoryDot, categoryColorMap } from "./category-color";
 import { LedgerRowBody } from "./expense-rows";
 import { parseAmountInput } from "./expense-sheet/sheet-helpers";
 import { SheetPanel } from "./ui/sheet-panel";
-import { useDelayedFocus } from "./ui/use-delayed-focus";
+import { useAutofocusField } from "./ui/use-autofocus-field";
 import { useRun } from "./ui/use-run";
 import { toTemplateRow } from "./ui/client-row";
 import {
@@ -273,10 +273,9 @@ function TemplateSheet({
   const [endDate, setEndDate] = useState<string | null>(template?.endDate ?? null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Create sheets focus the title a beat after opening (edit sheets stay
-  // keyboard-free) — never during the enter animation.
-  const titleInputRef = useRef<HTMLInputElement>(null);
-  useDelayedFocus(titleInputRef, !isEdit);
+  // Create sheets focus the title on mount (mobile only — the hook
+  // checks); edit sheets stay keyboard-free.
+  const autofocusRef = useAutofocusField<HTMLInputElement>(!isEdit);
 
   const amount = parseAmountInput(amountRaw);
   const day = parseDayInput(dayRaw);
@@ -326,7 +325,7 @@ function TemplateSheet({
           </label>
           <input
             id="template-title"
-            ref={titleInputRef}
+            ref={autofocusRef}
             type="text"
             value={title}
             onChange={(event) => setTitle(event.target.value)}

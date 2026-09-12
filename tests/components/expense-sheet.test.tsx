@@ -152,20 +152,15 @@ describe("sheet chrome (vaul drawer)", () => {
 });
 
 describe("sheet focus", () => {
-  it("create focuses the title after a beat on touch", () => {
+  it("create focuses the title on open on touch", () => {
     vi.useFakeTimers();
-    // Mobile: coarse pointer gets the delayed focus.
+    // Mobile: coarse pointer focuses synchronously on open.
     vi.stubGlobal(
       "matchMedia",
       vi.fn().mockReturnValue({ matches: true }),
     );
     openCreateSync(otherMonth);
-    // not during the enter animation
-    expect(screen.getByLabelText("عنوان")).not.toHaveFocus();
-    act(() => {
-      vi.advanceTimersByTime(500);
-    });
-    expect(screen.getByLabelText("عنوان")).toHaveFocus();
+    expect(document.getElementById("expense-title")).toHaveFocus();
   });
 
   it("create does not autofocus on desktop", () => {
