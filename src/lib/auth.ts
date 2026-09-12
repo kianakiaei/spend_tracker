@@ -78,6 +78,27 @@ export const auth = betterAuth({
         html: `<div dir="rtl" lang="fa"><p>برای تعیین رمز تازه روی پیوند زیر بزنید (یک ساعت اعتبار دارد):</p><p><a href="${url}">تعیین رمز تازه</a></p></div>`,
         logLine: `[auth] password reset link for ${user.email}: ${url}`,
       }),
+    // Taken email on sign-up: better-auth answers generically (200 + a
+    // phantom user — anti-enumeration, no row, no verification mail) and
+    // calls this hook with the REAL owner. The one place we can warn them
+    // without changing the wire response: no verification is (re)sent, the
+    // account is untouched, and the owner keeps signing in as before.
+    // (Untyped in better-auth 1.7's declarations, hence the local shape.)
+    onExistingUserSignUp: async ({ user }: { user: { email: string } }) => {
+      try {
+        await sendEmailOrLog({
+          to: user.email,
+          subject: "تلاش برای ثبت‌نام با ایمیل شما در دفتر هزینه",
+          html: `<div dir="rtl" lang="fa"><p>کسی با این ایمیل درخواست ثبت‌نام تازه کرده است. اگر خودتان بودید و رمزتان را دارید، فقط وارد شوید — حساب شما هیچ تغییری نکرده و ایمیل تأییدی هم فرستاده نشده است. در غیر این صورت این پیام را نادیده بگیرید.</p></div>`,
+          logLine: `[auth] duplicate sign-up warning for ${user.email}: account unchanged, no verification sent`,
+        });
+      } catch (error) {
+        console.error(
+          `[auth] duplicate sign-up warning failed for ${user.email}`,
+          error,
+        );
+      }
+    },
   },
   emailVerification: {
     // 1-hour tokens, same window as reset. The link signs the user in and
