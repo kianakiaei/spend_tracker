@@ -109,6 +109,13 @@ export const auth = betterAuth({
     expiresIn: SESSION_7_DAYS,
     updateAge: SESSION_UPDATE_AGE_1_DAY,
   },
+  // Dev-only: expo web runs on a different origin (localhost:8081) than Next
+  // (localhost:3000), and better-auth rejects unlisted origins with 403
+  // "Invalid origin". Production keeps the default (baseURL origin only).
+  trustedOrigins:
+    process.env.NODE_ENV === "development"
+      ? ["http://localhost:8081", "http://127.0.0.1:8081"]
+      : [],
   plugins: [
     bearer(), // mobile path: set-auth-token header + Authorization: Bearer (ticket 08)
     nextCookies(), // must stay last
