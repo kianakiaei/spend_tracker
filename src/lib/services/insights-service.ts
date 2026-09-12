@@ -1,6 +1,11 @@
 import { and, eq, inArray } from "drizzle-orm";
 import { expenses } from "@/db/schema";
 import { canonical } from "@/lib/categorization/normalize";
+import {
+  averageUnitPrice,
+  totalQuantity,
+  unitPrice,
+} from "@spend-tracker/shared/quantity";
 import type { DomainDb } from "./types";
 
 export interface InsightsPoint {
@@ -89,20 +94,17 @@ export function createInsightsService(db: DomainDb) {
         );
       });
       const totalToman = sorted.reduce((s, r) => s + r.amountToman, 0);
-      const totalQuantity = sorted.reduce(
-        (s, r) => s + (r.quantity ?? 1),
-        0,
-      );
+      const totalQty = totalQuantity(sorted.map((r) => r.quantity));
       const monthly: InsightsMonthAvg[] = monthKeys.map((monthKey) => {
         const inMonth = sorted.filter((r) => r.monthKey === monthKey);
         const mTotal = inMonth.reduce((s, r) => s + r.amountToman, 0);
-        const mQty = inMonth.reduce((s, r) => s + (r.quantity ?? 1), 0);
+        const mQty = totalQuantity(inMonth.map((r) => r.quantity));
         return {
           monthKey,
           count: inMonth.length,
           totalToman: mTotal,
           totalQuantity: mQty,
-          avgUnitPrice: mQty > 0 ? Math.round(mTotal / mQty) : 0,
+          avgUnitPrice: averageUnitPrice(mTotal, mQty),
         };
       });
       insights.push({
@@ -110,18 +112,16 @@ export function createInsightsService(db: DomainDb) {
         displayTitle: sorted[0]!.title.trim(),
         count: sorted.length,
         totalToman,
-        totalQuantity,
-        overallAvgUnit:
-          totalQuantity > 0 ? Math.round(totalToman / totalQuantity) : 0,
+        totalQuantity: totalQty,
+        overallAvgUnit: averageUnitPrice(totalToman, totalQty),
         monthly,
         points: sorted.map((r) => {
-          const q = r.quantity ?? 1;
           return {
             expenseId: r.id,
             monthKey: r.monthKey,
             occurredAt: r.occurredAt,
-            unitPrice: Math.round(r.amountToman / q),
-            quantity: q,
+            unitPrice: unitPrice(r.amountToman, r.quantity),
+            quantity: r.quantity ?? 1,
             amountToman: r.amountToman,
           };
         }),
@@ -175,10 +175,7 @@ export function createInsightsService(db: DomainDb) {
         );
       });
       const totalToman = sorted.reduce((s, r) => s + r.amountToman, 0);
-      const totalQuantity = sorted.reduce(
-        (s, r) => s + (r.quantity ?? 1),
-        0,
-      );
+      const totalQty = totalQuantity(sorted.map((r) => r.quantity));
       const byYear = new Map<string, typeof sorted>();
       for (const r of sorted) {
         const year = r.monthKey.slice(0, 4);
@@ -190,13 +187,13 @@ export function createInsightsService(db: DomainDb) {
         .sort(([a], [b]) => (a < b ? -1 : 1))
         .map(([year, inYear]) => {
           const yTotal = inYear.reduce((s, r) => s + r.amountToman, 0);
-          const yQty = inYear.reduce((s, r) => s + (r.quantity ?? 1), 0);
+          const yQty = totalQuantity(inYear.map((r) => r.quantity));
           return {
             year,
             count: inYear.length,
             totalToman: yTotal,
             totalQuantity: yQty,
-            avgUnitPrice: yQty > 0 ? Math.round(yTotal / yQty) : 0,
+            avgUnitPrice: averageUnitPrice(yTotal, yQty),
           };
         });
       insights.push({
@@ -204,18 +201,16 @@ export function createInsightsService(db: DomainDb) {
         displayTitle: sorted[0]!.title.trim(),
         count: sorted.length,
         totalToman,
-        totalQuantity,
-        overallAvgUnit:
-          totalQuantity > 0 ? Math.round(totalToman / totalQuantity) : 0,
+        totalQuantity: totalQty,
+        overallAvgUnit: averageUnitPrice(totalToman, totalQty),
         yearly,
         points: sorted.map((r) => {
-          const q = r.quantity ?? 1;
           return {
             expenseId: r.id,
             monthKey: r.monthKey,
             occurredAt: r.occurredAt,
-            unitPrice: Math.round(r.amountToman / q),
-            quantity: q,
+            unitPrice: unitPrice(r.amountToman, r.quantity),
+            quantity: r.quantity ?? 1,
             amountToman: r.amountToman,
           };
         }),
