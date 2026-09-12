@@ -66,4 +66,80 @@ describe("proxy matcher — the deliberate exceptions", () => {
       expect(proxied(path), `${path} must be gated`).toBe(true);
     }
   });
+
+  it("routes /api/* through the proxy too (dev CORS lives there, never a login redirect)", () => {
+    const apiPattern = new RegExp(
+      `^${config.matcher[1]!.replace(":path*", ".*")}$`,
+    );
+    const proxiedApi = (path: string) => apiPattern.test(path);
+    for (const path of ["/api/v1/expenses", "/api/auth/sign-in/email"]) {
+      expect(proxiedApi(path), `${path} must reach the proxy`).toBe(true);
+    }
+    for (const path of ["/", "/login", "/categories"]) {
+      expect(proxiedApi(path), `${path} must not match the api entry`).toBe(false);
+    }
+  });
+});
+
+describe("proxy dev CORS for expo web (localhost:8081)", () => {
+  const EXPO_WEB_ORIGIN = "http://localhost:8081";
+
+  function corsRequest(path: string, method: string, origin?: string): NextRequest {
+    return new NextRequest(`http://localhost:3000${path}`, {
+      method,
+      headers: origin ? { origin } : {},
+    });
+  }
+
+  function withDevEnv(fn: () => void): void {
+    const env = process.env as Record<string, string | undefined>;
+    const previous = env.NODE_ENV;
+    env.NODE_ENV = "development";
+    try {
+      fn();
+    } finally {
+      env.NODE_ENV = previous;
+    }
+  }
+
+  it("answers preflights from expo web with 204 plus CORS headers", () => {
+    withDevEnv(() => {
+      const res = proxy(corsRequest("/api/v1/expenses", "OPTIONS", EXPO_WEB_ORIGIN));
+      expect(res.status).toBe(204);
+      expect(res.headers.get("access-control-allow-origin")).toBe(EXPO_WEB_ORIGIN);
+      expect(res.headers.get("access-control-allow-methods")).toContain("POST");
+      expect(res.headers.get("access-control-allow-headers")).toContain("Authorization");
+    });
+  });
+
+  it("passes real API calls from expo web through (CORS headers, never a login redirect)", () => {
+    withDevEnv(() => {
+      const res = proxy(corsRequest("/api/v1/expenses", "GET", EXPO_WEB_ORIGIN));
+      expect(res.headers.get("x-middleware-next")).toBe("1");
+      expect(res.headers.get("access-control-allow-origin")).toBe(EXPO_WEB_ORIGIN);
+      expect(res.headers.get("location")).toBeNull();
+    });
+  });
+
+  it("leaves foreign origins and non-API paths without CORS headers", () => {
+    withDevEnv(() => {
+      const foreign = proxy(corsRequest("/api/v1/expenses", "OPTIONS", "https://evil.example"));
+      expect(foreign.status).toBe(204);
+      expect(foreign.headers.get("access-control-allow-origin")).toBeNull();
+      const page = proxy(corsRequest("/", "OPTIONS", EXPO_WEB_ORIGIN));
+      expect(page.headers.get("access-control-allow-origin")).toBeNull();
+    });
+  });
+
+  it("stays off outside development (production wire unchanged)", () => {
+    const env = process.env as Record<string, string | undefined>;
+    const previous = env.NODE_ENV;
+    env.NODE_ENV = "production";
+    try {
+      const res = proxy(corsRequest("/api/v1/expenses", "OPTIONS", EXPO_WEB_ORIGIN));
+      expect(res.headers.get("access-control-allow-origin")).toBeNull();
+    } finally {
+      env.NODE_ENV = previous;
+    }
+  });
 });
