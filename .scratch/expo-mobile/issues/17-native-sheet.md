@@ -9,14 +9,10 @@ this round found the date picker with no `direction` at all (شنبه leftmost).
 
 **Blocked by:** none.
 
-**Status:** done
+**Status:** rolled back (sheet); picker direction kept
 
-- [x] UniversalSheet renders `BottomSheet` + `RNHostView`; physics code deleted
-- [x] Picker card gets `direction: "rtl"`
-
-Done 2026-09-12: hand-rolled Animated physics deleted (the tab bar showing
-through dies with it — the OS modal owns the scrim and covers everything);
-`@expo/ui@57` added; sheet headers/titles unchanged, forms untouched inside
-the host. Gate: mobile tsc + eslint clean, web export bundles, full suite
-629 green. iOS RTL remainder still needs a device screenshot — the picker gap
-was the only missing `direction` found in a full-root audit.
+Rolled back 2026-09-12 per user review: the `@expo/ui` BottomSheet felt
+worse than the hand-rolled physics, so `universal-sheet.tsx` is restored to
+the ticket-16 Animated implementation (fading scrim, spring entry, grabber
+drag-to-dismiss) and the `@expo/ui` dependency is removed. The picker
+`direction: "rtl"` fix stays.
