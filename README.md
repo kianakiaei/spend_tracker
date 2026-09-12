@@ -1,36 +1,91 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# دفتر هزینه — Spend Tracker
 
-## Getting Started
+اپ مدیریت هزینهٔ ماهانهٔ فارسی (راست‌چین، تقویم جلالی). هر کاربر دادهٔ خودش را دارد: هر «خرج» دقیقاً به یک «دسته» تعلق دارد، جمع‌ها بر اساس ماه جلالی گروه‌بندی می‌شوند و دسته‌بندی خودکار از انتساب‌های دستی خود کاربر یاد می‌گیرد.
 
-First, run the development server:
+**تکنولوژی‌ها:** نکست‌جی‌اس ۱۶ (App Router و RSC) · ری‌اکت ۱۹ · تیلویند ۴ · Drizzle ORM + libSQL/Turso · better-auth (ایمیل و رمز) · Zod 4 · pnpm workspaces · Vitest + Playwright.
+
+## ویژگی‌ها
+
+- **داشبورد ماهانه** (`/`) — ناوبری ماه جلالی (`?month=1405-06`، بدون محدوده در هر دو جهت)، جمع کل به تومان، کاشی‌های تفکیک دسته و دفتر (ledger) خرج‌های ماه.
+- **خرج‌ها** — مبلغ به تومان صحیح، عنوان، دسته، تاریخ وقوع، یادداشت اختیاری، تعداد با واحد `عدد` / `کیلو` (کیلو تا ۳ رقم اعشار) و قیمت واحد مشتق‌شده (مبلغ ÷ تعداد). ثبت و ویرایش با باتم‌شیت، با پشتیبانی از دیپ‌لینک `?expense=<id>`.
+- **دسته‌ها** — ۶ دستهٔ سیستمی حذف‌نشدنی (هنگام ثبت‌نام برای هر کاربر ساخته می‌شود: خوراکی، کافه-رستوران، حمل‌ونقل، زیبایی و درمان، قسط، قبض و اینترنت) + دسته‌های سفارشی کاربر (تا وقتی خرج دارند حذف نمی‌شوند).
+- **پیشنهاد هوشمند دسته** — هر خرج جدید با بج پیشنهاد می‌آید: اول واژه‌های یادگرفته‌شده از خود کاربر، بعد واژه‌نامهٔ سیستمی فارسی (نان، اسنپ، قبض برق، …) و در نهایت پرتکرارترین دستهٔ خود کاربر. پیشنهاد همیشه قابل تغییر است.
+- **الگوهای تکرار** (`/templates`) — ساخت خودکار خرج در ماه‌های جلالی متوالی (مثل قسط). با ذخیرهٔ الگو، ماه‌های گذشته از تاریخ شروع تا ماه جاری هم ساخته می‌شوند؛ خرج‌های تولیدشده مستقل‌اند. الگوهای فعال ماه بعد در داشبورد به‌صورت **پیش‌بینی** (با نشان «پیش‌بینی»، بدون ذخیره‌شدن) نمایش داده می‌شوند.
+- **رویدادها** (`/events`) — حوضچهٔ نام‌دار اختیاری (مثل سفر یا مهمانی) به‌عنوان محور دوم: خرج دسته و ماه خودش را نگه می‌دارد و رویداد فقط یک لایهٔ اضافه است. حذف رویداد فقط پیوند را برمی‌دارد، نه خود خرج‌ها را.
+- **جست‌وجو** (`/search`) — تطبیق نرمال‌شدهٔ فارسی در همهٔ ماه‌ها (ی عربی/فارسی، ارقام فارسی/لاتین، نیم‌فاصله) با نمایش قیمت، ماه جلالی وقوع و دسته.
+- **بینش‌ها** (`/insights`) — آمار قیمت واحد هر محصول (میانگین وزنی ماهانه = جمع مبالغ ÷ جمع تعدادها).
+- **احراز هویت** — ایمیل و رمز با better-auth، همراه تأیید ایمیل و بازیابی رمز (ارسال با Resend؛ بدون کلید، لینک‌ها در محیط توسعه فقط در کنسول سرور چاپ می‌شوند).
+
+## شروع سریع
+
+پیش‌نیاز: Node 24 و pnpm 12.
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+pnpm install
+cp .env.example .env   # پیش‌فرض‌ها به دیتابیس فایل محلی اشاره می‌کنند
+pnpm db:migrate        # ساخت اسکیمای local.db با drizzle-kit
+pnpm dev               # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+اسکریپت‌های کاربردی (`package.json`):
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| دستور | کار |
+|---|---|
+| `pnpm dev` / `pnpm build` / `pnpm start` | سرور توسعه / بیلد production / اجرای بیلد |
+| `pnpm lint` / `pnpm typecheck` | ESLint / `tsc --noEmit` |
+| `pnpm test` / `pnpm test:watch` / `pnpm test:coverage` | Vitest (node: یونیت و ایتتگریشن، jsdom: کامپوننت) |
+| `pnpm e2e` | تست Playwright (بیلد می‌گیرد و با دیتابیس تازهٔ `e2e-test.db` سرو می‌کند) |
+| `pnpm db:generate` / `pnpm db:migrate` | ساخت / اجرای مایگریشن drizzle-kit |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+پایپلاین CI (`.github/workflows/ci.yml`) روی هر push/PR اجرا می‌شود: install ← lint ← typecheck ← test ← Playwright (chromium) ← build.
 
-## Learn More
+## پیکربندی
 
-To learn more about Next.js, take a look at the following resources:
+متغیرهای محیطی (مطابق `.env.example`):
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| متغیر | پیش‌فرض توسعه | production |
+|---|---|---|
+| `TURSO_DATABASE_URL` | `file:./local.db` | آدرس `libsql://<db>-<org>.turso.io` دیتابیس Turso |
+| `TURSO_AUTH_TOKEN` | — (محلی لازم نیست) | توکن احراز هویت Turso |
+| `BETTER_AUTH_SECRET` | — | **اجباری** (بدون آن اپ خطا می‌دهد). ساخت: `node -e "console.log(require('crypto').randomBytes(32).toString('base64url'))"` |
+| `BETTER_AUTH_URL` | `http://localhost:3000` | آدرس عمومی سایت (برای کال‌بک‌های پایدار احراز هویت) |
+| `RESEND_API_KEY` / `RESEND_FROM` | خالی ← لینک‌ها در کنسول چاپ می‌شوند | برای ایمیل واقعی ثبت‌نام/بازیابی رمز لازم است (دامنهٔ تأییدشده در Resend) |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ساختار پروژه
 
-## Deploy on Vercel
+```text
+src/
+  app/
+    (app)/            # صفحات لاگین‌کرده: داشبورد، دسته‌ها، الگوها، رویدادها، جست‌وجو، بینش‌ها
+    api/              # هندلرهای API (احراز هویت و دامنه؛ RSCها مستقیم از سرویس‌ها می‌خوانند)
+    login/ forgot-password/ reset-password/
+  components/         # ledger، summary-tiles، month-nav، expense-sheet و …
+  db/                 # اسکیما و کلاینت drizzle (کاربر، دسته، خرج، رویداد، الگوی تکرار، کلید یادگرفته)
+  lib/                # auth، jalali، categorization، recurring، services، schemas، format
+packages/shared/      # پکیج مشترک ورک‌اسپیس (@spend-tracker/shared)
+drizzle/              # مایگریشن‌های تولیدشده
+e2e/                  # سناریوهای Playwright (احراز هویت، خرج، الگو، جست‌وجو، بینش)
+tests/                # تست‌های Vitest: unit / integration / components
+docs/adr/             # تصمیم‌های معماری
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+واژه‌نامهٔ دامنه (زبان همه‌جاحاضر فارسی — خرج، دسته، الگو، پیش‌بینی، رویداد، …) در `CONTEXT.md` است؛ تصمیم‌های معماری در `docs/adr/`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## استقرار (Deployment)
+
+اپ یک بیلد استاندارد Next.js است و هر جایی که Node اجرا شود مستقر می‌شود. مسیر پیشنهادی **Vercel + Turso** است:
+
+1. در Turso یک دیتابیس بسازید و آدرس `libsql://` و توکن آن را بردارید.
+2. در هاست، متغیرها را ست کنید: `TURSO_DATABASE_URL`، `TURSO_AUTH_TOKEN`، `BETTER_AUTH_SECRET`، `BETTER_AUTH_URL` (آدرس عمومی سایت) و `RESEND_API_KEY`/`RESEND_FROM` برای ایمیل.
+3. قبل یا همراه دیپلوی، مایگریشن را روی دیتابیس ریموت اجرا کنید:
+   ```bash
+   TURSO_DATABASE_URL="libsql://…" TURSO_AUTH_TOKEN="…" pnpm db:migrate
+   ```
+4. بیلد و اجرا: `pnpm build && pnpm start` (در Vercel خودکار انجام می‌شود).
+
+نکته‌ها: فایل‌های `local.db` و `e2e-test.db` فقط محلی‌اند و در گیت ایگنور شده‌اند — هرگز آن‌ها را دیپلوی نکنید. تست‌های E2E حساس به منطقهٔ زمانی‌اند (`Asia/Tehran`).
+
+## بیشتر بدانید
+
+- [مستندات Next.js](https://nextjs.org/docs)
+- [مستندات Drizzle + Turso](https://orm.drizzle.team/) · [مستندات better-auth](https://www.better-auth.com/docs) · [مستندات Resend](https://resend.com/docs)
