@@ -12,6 +12,7 @@ import {
   BackHandler,
   Easing,
   PanResponder,
+  Platform,
   Pressable,
   View,
 } from "react-native";
@@ -120,7 +121,9 @@ function SheetContent({
   }, [onClose, scrim, offset]);
 
   // Android back button (the Modal's onRequestClose used to own this).
+  // BackHandler exists only on native — subscribing on web logs an error.
   useEffect(() => {
+    if (Platform.OS === "web") return;
     const sub = BackHandler.addEventListener("hardwareBackPress", () => {
       dismiss();
       return true;
