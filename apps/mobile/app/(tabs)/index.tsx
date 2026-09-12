@@ -127,7 +127,8 @@ export default function HomeScreen() {
             onPress={() => setMonthKey((m) => shiftDashboardMonth(m, -1))}
             style={navButton}
           >
-            <Text style={{ fontSize: 17 }}>‹</Text>
+            {/* RTL: previous points right. */}
+            <Text style={{ fontSize: 17 }}>›</Text>
           </Pressable>
           <Text style={{ minWidth: 112, textAlign: "center", fontSize: 15, fontWeight: "700" }}>
             {vm?.monthLabel ?? monthKey}
@@ -137,7 +138,8 @@ export default function HomeScreen() {
             onPress={() => setMonthKey((m) => shiftDashboardMonth(m, 1))}
             style={navButton}
           >
-            <Text style={{ fontSize: 17 }}>›</Text>
+            {/* RTL: next points left. */}
+            <Text style={{ fontSize: 17 }}>‹</Text>
           </Pressable>
         </View>
 
@@ -182,10 +184,10 @@ export default function HomeScreen() {
                   <Pressable
                     style={{
                       flexGrow: 1,
-                      // Web mosaic parity on the two-column phone grid: the
-                      // largest tile is the full-width anchor, ≥25% tiles go
-                      // full width too, the rest share a row.
-                      flexBasis: index === 0 || tile.share >= 0.25 ? "100%" : "45%",
+                      // Percentage sizing breaks tile content on phones: the
+                      // largest tile is the full-width anchor, the rest share
+                      // rows (ticket 12). Tiles arrive largest-first.
+                      flexBasis: index === 0 ? "100%" : "45%",
                       minHeight: index === 0 ? 128 : undefined,
                       borderWidth: 1,
                       borderColor: "#d8d3c8",

@@ -22,6 +22,7 @@ import {
   jalaliMonthKeyLabel,
 } from "@spend-tracker/shared/jalali";
 import { formatNumber } from "@spend-tracker/shared/format";
+import { tintOf } from "@spend-tracker/shared/color";
 import type {
   CategoryDto,
   EventDto,
@@ -131,7 +132,7 @@ export default function CategoryDetailScreen() {
       >
         <Link href="/categories" asChild>
           <Pressable>
-            <Text style={{ fontSize: 13, color: "#6b6259" }}>‹ بازگشت به دسته‌ها</Text>
+            <Text style={{ fontSize: 13, color: "#6b6259" }}>› بازگشت به دسته‌ها</Text>
           </Pressable>
         </Link>
 
@@ -144,7 +145,8 @@ export default function CategoryDetailScreen() {
             onPress={() => setMonthKey((m) => shiftDashboardMonth(m, -1))}
             style={navButton}
           >
-            <Text style={{ fontSize: 17 }}>‹</Text>
+            {/* RTL: previous points right. */}
+            <Text style={{ fontSize: 17 }}>›</Text>
           </Pressable>
           <Text style={{ minWidth: 112, textAlign: "center", fontSize: 15, fontWeight: "700" }}>
             {jalaliMonthKeyLabel(monthKey)}
@@ -154,7 +156,8 @@ export default function CategoryDetailScreen() {
             onPress={() => setMonthKey((m) => shiftDashboardMonth(m, 1))}
             style={navButton}
           >
-            <Text style={{ fontSize: 17 }}>›</Text>
+            {/* RTL: next points left. */}
+            <Text style={{ fontSize: 17 }}>‹</Text>
           </Pressable>
         </View>
 
@@ -185,6 +188,8 @@ export default function CategoryDetailScreen() {
                 borderRadius: 16,
                 padding: 16,
                 gap: 4,
+                // The panel wears the washed tint (web drilldown parity).
+                backgroundColor: tintOf(panel.category.color),
               }}
             >
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>

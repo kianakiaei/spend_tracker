@@ -48,6 +48,10 @@ import {
   fromISODate,
   jalaliMonthKeyLabel,
 } from "@spend-tracker/shared/jalali";
+import {
+  FALLBACK_CATEGORY_COLOR,
+  tintOf,
+} from "@spend-tracker/shared/color";
 import type {
   CategoryDto,
   ClassifyDto,
@@ -358,12 +362,24 @@ export function ExpenseSheetModal({
                         paddingHorizontal: 12,
                         paddingVertical: 8,
                         borderRadius: 999,
-                        borderWidth: 1,
+                        borderWidth: c.id === activeCategoryId ? 2 : 1,
                         borderColor: c.id === activeCategoryId ? "#1a7a5c" : "#d8d3c8",
-                        backgroundColor: c.id === activeCategoryId ? "#e4f0e9" : "#fff",
+                        // Every chip wears its own washed tint (web parity).
+                        backgroundColor:
+                          c.id === activeCategoryId ? "#e4f0e9" : tintOf(c.color),
                       }}
                     >
-                      <Text style={{ fontSize: 13 }}>{c.name}</Text>
+                      <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                        <View
+                          style={{
+                            width: 9,
+                            height: 9,
+                            borderRadius: 4.5,
+                            backgroundColor: c.color ?? FALLBACK_CATEGORY_COLOR,
+                          }}
+                        />
+                        <Text style={{ fontSize: 13 }}>{c.name}</Text>
+                      </View>
                     </Pressable>
                   ))}
                 </View>

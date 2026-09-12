@@ -227,11 +227,30 @@ describe("category create/rename (ticket 04)", () => {
       return jsonResponse(category(1, { name: "خوراک من" }));
     });
     const client = createV1Client({ fetchFn });
-    const updated = await renameCategory(client as never, v7(1), "خوراک من");
+    const updated = await renameCategory(client as never, v7(1), {
+      name: "خوراک من",
+    });
     expect((updated as { name: string }).name).toBe("خوراک من");
     expect(JSON.parse(String(calls[0]!.init.body))).toMatchObject({
       name: "خوراک من",
     });
+  });
+
+  it("carries a picked swatch in the same rename PATCH (ticket 12)", async () => {
+    const { calls, fetchFn } = mockFetch((url) => {
+      expect(url).toBe(`/api/v1/categories/${v7(1)}`);
+      return jsonResponse(category(1, { name: "خوراک من", color: "#3da3c4" }));
+    });
+    const client = createV1Client({ fetchFn });
+    await renameCategory(client as never, v7(1), {
+      name: "خوراک من",
+      color: "#3da3c4",
+    });
+    expect(JSON.parse(String(calls[0]!.init.body))).toMatchObject({
+      name: "خوراک من",
+      color: "#3da3c4",
+    });
+    expect(calls).toHaveLength(1);
   });
 });
 

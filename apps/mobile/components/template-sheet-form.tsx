@@ -21,6 +21,10 @@ import {
   fromISODate,
   toPersianDigits,
 } from "@spend-tracker/shared/jalali";
+import {
+  FALLBACK_CATEGORY_COLOR,
+  tintOf,
+} from "@spend-tracker/shared/color";
 import type { CategoryDto } from "@spend-tracker/shared/schemas/api";
 import { useSession } from "../src/session";
 import {
@@ -184,12 +188,24 @@ export function TemplateSheetModal({
                   paddingHorizontal: 12,
                   paddingVertical: 8,
                   borderRadius: 999,
-                  borderWidth: 1,
+                  borderWidth: c.id === form.categoryId ? 2 : 1,
                   borderColor: c.id === form.categoryId ? "#1a7a5c" : "#d8d3c8",
-                  backgroundColor: c.id === form.categoryId ? "#e4f0e9" : "#fff",
+                  // Every chip wears its own washed tint (web parity).
+                  backgroundColor:
+                    c.id === form.categoryId ? "#e4f0e9" : tintOf(c.color),
                 }}
               >
-                <Text style={{ fontSize: 13 }}>{c.name}</Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <View
+                    style={{
+                      width: 9,
+                      height: 9,
+                      borderRadius: 4.5,
+                      backgroundColor: c.color ?? FALLBACK_CATEGORY_COLOR,
+                    }}
+                  />
+                  <Text style={{ fontSize: 13 }}>{c.name}</Text>
+                </View>
               </Pressable>
             ))}
           </View>

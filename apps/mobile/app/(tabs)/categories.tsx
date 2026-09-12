@@ -60,6 +60,7 @@ export default function CategoriesScreen() {
   const [color, setColor] = useState(MOBILE_CATEGORY_SWATCHES[0]!.hex);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
+  const [editColor, setEditColor] = useState(MOBILE_CATEGORY_SWATCHES[0]!.hex);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [moveTarget, setMoveTarget] = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -153,20 +154,24 @@ export default function CategoriesScreen() {
                 pending={pending}
                 editing={editingId === row.id}
                 editName={editName}
+                editColor={editColor}
                 moving={movingId === row.id}
                 moveTarget={moveTarget}
                 confirming={confirmingId === row.id}
                 onStartEdit={() => {
                   setEditingId(row.id);
                   setEditName(row.name);
+                  setEditColor(row.color ?? MOBILE_CATEGORY_SWATCHES[0]!.hex);
                 }}
                 onCancelEdit={() => setEditingId(null)}
                 onEditName={setEditName}
+                onEditColor={setEditColor}
                 onRename={() =>
                   void run(() =>
-                    renameCategory(api, row.id, editName).then(() =>
-                      setEditingId(null),
-                    ),
+                    renameCategory(api, row.id, {
+                      name: editName,
+                      color: editColor,
+                    }).then(() => setEditingId(null)),
                   )
                 }
                 onReorder={(delta) =>
@@ -286,12 +291,14 @@ function CategoryRowView({
   pending,
   editing,
   editName,
+  editColor,
   moving,
   moveTarget,
   confirming,
   onStartEdit,
   onCancelEdit,
   onEditName,
+  onEditColor,
   onRename,
   onReorder,
   onStartMove,
@@ -308,12 +315,14 @@ function CategoryRowView({
   pending: boolean;
   editing: boolean;
   editName: string;
+  editColor: string;
   moving: boolean;
   moveTarget: string | null;
   confirming: boolean;
   onStartEdit: () => void;
   onCancelEdit: () => void;
   onEditName: (v: string) => void;
+  onEditColor: (hex: string) => void;
   onRename: () => void;
   onReorder: (delta: -1 | 1) => void;
   onStartMove: () => void;
@@ -326,23 +335,48 @@ function CategoryRowView({
 }) {
   if (editing) {
     return (
-      <View style={rowStyle}>
+      <View style={[rowStyle, { flexDirection: "column", alignItems: "stretch" }]}>
         <TextInput
           aria-label="نام دسته"
           value={editName}
           onChangeText={onEditName}
-          style={[inputStyle, { flex: 1 }]}
+          style={inputStyle}
         />
-        <Pressable onPress={onCancelEdit} style={ghostButton}>
-          <Text>انصراف</Text>
-        </Pressable>
-        <Pressable
-          onPress={onRename}
-          disabled={!validateCategoryName(editName) || pending}
-          style={primaryButton}
+        <View
+          role="radiogroup"
+          aria-label="رنگ دسته"
+          style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}
         >
-          <Text style={{ color: "#fff", fontWeight: "800" }}>ذخیره</Text>
-        </Pressable>
+          {MOBILE_CATEGORY_SWATCHES.map((swatch) => (
+            <Pressable
+              key={swatch.hex}
+              accessibilityLabel={swatch.name}
+              role="radio"
+              aria-checked={editColor === swatch.hex}
+              onPress={() => onEditColor(swatch.hex)}
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: swatch.hex,
+                borderWidth: 2,
+                borderColor: editColor === swatch.hex ? "#1c1a17" : "transparent",
+              }}
+            />
+          ))}
+        </View>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          <Pressable onPress={onCancelEdit} style={ghostButton}>
+            <Text>انصراف</Text>
+          </Pressable>
+          <Pressable
+            onPress={onRename}
+            disabled={!validateCategoryName(editName) || pending}
+            style={primaryButton}
+          >
+            <Text style={{ color: "#fff", fontWeight: "800" }}>ذخیره</Text>
+          </Pressable>
+        </View>
       </View>
     );
   }

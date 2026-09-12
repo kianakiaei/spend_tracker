@@ -193,12 +193,17 @@ export function buildCreateCategoryPayload(
   return { name: name.trim(), color, icon: null };
 }
 
-/** Rename patch (free for system rows too), or null while blank. */
+/** Rename patch (free for system rows too), or null while blank. A color
+ * rides along when the edit picked a new swatch — one PATCH, no extra
+ * endpoint (ticket 12). */
 export function buildRenamePayload(
   name: string,
+  color?: string,
 ): UpdateCategoryRequest | null {
   if (!validateCategoryName(name)) return null;
-  return { name: name.trim() };
+  return color === undefined
+    ? { name: name.trim() }
+    : { name: name.trim(), color };
 }
 
 export interface ReorderPlan {
@@ -267,9 +272,9 @@ export async function createCategory<Out>(
 export async function renameCategory<Out>(
   client: CategoryWriteClient,
   id: string,
-  name: string,
+  args: { name: string; color?: string },
 ): Promise<Out> {
-  const patch = buildRenamePayload(name);
+  const patch = buildRenamePayload(args.name, args.color);
   if (!patch) throw new Error("invalid category name");
   return (await client.categories.update(id, patch)) as Out;
 }

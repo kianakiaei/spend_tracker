@@ -92,7 +92,8 @@ export function JalaliDatePicker({
               onPress={() => setMonthKey((m) => shiftJalaliMonthKey(m, -1))}
               style={navButton}
             >
-              <Text style={{ fontSize: 17 }}>‹</Text>
+              {/* RTL: previous points right. */}
+              <Text style={{ fontSize: 17 }}>›</Text>
             </Pressable>
             <Text style={{ flex: 1, textAlign: "center", fontSize: 15, fontWeight: "700" }}>
               {jalaliMonthKeyLabel(monthKey)}
@@ -102,7 +103,8 @@ export function JalaliDatePicker({
               onPress={() => setMonthKey((m) => shiftJalaliMonthKey(m, 1))}
               style={navButton}
             >
-              <Text style={{ fontSize: 17 }}>›</Text>
+              {/* RTL: next points left. */}
+              <Text style={{ fontSize: 17 }}>‹</Text>
             </Pressable>
           </View>
 

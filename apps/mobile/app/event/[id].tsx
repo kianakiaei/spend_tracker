@@ -141,7 +141,7 @@ export default function EventDetailScreen() {
       >
         <Link href="/events" asChild>
           <Pressable>
-            <Text style={{ fontSize: 13, color: "#6b6259" }}>‹ بازگشت به رویدادها</Text>
+            <Text style={{ fontSize: 13, color: "#6b6259" }}>› بازگشت به رویدادها</Text>
           </Pressable>
         </Link>
 
@@ -154,7 +154,8 @@ export default function EventDetailScreen() {
             onPress={() => setMonthKey((m) => shiftDashboardMonth(m, -1))}
             style={navButton}
           >
-            <Text style={{ fontSize: 17 }}>‹</Text>
+            {/* RTL: previous points right. */}
+            <Text style={{ fontSize: 17 }}>›</Text>
           </Pressable>
           <Text style={{ minWidth: 112, textAlign: "center", fontSize: 15, fontWeight: "700" }}>
             {jalaliMonthKeyLabel(monthKey)}
@@ -164,7 +165,8 @@ export default function EventDetailScreen() {
             onPress={() => setMonthKey((m) => shiftDashboardMonth(m, 1))}
             style={navButton}
           >
-            <Text style={{ fontSize: 17 }}>›</Text>
+            {/* RTL: next points left. */}
+            <Text style={{ fontSize: 17 }}>‹</Text>
           </Pressable>
         </View>
 
