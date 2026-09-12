@@ -86,6 +86,15 @@ export default function InsightsScreen() {
     () => (active ? historyFor(active) : []),
     [active],
   );
+  // Bar scale: the hottest month fills the track; every value stays readable
+  // in Persian digits next to its bar (web parity: readable values).
+  const maxBucketAvg = useMemo(
+    () =>
+      active
+        ? Math.max(...active.monthly.map((b) => b.avgUnitPrice), 1)
+        : 1,
+    [active],
+  );
 
   return (
     <View style={{ flex: 1, direction: "rtl" }}>
@@ -177,16 +186,35 @@ export default function InsightsScreen() {
                   {formatToman(active.overallAvgUnit)}
                 </Text>
 
-                <View accessibilityLabel={`میانگین ماهانه ${active.displayTitle}`} style={{ gap: 0 }}>
+                <View accessibilityLabel={`میانگین ماهانه ${active.displayTitle}`} style={{ gap: 10 }}>
                   {active.monthly.map((bucket) => (
-                    <View key={bucket.monthKey} style={ledgerRow}>
-                      <Text style={{ flex: 1, fontSize: 13 }}>
-                        {jalaliMonthKeyLabel(bucket.monthKey)} ·{" "}
-                        {toPersianDigits(bucket.count)} خرید
-                      </Text>
-                      <Text style={{ fontSize: 13.5, fontWeight: "800" }}>
-                        {formatToman(bucket.avgUnitPrice)}
-                      </Text>
+                    <View key={bucket.monthKey} style={{ gap: 3 }}>
+                      <View style={{ flexDirection: "row", alignItems: "baseline", gap: 6 }}>
+                        <Text style={{ flex: 1, fontSize: 12.5 }}>
+                          {jalaliMonthKeyLabel(bucket.monthKey)} ·{" "}
+                          {toPersianDigits(bucket.count)} خرید
+                        </Text>
+                        <Text style={{ fontSize: 13, fontWeight: "800" }}>
+                          {formatToman(bucket.avgUnitPrice)}
+                        </Text>
+                      </View>
+                      <View
+                        style={{
+                          height: 10,
+                          borderRadius: 5,
+                          backgroundColor: "#ece7db",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <View
+                          style={{
+                            height: 10,
+                            borderRadius: 5,
+                            backgroundColor: "#1a7a5c",
+                            width: `${Math.max(Math.round((bucket.avgUnitPrice / maxBucketAvg) * 100), 4)}%`,
+                          }}
+                        />
+                      </View>
                     </View>
                   ))}
                   <View style={ledgerRow}>

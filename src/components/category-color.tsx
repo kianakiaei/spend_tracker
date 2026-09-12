@@ -3,24 +3,12 @@
 // tint. Categories with no color yet (custom ones until ticket 28 brings
 // the swatches) fall back to the muted ink gray.
 import type { Category } from "@/lib/services";
+import {
+  FALLBACK_CATEGORY_COLOR,
+  tintOf,
+} from "@spend-tracker/shared/color";
 
-export const FALLBACK_CATEGORY_COLOR = "#82887e";
-
-const PAPER = [0xfa, 0xfa, 0xf7];
-
-export function tintOf(color: string | null | undefined): string {
-  const hex =
-    color != null && /^#[0-9a-fA-F]{6}$/.test(color)
-      ? color
-      : FALLBACK_CATEGORY_COLOR;
-  const channel = (index: number) => {
-    const own = Number.parseInt(hex.slice(1 + index * 2, 3 + index * 2), 16);
-    return Math.round(own * 0.15 + PAPER[index]! * 0.85)
-      .toString(16)
-      .padStart(2, "0");
-  };
-  return `#${channel(0)}${channel(1)}${channel(2)}`;
-}
+export { FALLBACK_CATEGORY_COLOR, tintOf };
 
 export function CategoryDot({ color }: { color: string | null | undefined }) {
   return (

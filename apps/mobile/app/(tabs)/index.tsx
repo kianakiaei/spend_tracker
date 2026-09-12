@@ -19,6 +19,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "expo-router";
 import { currentJalaliMonthKey, formatToman } from "@spend-tracker/shared/jalali";
 import { formatNumber, formatPercent } from "@spend-tracker/shared/format";
+import {
+  FALLBACK_CATEGORY_COLOR,
+  tintOf,
+} from "@spend-tracker/shared/color";
 import type {
   CategoryDto,
   EventDto,
@@ -184,6 +188,8 @@ export default function HomeScreen() {
                       borderRadius: 16,
                       padding: 12,
                       gap: 6,
+                      // The tile wears its own washed tint (web parity).
+                      backgroundColor: tintOf(tile.color),
                     }}
                   >
                     <Text style={{ fontSize: 13, fontWeight: "700" }}>{tile.name}</Text>
@@ -256,6 +262,16 @@ function LedgerRowBody({ row }: { row: DashboardLedgerRow }) {
   return (
     <View style={{ flexDirection: "row", alignItems: "center", gap: 10, flex: 1 }}>
       <Text style={{ width: 66, fontSize: 11.5, color: "#6b6259" }}>{row.dayLabel}</Text>
+      <View
+        accessibilityElementsHidden
+        importantForAccessibility="no"
+        style={{
+          width: 9,
+          height: 9,
+          borderRadius: 4.5,
+          backgroundColor: row.categoryColor ?? FALLBACK_CATEGORY_COLOR,
+        }}
+      />
       <View style={{ flex: 1, gap: 2 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
           <Text style={{ fontSize: 13.5, fontWeight: "700", flexShrink: 1 }}>

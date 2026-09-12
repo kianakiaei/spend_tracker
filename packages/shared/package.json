@@ -14,7 +14,8 @@
     "./jalali": "./src/jalali.ts",
     "./normalize": "./src/normalize.ts",
     "./format": "./src/format.ts",
-    "./quantity": "./src/quantity.ts"
+    "./quantity": "./src/quantity.ts",
+    "./color": "./src/color.ts"
   },
   "dependencies": {
     "date-fns-jalali": "4.4.0-0",

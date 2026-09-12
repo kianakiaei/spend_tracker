@@ -22,7 +22,7 @@ Ship a minimal pnpm monorepo addition: an Expo Router mobile app plus one shared
 
 ### App shell and navigation
 
-6. As a mobile user, I want bottom tabs for Home, Categories, Events, Search, and More, so that I reach every area with one thumb.
+6. As a mobile user, I want bottom tabs for Home, Categories, and Events with a native header on every screen, so that I reach every area with one thumb. (Amended by ticket 10 per user review 2026-09-12: Search moved from a tab into a header action as a stack screen; the More tab is gone and Templates + Insights + Sign-out live in the header «…» menu.)
 7. As a mobile user, I want category and event drilldowns to push as stack screens with back navigation, so that I keep context of where I came from.
 8. As a mobile user, I want a prominent add action on the Dashboard for a new خرج, so that capture takes seconds.
 9. As a mobile user, I want the same app to load in a desktop browser via expo web, so that behavior can be tested without a phone.
@@ -96,7 +96,7 @@ Ship a minimal pnpm monorepo addition: an Expo Router mobile app plus one shared
 - One shared pure package holds the versioned API client wrapper, request/response shapes, Jalali calendar helpers, title normalization, and formatting helpers. Both web and mobile consume it; it has no web-only or native-only dependencies.
 - The typed client wrapper stays the single programmatic path to the versioned API: typed inputs, runtime validation of success bodies against shared shapes, one error shape for non-2xx, and an injectable fetch function plus a per-call async header supplier for the bearer token.
 - The versioned HTTP API is frozen for this work: no new endpoints, no contract changes. Mobile authenticates with the existing bearer mechanism and the same session semantics as web.
-- Expo Router with 5 bottom tabs (Home, Categories, Events, Search, More with Templates + Insights + Sign-out) plus stack drilldowns for category and event detail. Expense and Template entry are modal bottom sheets, never full pages.
+- Expo Router with 3 bottom tabs (Home, Categories, Events) plus stack screens for category and event detail, search, templates, and insights. A native header on the tabs carries the search action and the «…» menu (Templates + Insights + Sign-out). Expense and Template entry are modal bottom sheets, never full pages. (Amended by ticket 10 per user review 2026-09-12; was 5 tabs with a More page.)
 - One universal sheet abstraction: native bottom sheet on iOS/Android, the existing web sheet primitive on expo web, behind one prop contract so every behavior is testable in a browser.
 - One universal token store: secure storage on native, browser storage on web, behind one get/set contract, fed into the client header supplier.
 - One custom Jalali calendar built on the existing Jalali core (already pure calendar logic with Tehran timezone handling): Gregorian ISO storage, Jalali month key grouping, unbounded month shifting, Persian-digit display. No third-party picker with single-platform lock-in.
