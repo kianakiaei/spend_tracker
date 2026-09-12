@@ -23,6 +23,10 @@ import {
   deleteSheetExpense,
   effectiveMonthKey,
   fetchSuggestion,
+  formatAmountInput,
+  formatQuantityInput,
+  normalizeAmountInput,
+  normalizeQuantityInput,
   parseAmountInput,
   parseQuantityInput,
   pickSheetCategory,
@@ -252,6 +256,32 @@ describe("expense sheet parsing (ticket 03)", () => {
 
   it("defaults a create date to today in the current month, else the month start", () => {
     expect(defaultCreateDate(currentJalaliMonthKey())).toBe(currentTehranISODate());
+  });
+});
+
+describe("expense sheet number display (ticket 11)", () => {
+  it("shows grouped Persian digits for amounts (web live fa-IR parity)", () => {
+    const shown = formatAmountInput("129877");
+    expect(shown).not.toMatch(/[0-9]/);
+    expect(shown).toContain("۱۲۹");
+    expect(normalizeAmountInput(shown)).toBe("129877");
+  });
+
+  it("keeps raw text while the amount is not a number yet", () => {
+    expect(formatAmountInput("")).toBe("");
+    expect(formatAmountInput("abc")).toBe("abc");
+  });
+
+  it("normalizes any digit script and drops separators for storage", () => {
+    expect(normalizeAmountInput("۱۲۹٬۸۷۷")).toBe("129877");
+    expect(normalizeAmountInput("129,877")).toBe("129877");
+  });
+
+  it("shows Persian digits with the Arabic decimal mark for quantities", () => {
+    expect(formatQuantityInput("0.5")).toBe("۰٫۵");
+    expect(formatQuantityInput("۲")).toBe("۲");
+    expect(normalizeQuantityInput("۰٫۵")).toBe("0.5");
+    expect(normalizeQuantityInput("۲")).toBe("2");
   });
 });
 

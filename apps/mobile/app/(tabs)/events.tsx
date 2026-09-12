@@ -28,6 +28,7 @@ import type {
   ExpenseDto,
 } from "@spend-tracker/shared/schemas/api";
 import { useSession } from "../../src/session";
+import { INPUT_FONT_STYLE } from "../../components/app-text";
 import {
   EVENT_MESSAGES,
   buildEventListViewModel,
@@ -280,6 +281,7 @@ const rowStyle = {
 } as const;
 
 const inputStyle = {
+  ...INPUT_FONT_STYLE,
   borderWidth: 1,
   borderColor: "#d8d3c8",
   borderRadius: 12,

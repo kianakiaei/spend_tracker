@@ -15,7 +15,12 @@ import {
 } from "react-native";
 import { T as Text } from "./app-text";
 import { useQueryClient } from "@tanstack/react-query";
-import { formatToman } from "@spend-tracker/shared/jalali";
+import {
+  formatJalali,
+  formatToman,
+  fromISODate,
+  toPersianDigits,
+} from "@spend-tracker/shared/jalali";
 import type { CategoryDto } from "@spend-tracker/shared/schemas/api";
 import { useSession } from "../src/session";
 import {
@@ -32,7 +37,23 @@ import {
   affectedScopesForTemplateMutation,
   invalidateTemplateScopes,
 } from "../src/template-queries";
+import {
+  formatAmountInput,
+  normalizeAmountInput,
+} from "../src/expense-sheet";
 import { UniversalSheet } from "./universal-sheet";
+import { INPUT_FONT_STYLE } from "./app-text";
+import { JalaliDatePicker } from "./jalali-date-picker";
+
+/** Jalali display of an ISO field, or the placeholder while empty/invalid. */
+function displayDate(iso: string | null, placeholder: string): string {
+  if (iso === null || iso === "") return placeholder;
+  try {
+    return formatJalali(fromISODate(iso), "d MMMM yyyy");
+  } catch {
+    return placeholder;
+  }
+}
 
 export type TemplateSheetOpen =
   | { mode: "create" }
@@ -61,6 +82,7 @@ export function TemplateSheetModal({
     endDate: source?.endDate ?? null,
   });
   const [endEnabled, setEndEnabled] = useState(source?.endDate != null);
+  const [picker, setPicker] = useState<"start" | "end" | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -123,8 +145,8 @@ export function TemplateSheetModal({
 
         <SheetField label="مبلغ (تومان)">
           <TextInput
-            value={form.amountRaw}
-            onChangeText={(v) => set("amountRaw", v)}
+            value={formatAmountInput(form.amountRaw)}
+            onChangeText={(v) => set("amountRaw", normalizeAmountInput(v))}
             placeholder="به تومان"
             keyboardType="numeric"
             style={inputStyle}
@@ -138,8 +160,8 @@ export function TemplateSheetModal({
 
         <SheetField label="روز ماه (۱ تا ۳۱)">
           <TextInput
-            value={form.dayRaw}
-            onChangeText={(v) => set("dayRaw", v)}
+            value={toPersianDigits(normalizeAmountInput(form.dayRaw))}
+            onChangeText={(v) => set("dayRaw", normalizeAmountInput(v))}
             placeholder="مثلاً ۵"
             keyboardType="numeric"
             style={inputStyle}
@@ -173,14 +195,17 @@ export function TemplateSheetModal({
           </View>
         </SheetField>
 
-        <SheetField label="تاریخ شروع (میلادی، YYYY-MM-DD)">
-          <TextInput
-            value={form.startDate}
-            onChangeText={(v) => set("startDate", v)}
-            placeholder="2026-08-01"
-            autoCapitalize="none"
-            style={inputStyle}
-          />
+        <SheetField label="تاریخ شروع">
+          <Pressable
+            accessibilityLabel="انتخاب تاریخ شروع"
+            accessibilityRole="button"
+            onPress={() => setPicker("start")}
+            style={[inputStyle, { justifyContent: "center" }]}
+          >
+            <Text style={{ fontSize: 15 }}>
+              {displayDate(form.startDate, "انتخاب تاریخ")}
+            </Text>
+          </Pressable>
         </SheetField>
 
         <SheetField label="تاریخ پایان (اختیاری)">
@@ -199,16 +224,19 @@ export function TemplateSheetModal({
             >
               <Text style={{ fontSize: 13, fontWeight: "700" }}>بدون پایان</Text>
             </Pressable>
-            <TextInput
-              value={form.endDate ?? ""}
-              onChangeText={(v) => {
+            <Pressable
+              accessibilityLabel="انتخاب تاریخ پایان"
+              accessibilityRole="button"
+              onPress={() => {
                 setEndEnabled(true);
-                set("endDate", v === "" ? null : v);
+                setPicker("end");
               }}
-              placeholder="2026-12-29"
-              autoCapitalize="none"
-              style={[inputStyle, { flex: 1 }]}
-            />
+              style={[inputStyle, { flex: 1, justifyContent: "center" }]}
+            >
+              <Text style={{ fontSize: 15 }}>
+                {displayDate(form.endDate, "انتخاب تاریخ")}
+              </Text>
+            </Pressable>
           </View>
           {!checked.windowValid ? (
             <Text style={{ fontSize: 12, color: "#b3261e" }}>
@@ -216,6 +244,20 @@ export function TemplateSheetModal({
             </Text>
           ) : null}
         </SheetField>
+
+        {picker !== null ? (
+          <JalaliDatePicker
+            value={picker === "start" ? form.startDate : (form.endDate ?? "")}
+            onSelect={(iso) => {
+              if (picker === "start") set("startDate", iso);
+              else {
+                setEndEnabled(true);
+                set("endDate", iso);
+              }
+            }}
+            onClose={() => setPicker(null)}
+          />
+        ) : null}
 
         {error ? (
           <Text accessibilityRole="alert" style={{ fontSize: 13, color: "#b3261e" }}>
@@ -256,6 +298,7 @@ function SheetField({ label, children }: { label: string; children: React.ReactN
 }
 
 const inputStyle = {
+  ...INPUT_FONT_STYLE,
   borderWidth: 1,
   borderColor: "#d8d3c8",
   borderRadius: 12,

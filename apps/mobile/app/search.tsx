@@ -26,6 +26,7 @@ import type {
   SearchResultDto,
 } from "@spend-tracker/shared/schemas/api";
 import { useSession } from "../src/session";
+import { INPUT_FONT_STYLE } from "../components/app-text";
 import {
   SEARCH_MESSAGES,
   buildSearchViewModel,
@@ -124,6 +125,7 @@ export default function SearchScreen() {
           value={query}
           onChangeText={setQuery}
           style={{
+            ...INPUT_FONT_STYLE,
             borderWidth: 1,
             borderColor: "#d8d3c8",
             borderRadius: 16,

@@ -3,7 +3,7 @@
 
 import type { ReactNode } from "react";
 import { TextInput, TouchableOpacity, View } from "react-native";
-import { T as Text } from "../../components/app-text";
+import { INPUT_FONT_STYLE, T as Text } from "../../components/app-text";
 import { MOBILE_AUTH_MESSAGES, MobileAuthError } from "../../src/auth-client";
 
 export function AuthScreen({ title, children }: { title: string; children: ReactNode }) {
@@ -39,6 +39,7 @@ export function AuthField({
         autoCapitalize="none"
         textAlign={secure ? "left" : undefined}
         style={{
+          ...INPUT_FONT_STYLE,
           borderWidth: 1,
           borderColor: "#d8d3c8",
           borderRadius: 12,

@@ -25,7 +25,9 @@ import {
   jalaliMonthKey,
   toEnglishDigits,
   toISODate,
+  toPersianDigits,
 } from "@spend-tracker/shared/jalali";
+import { formatNumber } from "@spend-tracker/shared/format";
 import type {
   ClassifyDto,
   CreateExpenseRequest,
@@ -69,6 +71,35 @@ export function parseQuantityInput(raw: string): number | null {
   const value = Number(dotted);
   if (!Number.isFinite(value) || value > 1_000_000 || value <= 0) return null;
   return value;
+}
+
+/** Display text for whole-Toman amount fields: grouped Persian digits — the
+ * web sheet's live fa-IR formatting — or the raw text while it is not a
+ * number yet (empty, separators-only). */
+export function formatAmountInput(raw: string): string {
+  const value = parseAmountInput(raw);
+  return value === null ? raw : formatNumber(value);
+}
+
+/** Keystroke normalization for amount fields: any digit script becomes Latin
+ * digits and separators drop, so the stored raw is always parse-ready. */
+export function normalizeAmountInput(raw: string): string {
+  return toEnglishDigits(raw).replace(/\D+/g, "");
+}
+
+/** Display text for the quantity field: Persian digits with the Arabic
+ * decimal mark, so «0.5» reads «۰٫۵». */
+export function formatQuantityInput(raw: string): string {
+  return toPersianDigits(raw).replace(/\./g, "٫");
+}
+
+/** Keystroke normalization for the quantity field: any digit script becomes
+ * Latin, the Arabic decimal mark becomes a dot, and thousand separators
+ * drop (parseQuantityInput accepts the rest). */
+export function normalizeQuantityInput(raw: string): string {
+  return toEnglishDigits(raw)
+    .replace(/٫/g, ".")
+    .replace(/[٬,\s]/g, "");
 }
 
 /** The Jalali month a save will land in: always the picked date's month. */

@@ -11,7 +11,16 @@ import {
   Text as RNText,
   type TextProps,
 } from "react-native";
-import { fontFamilyForWeight } from "../src/font-weights";
+import {
+  FONT_FAMILY_REGULAR,
+  fontFamilyForWeight,
+} from "../src/font-weights";
+
+/** Vazirmatn for TextInputs (they are not Text, so the T wrapper cannot
+ * reach them): spread into every input style. */
+export const INPUT_FONT_STYLE = {
+  fontFamily: FONT_FAMILY_REGULAR,
+} as const;
 
 export function T({ style, ...rest }: TextProps) {
   const flat = StyleSheet.flatten(style) ?? {};

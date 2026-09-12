@@ -30,6 +30,7 @@ import { formatNumber } from "@spend-tracker/shared/format";
 import { canonical } from "@spend-tracker/shared/normalize";
 import type { ExpenseDto } from "@spend-tracker/shared/schemas/api";
 import { useSession } from "../src/session";
+import { INPUT_FONT_STYLE } from "../components/app-text";
 import {
   INSIGHT_MESSAGES,
   buildProductInsights,
@@ -257,6 +258,7 @@ export default function InsightsScreen() {
 }
 
 const inputStyle = {
+  ...INPUT_FONT_STYLE,
   borderWidth: 1,
   borderColor: "#d8d3c8",
   borderRadius: 16,

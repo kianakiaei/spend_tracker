@@ -23,6 +23,10 @@ import {
   createSheetFormState,
   effectiveMonthKey,
   fetchSuggestion,
+  formatAmountInput,
+  formatQuantityInput,
+  normalizeAmountInput,
+  normalizeQuantityInput,
   pickSheetCategory,
   repeatNoticeFor,
   resolveActiveCategoryId,
@@ -39,13 +43,19 @@ import {
   invalidateDashboardScopes,
 } from "../src/queries";
 import { saveErrorMessage } from "../src/server-errors";
-import { jalaliMonthKeyLabel } from "@spend-tracker/shared/jalali";
+import {
+  formatJalali,
+  fromISODate,
+  jalaliMonthKeyLabel,
+} from "@spend-tracker/shared/jalali";
 import type {
   CategoryDto,
   ClassifyDto,
   EventDto,
 } from "@spend-tracker/shared/schemas/api";
 import { UniversalSheet } from "./universal-sheet";
+import { INPUT_FONT_STYLE } from "./app-text";
+import { JalaliDatePicker } from "./jalali-date-picker";
 
 const FIELD_GAP = 12;
 
@@ -83,6 +93,7 @@ export function ExpenseSheetModal({
   const [suggestion, setSuggestion] = useState<ClassifyDto | null>(null);
   const [optsOpen, setOptsOpen] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -230,8 +241,8 @@ export function ExpenseSheetModal({
 
         <SheetField label="مبلغ (تومان)">
           <TextInput
-            value={form.amountRaw}
-            onChangeText={(v) => set("amountRaw", v)}
+            value={formatAmountInput(form.amountRaw)}
+            onChangeText={(v) => set("amountRaw", normalizeAmountInput(v))}
             placeholder="به تومان"
             keyboardType="numeric"
             style={inputStyle}
@@ -241,8 +252,8 @@ export function ExpenseSheetModal({
         <SheetField label="تعداد">
           <View style={{ flexDirection: "row", gap: 8 }}>
             <TextInput
-              value={form.quantityRaw}
-              onChangeText={(v) => set("quantityRaw", v)}
+              value={formatQuantityInput(form.quantityRaw)}
+              onChangeText={(v) => set("quantityRaw", normalizeQuantityInput(v))}
               placeholder="۱"
               keyboardType="decimal-pad"
               style={[inputStyle, { flex: 1 }]}
@@ -274,20 +285,32 @@ export function ExpenseSheetModal({
           ) : null}
         </SheetField>
 
-        <SheetField label="تاریخ وقوع (میلادی، YYYY-MM-DD)">
-          <TextInput
-            value={form.occurredAt}
-            onChangeText={(v) => set("occurredAt", v)}
-            placeholder="2026-09-12"
-            autoCapitalize="none"
-            style={inputStyle}
-          />
+        <SheetField label="تاریخ وقوع">
+          <Pressable
+            accessibilityLabel="انتخاب تاریخ وقوع"
+            accessibilityRole="button"
+            onPress={() => setDatePickerOpen(true)}
+            style={[inputStyle, { justifyContent: "center" }]}
+          >
+            <Text style={{ fontSize: 15 }}>
+              {checked.dateValid
+                ? formatJalali(fromISODate(form.occurredAt), "d MMMM yyyy")
+                : "انتخاب تاریخ"}
+            </Text>
+          </Pressable>
           {!checked.dateValid ? (
             <Text style={{ fontSize: 12, color: "#b3261e" }}>
               تاریخ وقوع الزامی است
             </Text>
           ) : null}
         </SheetField>
+        {datePickerOpen ? (
+          <JalaliDatePicker
+            value={form.occurredAt}
+            onSelect={(iso) => set("occurredAt", iso)}
+            onClose={() => setDatePickerOpen(false)}
+          />
+        ) : null}
 
         <SheetField label="دسته">
           {lockedCategory ? (
@@ -468,6 +491,7 @@ function SheetField({ label, children }: { label: string; children: React.ReactN
 }
 
 const inputStyle = {
+  ...INPUT_FONT_STYLE,
   borderWidth: 1,
   borderColor: "#d8d3c8",
   borderRadius: 12,
