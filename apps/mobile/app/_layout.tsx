@@ -38,6 +38,7 @@ function RootNavigator() {
           <Stack.Screen name="category/[id]" options={{ headerShown: true, title: "دسته" }} />
           <Stack.Screen name="event/[id]" options={{ headerShown: true, title: "رویداد" }} />
           <Stack.Screen name="templates" options={{ headerShown: true, title: "الگوها" }} />
+          <Stack.Screen name="insights" options={{ headerShown: true, title: "بینش محصول‌ها" }} />
         </Stack.Protected>
         <Stack.Protected guard={!session}>
           <Stack.Screen name="(auth)/sign-in" />
