@@ -32,7 +32,7 @@ export default defineConfig({
     ],
     coverage: {
       provider: "v8",
-      include: ["src/**"],
+      include: ["src/**", "packages/shared/src/**"],
       thresholds: {
         "src/lib/schemas/**": { lines: 90, branches: 85 },
         "src/lib/id.ts": { lines: 90, branches: 85 },
@@ -40,6 +40,7 @@ export default defineConfig({
         "src/lib/categorization/**": { lines: 90, branches: 85 },
         "src/lib/recurring/**": { lines: 90, branches: 85 },
         "src/lib/services/**": { lines: 80, branches: 80 },
+        "packages/shared/src/**": { lines: 90, branches: 85 },
       },
     },
   },
