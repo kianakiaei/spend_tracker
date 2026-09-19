@@ -204,7 +204,15 @@ describe("event summary + expenses", () => {
     );
 
     const summary = await eventService.summary(userId, event.id);
-    expect(summary).toEqual({ totalToman: 150_000, count: 2 });
+    expect(summary.totalToman).toBe(150_000);
+    expect(summary.count).toBe(2);
+    expect(summary.byCategory).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "خوراکی", totalToman: 50_000, count: 1 }),
+        expect.objectContaining({ totalToman: 100_000, count: 1 }),
+      ]),
+    );
+    expect(summary.byCategory).toHaveLength(2);
 
     const rows = await eventService.listExpenses(userId, event.id);
     expect(rows).toHaveLength(2);

@@ -3,10 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useExpenseSheet } from "./expense-sheet/provider";
+import { CategoryMosaic } from "./category-mosaic";
 import { ExpenseRows } from "./expense-rows";
 import { useRun } from "./ui/use-run";
 import { api } from "@/lib/api/client";
-import type { Category, EventRow, ExpenseWithCategory } from "@/lib/services";
+import type {
+  Category,
+  EventRow,
+  EventSummary,
+  ExpenseWithCategory,
+} from "@/lib/services";
 import { BTN_DANGER, BTN_GHOST } from "./ui/style";
 
 
@@ -15,16 +21,33 @@ export function EventDetailPanel({
   expenses,
   categories,
   monthKey,
+  summary,
 }: {
   event: EventRow;
   expenses: ExpenseWithCategory[];
   categories: Category[];
   monthKey: string;
+  summary: EventSummary;
 }) {
   const { openCreate } = useExpenseSheet();
 
   return (
     <>
+      {summary.byCategory.length > 0 && (
+        <section aria-label={`تفکیک دسته‌های ${event.title}`}>
+          <CategoryMosaic
+            rows={summary.byCategory}
+            categories={categories}
+            renderTile={({ row, tileClass, tileStyle, content }) => (
+              // An event spans months, while the category drilldown is
+              // month-scoped — so event tiles are plain boxes, not links.
+              <div key={row.categoryId} className={tileClass} style={tileStyle}>
+                {content}
+              </div>
+            )}
+          />
+        </section>
+      )}
       <button
         type="button"
         onClick={() => openCreate({ eventId: event.id })}

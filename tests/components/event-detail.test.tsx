@@ -75,6 +75,18 @@ function renderDetail() {
         expenses={[EXPENSE]}
         categories={[CATEGORY]}
         monthKey="1405-06"
+        summary={{
+          totalToman: 50_000,
+          count: 1,
+          byCategory: [
+            {
+              categoryId: CATEGORY.id,
+              name: CATEGORY.name,
+              totalToman: 50_000,
+              count: 1,
+            },
+          ],
+        }}
       />
     </ExpenseSheetProvider>,
   );
@@ -91,7 +103,16 @@ describe("EventDetailPanel", () => {
   it("lists the event's expenses with the shared row anatomy", () => {
     renderDetail();
     expect(screen.getByText("شارژ تاکسی")).toBeInTheDocument();
-    expect(screen.getByText("۵۰٬۰۰۰")).toBeInTheDocument();
+    // The amount appears twice now — once in the mosaic tile, once in the row.
+    expect(screen.getAllByText("۵۰٬۰۰۰").length).toBeGreaterThan(0);
+  });
+
+  it("shows the per-category mosaic chart", () => {
+    renderDetail();
+    expect(
+      screen.getByLabelText(`تفکیک دسته‌های ${EVENT.title}`),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText("خوراکی").length).toBeGreaterThan(0);
   });
 
   it("opens the sheet with the event pre-selected on «افزودن به این رویداد»", async () => {

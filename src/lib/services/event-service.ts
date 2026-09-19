@@ -67,9 +67,17 @@ export interface UpdateEventInput {
   endDate?: string | null;
 }
 
+export interface EventCategoryRow {
+  categoryId: string;
+  name: string;
+  totalToman: number;
+  count: number;
+}
+
 export interface EventSummary {
   totalToman: number;
   count: number;
+  byCategory: EventCategoryRow[];
 }
 
 export interface EventService {
@@ -207,9 +215,44 @@ export function createEventService(db: DomainDb): EventService {
         })
         .from(expenses)
         .where(and(eq(expenses.userId, userId), eq(expenses.eventId, id)));
+
+      // Per-category breakdown for the event's mosaic chart (same shape as
+      // the month summary's byCategory — the event is an overlay, so its
+      // rows group by their own category, across all months).
+      const grouped = await db
+        .select({
+          categoryId: expenses.categoryId,
+          totalToman: sum(expenses.amountToman),
+          count: count(expenses.id),
+        })
+        .from(expenses)
+        .where(and(eq(expenses.userId, userId), eq(expenses.eventId, id)))
+        .groupBy(expenses.categoryId);
+
+      const userCategories = await db
+        .select()
+        .from(categories)
+        .where(eq(categories.userId, userId))
+        .orderBy(asc(categories.order), asc(categories.createdAt));
+      const nameOf = new Map(userCategories.map((c) => [c.id, c.name]));
+      const byCategory: EventCategoryRow[] = grouped.flatMap((g) => {
+        const name = nameOf.get(g.categoryId);
+        return name
+          ? [
+              {
+                categoryId: g.categoryId,
+                name,
+                totalToman: Number(g.totalToman ?? 0),
+                count: g.count,
+              },
+            ]
+          : [];
+      });
+
       return {
         totalToman: Number(row?.totalToman ?? 0),
         count: row?.count ?? 0,
+        byCategory,
       };
     },
 

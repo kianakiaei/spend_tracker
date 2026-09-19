@@ -83,6 +83,7 @@ export default async function EventDetailPage({
           expenses={expenses}
           categories={categories}
           monthKey={currentJalaliMonthKey()}
+          summary={summary}
         />
 
         <div className="mt-8 border-t border-rule pt-4">

@@ -51,6 +51,7 @@ export type {
 } from "./types";
 export type {
   CreateEventInput,
+  EventCategoryRow,
   EventRow,
   EventService,
   EventSummary,
