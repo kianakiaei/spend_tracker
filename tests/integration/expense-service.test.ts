@@ -119,6 +119,98 @@ describe("expenseService.create — the monthKey rule (ticket 22)", () => {
   });
 });
 
+describe("expenseService note — optional یادداشت, at most 180 chars", () => {
+  it("stores a short note and returns it on read", async () => {
+    const userId = await fx.signUp();
+    const categoryId = await systemCategory(userId, "groceries");
+
+    const created = await expensesService.create(
+      userId,
+      {
+        amountToman: 25_000,
+        title: "نان بربری",
+        note: "از نانوایی سر کوچه",
+        categoryId,
+        occurredAt: "2026-08-23",
+      },
+      "1405-06",
+    );
+    expect(created.note).toBe("از نانوایی سر کوچه");
+
+    const got = await expensesService.get(userId, created.id);
+    expect(got.note).toBe("از نانوایی سر کوچه");
+  });
+
+  it("stores NULL for a missing or blank note", async () => {
+    const userId = await fx.signUp();
+    const categoryId = await systemCategory(userId, "groceries");
+    const base = {
+      amountToman: 1_000,
+      title: "شیر",
+      categoryId,
+      occurredAt: "2026-08-23",
+    };
+
+    const missing = await expensesService.create(userId, base, "1405-06");
+    expect(missing.note).toBeNull();
+
+    const blank = await expensesService.create(
+      userId,
+      { ...base, note: "   " },
+      "1405-06",
+    );
+    expect(blank.note).toBeNull();
+  });
+
+  it("rejects a note longer than 180 chars on create and update", async () => {
+    const userId = await fx.signUp();
+    const categoryId = await systemCategory(userId, "groceries");
+    const base = {
+      amountToman: 1_000,
+      title: "شیر",
+      categoryId,
+      occurredAt: "2026-08-23",
+    };
+    const long = "ی".repeat(181);
+
+    await expect(
+      expensesService.create(userId, { ...base, note: long }, "1405-06"),
+    ).rejects.toThrow(ValidationError);
+
+    const expense = await expensesService.create(userId, base, "1405-06");
+    await expect(
+      expensesService.update(userId, expense.id, { note: long }),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it("edits and clears the note", async () => {
+    const userId = await fx.signUp();
+    const categoryId = await systemCategory(userId, "groceries");
+
+    const expense = await expensesService.create(
+      userId,
+      {
+        amountToman: 1_000,
+        title: "شیر",
+        note: "کم‌چرب",
+        categoryId,
+        occurredAt: "2026-08-23",
+      },
+      "1405-06",
+    );
+
+    const edited = await expensesService.update(userId, expense.id, {
+      note: "پرچرب",
+    });
+    expect(edited.note).toBe("پرچرب");
+
+    const cleared = await expensesService.update(userId, expense.id, {
+      note: null,
+    });
+    expect(cleared.note).toBeNull();
+  });
+});
+
 describe("expenseService quantity + unit (kilo support)", () => {
   it("stores fractional kilos with unit 'kg'", async () => {
     const userId = await fx.signUp();

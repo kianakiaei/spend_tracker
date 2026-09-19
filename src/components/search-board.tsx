@@ -26,6 +26,7 @@ function toSheetExpense(hit: SearchResultDto): SheetExpense {
   return {
     id: hit.expenseId,
     title: hit.title,
+    note: hit.note,
     amountToman: hit.amountToman,
     quantity: hit.quantity,
     unit: hit.unit,

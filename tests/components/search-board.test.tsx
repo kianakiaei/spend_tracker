@@ -40,6 +40,7 @@ function hit(
   return {
     expenseId: "01900000-0000-7000-8000-000000000101",
     title: "نان سنگک",
+    note: null,
     amountToman: 25_000,
     quantity: 2,
     unit: "piece",

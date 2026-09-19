@@ -84,6 +84,7 @@ export function ExpenseRows({
                 <LedgerRowBody
                   day={formatJalali(fromISODate(entry.expense.occurredAt), "d MMMM")}
                   title={entry.expense.title}
+                  note={entry.expense.note}
                   color={entry.expense.category.color}
                   tag={entry.expense.sourceRecurringId !== null ? "از الگو" : null}
                   eventTitle={entry.expense.eventTitle ?? null}
@@ -120,6 +121,7 @@ export function ExpenseRows({
 export function LedgerRowBody({
   day,
   title,
+  note = null,
   color,
   tag,
   eventTitle = null,
@@ -129,6 +131,7 @@ export function LedgerRowBody({
 }: {
   day: string;
   title: string;
+  note?: string | null;
   color: string | null;
   tag: string | null;
   eventTitle?: string | null;
@@ -150,6 +153,11 @@ export function LedgerRowBody({
             <span className={TAG_EVENT_CLASS}>{eventTitle}</span>
           )}
         </span>
+        {note && (
+          <span className="mt-0.5 truncate text-[11.5px] text-ink-muted">
+            {note}
+          </span>
+        )}
         {(qty !== 1 || isKg) && (
           <span className="mt-0.5 text-[11.5px] text-ink-muted">
             {isKg

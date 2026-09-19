@@ -30,6 +30,7 @@ import { ExpenseSheet } from "./expense-sheet";
 export interface SheetExpense {
   id: string;
   title: string;
+  note: string | null;
   amountToman: number;
   quantity: number;
   unit: ExpenseUnit;

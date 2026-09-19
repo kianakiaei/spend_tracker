@@ -8,6 +8,7 @@ import { monthPosition } from "@/lib/recurring";
 import {
   amountTomanSchema,
   dateOnlySchema,
+  expenseNoteSchema,
   jalaliMonthKeySchema,
   quantitySchema,
   refineUnitQuantity,
@@ -42,6 +43,7 @@ const SEARCH_LIMIT = 100;
 export interface SearchResult {
   expenseId: string;
   title: string;
+  note: string | null;
   amountToman: number;
   quantity: number;
   unit: ExpenseUnit;
@@ -63,6 +65,7 @@ function toSearchResult(row: {
   return {
     expenseId: row.expense.id,
     title: row.expense.title,
+    note: row.expense.note,
     amountToman: row.expense.amountToman,
     quantity: row.expense.quantity,
     unit: row.expense.unit,
@@ -82,7 +85,7 @@ const createExpenseInputSchema = z
     quantity: quantitySchema.optional(),
     unit: unitSchema.optional(),
     title: titleSchema,
-    note: z.string().nullish(),
+    note: expenseNoteSchema.nullish(),
     categoryId: uuidv7Schema,
     occurredAt: dateOnlySchema,
     eventId: uuidv7Schema.nullish(),
@@ -95,12 +98,19 @@ const updateExpenseInputSchema = z
     quantity: quantitySchema.optional(),
     unit: unitSchema.optional(),
     title: titleSchema.optional(),
-    note: z.string().nullish(),
+    note: expenseNoteSchema.nullish(),
     categoryId: uuidv7Schema.optional(),
     occurredAt: dateOnlySchema.optional(),
     eventId: uuidv7Schema.nullish(),
   })
   .superRefine(refineUnitQuantity);
+
+/** Blank notes store as NULL — «بدون یادداشت» stays blank, not "". The
+ * input schema already trims, so whitespace-only arrives as "". */
+function normalizeNote(note: string | null | undefined): string | null {
+  if (note == null || note === "") return null;
+  return note;
+}
 
 /** Jalali month of a date-only string — real-calendar validity included
  * (2026-02-30 is rejected here, not just 2026-13-40). */
@@ -225,7 +235,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
           quantity: data.quantity ?? 1,
           unit: data.unit ?? "piece",
           title: data.title,
-          note: data.note ?? null,
+          note: normalizeNote(data.note),
           categoryId: data.categoryId,
           occurredAt: data.occurredAt,
           monthKey: monthKeyOf(data.occurredAt),
@@ -278,7 +288,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       if (data.quantity !== undefined) set.quantity = data.quantity;
       if (data.unit !== undefined) set.unit = data.unit;
       if (data.title !== undefined) set.title = data.title;
-      if (data.note !== undefined) set.note = data.note;
+      if (data.note !== undefined) set.note = normalizeNote(data.note);
       if (data.categoryId !== undefined) set.categoryId = data.categoryId;
       if (eventId !== undefined) set.eventId = eventId;
 

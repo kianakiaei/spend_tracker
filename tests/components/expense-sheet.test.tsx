@@ -306,6 +306,7 @@ describe("save path (typed v1 client)", () => {
         quantity: 1,
         unit: "piece",
         title: "نان",
+        note: null,
         categoryId: GROCERIES.id,
         occurredAt: defaultCreateDate(otherMonth),
         eventId: null,
@@ -333,6 +334,7 @@ describe("save path (typed v1 client)", () => {
         quantity: 1,
         unit: "piece",
         title: "نان",
+        note: null,
         categoryId: GROCERIES.id,
         occurredAt: defaultCreateDate(otherMonth),
         eventId: null,
@@ -390,6 +392,7 @@ describe("edit sheet from a ledger row", () => {
           quantity: 1,
           unit: "piece",
           title: "شارژ تاکسی",
+          note: null,
           categoryId: GROCERIES.id,
           occurredAt: UNDATED.occurredAt,
           eventId: null,
@@ -433,6 +436,67 @@ describe("edit sheet from a ledger row", () => {
     );
     await waitFor(() => expect(refresh).toHaveBeenCalled());
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
+describe("expense note (یادداشت, max 180)", () => {
+  it("saves the typed note with the expense", async () => {
+    api.expenses.create.mockResolvedValue({});
+    await openCreate(otherMonth);
+
+    fireEvent.change(screen.getByLabelText("عنوان"), {
+      target: { value: "نان" },
+    });
+    fireEvent.change(screen.getByLabelText("مبلغ"), {
+      target: { value: "50000" },
+    });
+    fireEvent.change(screen.getByLabelText(/یادداشت/), {
+      target: { value: "از نانوایی سر کوچه" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "ثبت" }));
+
+    await waitFor(() =>
+      expect(api.expenses.create).toHaveBeenCalledWith(
+        expect.objectContaining({ note: "از نانوایی سر کوچه" }),
+      ),
+    );
+  });
+
+  it("counts down the remaining chars in Persian digits", async () => {
+    await openCreate(otherMonth);
+
+    // Empty — the full budget remains.
+    expect(screen.getByText("۰ / ۱۸۰")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/یادداشت/), {
+      target: { value: "نان" },
+    });
+    expect(screen.getByText("۳ / ۱۸۰")).toBeInTheDocument();
+  });
+
+  it("prefills the note on edit and patches it", async () => {
+    api.expenses.update.mockResolvedValue({});
+    renderEdit({ ...UNDATED, note: "کم‌چرب" });
+
+    fireEvent.click(screen.getByRole("button", { name: /شارژ تاکسی/ }));
+    expect(await screen.findByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByLabelText(/یادداشت/)).toHaveValue("کم‌چرب");
+
+    fireEvent.change(screen.getByLabelText(/یادداشت/), {
+      target: { value: "پرچرب" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "ذخیره" }));
+
+    await waitFor(() =>
+      expect(api.expenses.update).toHaveBeenCalledWith(
+        UNDATED.id,
+        expect.objectContaining({ note: "پرچرب" }),
+      ),
+    );
+  });
+
+  it("renders the note under the row's title", () => {
+    renderEdit({ ...UNDATED, note: "کم‌چرب" });
+    expect(screen.getByText("کم‌چرب")).toBeInTheDocument();
   });
 });
 
@@ -508,6 +572,7 @@ describe("locked create from a category (ticket 28 handoff)", () => {
         quantity: 1,
         unit: "piece",
         title: "قسط وام",
+        note: null,
         categoryId: INSTALLMENT.id,
         occurredAt: defaultCreateDate(otherMonth),
         eventId: null,

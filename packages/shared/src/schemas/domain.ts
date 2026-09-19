@@ -82,6 +82,12 @@ export const uuidv7Schema = z.uuid({ version: "v7" });
  * happens separately in the categorization engine. */
 export const titleSchema = z.string().trim().min(1, "title is required");
 
+/** Optional per-expense یادداشت — free text, at most 180 chars. */
+export const expenseNoteSchema = z
+  .string()
+  .trim()
+  .max(180, "note must be at most 180 characters");
+
 /** Category names: trimmed, never empty, unique per user. */
 export const categoryNameSchema = z
   .string()

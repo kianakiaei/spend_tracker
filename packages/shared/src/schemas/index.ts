@@ -6,6 +6,7 @@ export {
   dateOnlySchema,
   dayOfMonthSchema,
   eventTitleSchema,
+  expenseNoteSchema,
   jalaliMonthKeySchema,
   learnedKeySourceSchema,
   quantitySchema,

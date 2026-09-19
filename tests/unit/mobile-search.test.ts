@@ -41,6 +41,7 @@ function hit(
   return {
     expenseId: v7(id),
     title: `شیر ${id}`,
+    note: null,
     amountToman: 50000,
     quantity: 1,
     unit: "piece",

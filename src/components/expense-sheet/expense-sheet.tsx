@@ -25,7 +25,7 @@ import type { SuggestionAnswer } from "@/lib/categorization/suggestion-engine";
 import type { ClientSuggestionEngine } from "@/lib/categorization/suggestion-engine";
 import type { ExpenseUnit } from "@/lib/schemas";
 import { api } from "@/lib/api/client";
-import { formatToman, fromISODate, jalaliMonthKeyLabel } from "@/lib/jalali";
+import { formatToman, fromISODate, jalaliMonthKeyLabel, toPersianDigits } from "@/lib/jalali";
 import { isoDateFromPicker } from "./picker-iso";
 import type { Category } from "@/lib/services";
 import type { SheetEventOption, SheetOpen } from "./provider";
@@ -52,6 +52,11 @@ import {
 // network calls are the explicit save/delete.
 
 const DEBOUNCE_MS = 150;
+
+// Optional per-expense یادداشت — mirrors expenseNoteSchema (the shared
+// domain cap); the textarea's maxLength enforces it while typing and the
+// server re-validates on save.
+const NOTE_MAX = 180;
 
 // Chip/button/field classes speak the shared ui/style vocabulary; the
 // sheet's own additions stay local.
@@ -88,6 +93,8 @@ export function ExpenseSheet({
       : null;
 
   const [title, setTitle] = useState(expense?.title ?? "");
+  // Optional یادداشت (max 180) — prefilled on edit, blank on create.
+  const [note, setNote] = useState(expense?.note ?? "");
   const [amountRaw, setAmountRaw] = useState(
     expense ? String(expense.amountToman) : "",
   );
@@ -204,6 +211,7 @@ export function ExpenseSheet({
       quantity,
       unit,
       title: title.trim(),
+      note: note.trim() === "" ? null : note.trim(),
       categoryId: activeCategoryId,
       occurredAt: date,
       eventId: lockedEvent ? lockedEvent.id : eventId,
@@ -216,6 +224,7 @@ export function ExpenseSheet({
   // carries the just-learned counters back into the engine behind it.
   function resetForNext() {
     setTitle("");
+    setNote("");
     setAmountRaw("");
     setQuantityRaw("");
     setUnit("piece");
@@ -474,12 +483,30 @@ export function ExpenseSheet({
             )}
           </div>
 
+          <div className={FIELD_CLASS}>
+            <label htmlFor="expense-note" className={LABEL_CLASS}>
+              یادداشت
+              <span className="ms-2 font-normal text-ink-muted">(اختیاری)</span>
+            </label>
+            <textarea
+              id="expense-note"
+              value={note}
+              onChange={(event) => setNote(event.target.value)}
+              placeholder="توضیح کوتاه دربارهٔ این خرج"
+              maxLength={NOTE_MAX}
+              rows={2}
+              className={INPUT_CLASS}
+            />
+            <p className="mt-1.5 text-[12px] text-ink-muted">
+              {toPersianDigits(note.length)} / {toPersianDigits(NOTE_MAX)}
+            </p>
+          </div>
+
           {expense?.sourceRecurringId && (
             <p className="mt-3 rounded-[10px] bg-accent-soft px-3 py-2 text-[12px] leading-7 text-ink-muted">
               این خرج از الگو تولید شده؛ ویرایشش الگو را عوض نمی‌کند.
             </p>
           )}
-
           {error && (
             <p role="alert" className="mt-3 text-[13px] text-danger">
               {error}

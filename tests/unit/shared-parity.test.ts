@@ -321,6 +321,7 @@ describe("shared client — every resource method hits its frozen path", () => {
   const searchHit = {
     expenseId: EXPENSE_ID,
     title: "بستنی",
+    note: null,
     amountToman: 270_000,
     quantity: 0.5,
     unit: "kg",
