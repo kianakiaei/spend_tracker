@@ -115,6 +115,69 @@ describe("EventDetailPanel", () => {
     expect(screen.getAllByText("خوراکی").length).toBeGreaterThan(0);
   });
 
+  it("filters the rows to a category when its tile is tapped", () => {
+    const other: Category = {
+      ...CATEGORY,
+      id: "01900000-0000-7000-8000-000000000002",
+      name: "کافه-رستوران",
+    };
+    const otherExpense: ExpenseWithCategory = {
+      ...EXPENSE,
+      id: "01900000-0000-7000-8000-000000000102",
+      title: "قهوه",
+      amountToman: 30_000,
+      categoryId: other.id,
+      category: other,
+    };
+    render(
+      <ExpenseSheetProvider
+        monthKey="1405-06"
+        categories={[CATEGORY, other]}
+        events={[EVENT]}
+        learnedKeys={[]}
+        fallbackCategoryId={CATEGORY.id}
+      >
+        <EventDetailPanel
+          event={EVENT}
+          expenses={[EXPENSE, otherExpense]}
+          categories={[CATEGORY, other]}
+          monthKey="1405-06"
+          summary={{
+            totalToman: 80_000,
+            count: 2,
+            byCategory: [
+              {
+                categoryId: CATEGORY.id,
+                name: CATEGORY.name,
+                totalToman: 50_000,
+                count: 1,
+              },
+              {
+                categoryId: other.id,
+                name: other.name,
+                totalToman: 30_000,
+                count: 1,
+              },
+            ],
+          }}
+        />
+      </ExpenseSheetProvider>,
+    );
+
+    expect(screen.getByText("شارژ تاکسی")).toBeInTheDocument();
+    expect(screen.getByText("قهوه")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "نمایش خرج‌های خوراکی" }),
+    );
+    expect(screen.getByText("شارژ تاکسی")).toBeInTheDocument();
+    expect(screen.queryByText("قهوه")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "نمایش همه" })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "نمایش همه" }));
+    expect(screen.getByText("قهوه")).toBeInTheDocument();
+  });
+
   it("opens the sheet with the event pre-selected on «افزودن به این رویداد»", async () => {
     api.expenses.create.mockResolvedValue({});
     renderDetail();

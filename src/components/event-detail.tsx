@@ -30,6 +30,20 @@ export function EventDetailPanel({
   summary: EventSummary;
 }) {
   const { openCreate } = useExpenseSheet();
+  // Tile filter: tapping a mosaic tile narrows the rows below to that
+  // category (an event spans months, so tiles can't link to the
+  // month-scoped category drilldown — they filter in place instead).
+  // Tapping the active tile again clears the filter.
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    null,
+  );
+  const selectedName =
+    summary.byCategory.find((r) => r.categoryId === selectedCategoryId)?.name ??
+    null;
+  const visibleExpenses =
+    selectedCategoryId === null
+      ? expenses
+      : expenses.filter((e) => e.categoryId === selectedCategoryId);
 
   return (
     <>
@@ -38,13 +52,24 @@ export function EventDetailPanel({
           <CategoryMosaic
             rows={summary.byCategory}
             categories={categories}
-            renderTile={({ row, tileClass, tileStyle, content }) => (
-              // An event spans months, while the category drilldown is
-              // month-scoped — so event tiles are plain boxes, not links.
-              <div key={row.categoryId} className={tileClass} style={tileStyle}>
-                {content}
-              </div>
-            )}
+            renderTile={({ row, tileClass, tileStyle, content }) => {
+              const active = row.categoryId === selectedCategoryId;
+              return (
+                <button
+                  key={row.categoryId}
+                  type="button"
+                  aria-pressed={active}
+                  aria-label={`نمایش خرج‌های ${row.name}`}
+                  onClick={() =>
+                    setSelectedCategoryId(active ? null : row.categoryId)
+                  }
+                  className={`${tileClass} cursor-pointer hover:border-rule-strong ${active ? "ring-2 ring-inset ring-ink" : selectedCategoryId !== null ? "opacity-55" : ""}`}
+                  style={tileStyle}
+                >
+                  {content}
+                </button>
+              );
+            }}
           />
         </section>
       )}
@@ -63,11 +88,29 @@ export function EventDetailPanel({
       ) : (
         <section
           className="mt-6 border-t-2 border-ink"
-          aria-label={`خرج‌های ${event.title}`}
+          aria-label={
+            selectedName
+              ? `خرج‌های ${selectedName} در ${event.title}`
+              : `خرج‌های ${event.title}`
+          }
         >
+          {selectedName && (
+            <div className="flex items-center gap-2 py-2.5">
+              <p className="me-auto text-[13px] text-ink-muted">
+                نمایش خرج‌های «{selectedName}»
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelectedCategoryId(null)}
+                className="rounded-full border border-rule-strong px-4 py-1.5 text-[13px] font-semibold hover:border-ink"
+              >
+                نمایش همه
+              </button>
+            </div>
+          )}
           <ExpenseRows
             monthKey={monthKey}
-            expenses={expenses.map((e) => ({
+            expenses={visibleExpenses.map((e) => ({
               ...e,
               // Every row here already belongs to this page's event — a
               // رویداد badge would be redundant noise, so it stays off.
