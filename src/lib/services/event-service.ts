@@ -3,7 +3,7 @@
 // the event is a pure overlay. Deleting an event only unlinks expenses,
 // never deletes them. No `next/*` imports — the db arrives injected.
 
-import { and, asc, count, eq, sum } from "drizzle-orm";
+import { and, asc, count, eq, isNull, sum } from "drizzle-orm";
 import { z } from "zod";
 import { categories, events, expenses } from "@/db/schema";
 import { newId } from "@/lib/id";
@@ -85,7 +85,9 @@ export interface EventService {
   get(userId: string, id: string): Promise<EventRow>;
   create(userId: string, input: CreateEventInput): Promise<EventRow>;
   update(userId: string, id: string, input: UpdateEventInput): Promise<EventRow>;
-  /** Deletes the event and unlinks its expenses (they keep category + month). */
+  /** Deletes the event. Categorized expenses are unlinked (they keep
+   * category + month); event-only expenses (no category) are deleted with
+   * it — outside their event they would have no home at all. */
   remove(userId: string, id: string): Promise<void>;
   /** Event totals overlay: recorded sum + count; month math is untouched. */
   summary(userId: string, id: string): Promise<EventSummary>;
@@ -199,6 +201,17 @@ export function createEventService(db: DomainDb): EventService {
 
     async remove(userId, id) {
       await getOwned(userId, id);
+      // Event-only rows would strand without a category AND without an
+      // event — they go down with the event. The rest just unlink.
+      await db
+        .delete(expenses)
+        .where(
+          and(
+            eq(expenses.userId, userId),
+            eq(expenses.eventId, id),
+            isNull(expenses.categoryId),
+          ),
+        );
       await db
         .update(expenses)
         .set({ eventId: null, updatedAt: new Date() })
@@ -218,7 +231,9 @@ export function createEventService(db: DomainDb): EventService {
 
       // Per-category breakdown for the event's mosaic chart (same shape as
       // the month summary's byCategory — the event is an overlay, so its
-      // rows group by their own category, across all months).
+      // categorized rows group by their own category, across all months).
+      // Event-only rows (no category) count toward the event total above
+      // but never enter a category breakdown.
       const grouped = await db
         .select({
           categoryId: expenses.categoryId,
@@ -236,6 +251,7 @@ export function createEventService(db: DomainDb): EventService {
         .orderBy(asc(categories.order), asc(categories.createdAt));
       const nameOf = new Map(userCategories.map((c) => [c.id, c.name]));
       const byCategory: EventCategoryRow[] = grouped.flatMap((g) => {
+        if (g.categoryId == null) return [];
         const name = nameOf.get(g.categoryId);
         return name
           ? [
@@ -257,11 +273,13 @@ export function createEventService(db: DomainDb): EventService {
     },
 
     async listExpenses(userId, id) {
+      // The event's full ledger, newest first — event-only rows (no
+      // category) included, each showing the month it happened in.
       await getOwned(userId, id);
       const rows = await db
         .select({ expense: expenses, category: categories })
         .from(expenses)
-        .innerJoin(categories, eq(categories.id, expenses.categoryId))
+        .leftJoin(categories, eq(categories.id, expenses.categoryId))
         .where(and(eq(expenses.userId, userId), eq(expenses.eventId, id)));
       return rows
         .map((row) => ({ ...row.expense, category: row.category }))

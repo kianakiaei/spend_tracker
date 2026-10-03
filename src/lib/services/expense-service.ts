@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq } from "drizzle-orm";
+import { and, asc, count, desc, eq, isNotNull } from "drizzle-orm";
 import { z } from "zod";
 import { categories, events, expenses } from "@/db/schema";
 import { canonical } from "@/lib/categorization/normalize";
@@ -49,8 +49,9 @@ export interface SearchResult {
   unit: ExpenseUnit;
   monthKey: string;
   occurredAt: string;
-  categoryName: string;
-  categoryId: string;
+  /** Null on event-only expenses — they live in an event, not a category. */
+  categoryName: string | null;
+  categoryId: string | null;
   /** The رویداد the expense belongs to — null when unattached. */
   eventTitle: string | null;
   eventId: string | null;
@@ -59,7 +60,7 @@ export interface SearchResult {
 
 function toSearchResult(row: {
   expense: Expense;
-  category: { id: string; name: string };
+  category: { id: string; name: string } | null;
   event: { title: string } | null;
 }): SearchResult {
   return {
@@ -71,12 +72,27 @@ function toSearchResult(row: {
     unit: row.expense.unit,
     monthKey: row.expense.monthKey,
     occurredAt: row.expense.occurredAt,
-    categoryName: row.category.name,
-    categoryId: row.category.id,
+    categoryName: row.category?.name ?? null,
+    categoryId: row.category?.id ?? null,
     eventTitle: row.event?.title ?? null,
     eventId: row.expense.eventId,
     sourceRecurringId: row.expense.sourceRecurringId,
   };
+}
+
+/** An expense needs a home: a category, an event, or both. Category-less
+ * rows are event-only — they never enter month/category totals. */
+function refineCategoryOrEvent(
+  data: { categoryId?: string | null; eventId?: string | null },
+  ctx: z.RefinementCtx,
+): void {
+  if (data.categoryId == null && data.eventId == null) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["categoryId"],
+      message: "an expense needs a category or an event",
+    });
+  }
 }
 
 const createExpenseInputSchema = z
@@ -86,11 +102,12 @@ const createExpenseInputSchema = z
     unit: unitSchema.optional(),
     title: titleSchema,
     note: expenseNoteSchema.nullish(),
-    categoryId: uuidv7Schema,
+    categoryId: uuidv7Schema.nullish(),
     occurredAt: dateOnlySchema,
     eventId: uuidv7Schema.nullish(),
   })
-  .superRefine(refineUnitQuantity);
+  .superRefine(refineUnitQuantity)
+  .superRefine(refineCategoryOrEvent);
 
 const updateExpenseInputSchema = z
   .object({
@@ -99,7 +116,7 @@ const updateExpenseInputSchema = z
     unit: unitSchema.optional(),
     title: titleSchema.optional(),
     note: expenseNoteSchema.nullish(),
-    categoryId: uuidv7Schema.optional(),
+    categoryId: uuidv7Schema.nullish(),
     occurredAt: dateOnlySchema.optional(),
     eventId: uuidv7Schema.nullish(),
   })
@@ -128,7 +145,8 @@ export interface CreateExpenseInput {
   unit?: ExpenseUnit;
   title: string;
   note?: string | null;
-  categoryId: string;
+  /** Null = event-only (requires eventId). */
+  categoryId?: string | null;
   occurredAt: string;
   eventId?: string | null;
 }
@@ -139,7 +157,8 @@ export interface UpdateExpenseInput {
   unit?: ExpenseUnit;
   title?: string;
   note?: string | null;
-  categoryId?: string;
+  /** Null detaches the category — only with an (effective) event. */
+  categoryId?: string | null;
   occurredAt?: string;
   eventId?: string | null;
 }
@@ -214,7 +233,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       const [row] = await db
         .select({ expense: expenses, category: categories })
         .from(expenses)
-        .innerJoin(categories, eq(categories.id, expenses.categoryId))
+        .leftJoin(categories, eq(categories.id, expenses.categoryId))
         .where(and(eq(expenses.id, id), eq(expenses.userId, userId)))
         .limit(1);
       if (!row) throw new NotFoundError(`expense ${id} not found`);
@@ -223,7 +242,9 @@ export function createExpenseService(db: DomainDb): ExpenseService {
 
     async create(userId, input) {
       const data = parseOrThrow(createExpenseInputSchema, input, "expense input");
-      await getOwnedCategory(db, userId, data.categoryId);
+      if (data.categoryId != null) {
+        await getOwnedCategory(db, userId, data.categoryId);
+      }
       const eventId = await resolveEventId(userId, data.eventId);
 
       const now = new Date();
@@ -236,7 +257,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
           unit: data.unit ?? "piece",
           title: data.title,
           note: normalizeNote(data.note),
-          categoryId: data.categoryId,
+          categoryId: data.categoryId ?? null,
           occurredAt: data.occurredAt,
           monthKey: monthKeyOf(data.occurredAt),
           sourceRecurringId: null,
@@ -247,7 +268,10 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         })
         .returning();
 
-      await learnOnSave(db, userId, data.title, data.categoryId);
+      // Event-only expenses teach nothing — there is no category to learn.
+      if (data.categoryId != null) {
+        await learnOnSave(db, userId, data.title, data.categoryId);
+      }
       return expense!;
     },
 
@@ -257,11 +281,19 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         throw new ValidationError("empty expense update");
       }
       const existing = await getOwned(userId, id);
-      if (data.categoryId !== undefined) {
+      if (data.categoryId !== undefined && data.categoryId !== null) {
         await getOwnedCategory(db, userId, data.categoryId);
       }
       const eventId =
         data.eventId !== undefined ? await resolveEventId(userId, data.eventId) : undefined;
+      // Effective home after this patch — detaching the last one strands
+      // the expense (neither category nor event).
+      const effectiveCategoryId =
+        data.categoryId !== undefined ? data.categoryId : existing.categoryId;
+      const effectiveEventId = eventId !== undefined ? eventId : existing.eventId;
+      if (effectiveCategoryId == null && effectiveEventId == null) {
+        throw new ValidationError("an expense needs a category or an event");
+      }
       // The input schema guards the incoming pair; the stored row supplies
       // the other half when only one side changes (fractional kilos must
       // not become fractional pieces through a unit-only edit).
@@ -280,7 +312,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         unit?: ExpenseUnit;
         title?: string;
         note?: string | null;
-        categoryId?: string;
+        categoryId?: string | null;
         eventId?: string | null;
         updatedAt: Date;
       } = { updatedAt: new Date() };
@@ -299,8 +331,11 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         .returning();
 
       const title = data.title ?? existing.title;
-      const categoryId = data.categoryId ?? existing.categoryId;
-      await learnOnSave(db, userId, title, categoryId);
+      const categoryId =
+        data.categoryId !== undefined ? data.categoryId : existing.categoryId;
+      if (categoryId != null) {
+        await learnOnSave(db, userId, title, categoryId);
+      }
       return expense!;
     },
 
@@ -321,10 +356,14 @@ export function createExpenseService(db: DomainDb): ExpenseService {
         await ensureRecurringExpensesGenerated(db, userId, monthKey);
       }
 
+      // The month's full ledger, event-only rows included (category NULL):
+      // month/category SPENDING totals ignore them (summary-service), and
+      // the month views hide them (they live in their event alone) — but
+      // event details and search still reach them through this read.
       const rows = await db
         .select({ expense: expenses, category: categories, event: events })
         .from(expenses)
-        .innerJoin(categories, eq(categories.id, expenses.categoryId))
+        .leftJoin(categories, eq(categories.id, expenses.categoryId))
         .leftJoin(events, eq(events.id, expenses.eventId))
         .where(and(eq(expenses.userId, userId), eq(expenses.monthKey, monthKey)))
         .orderBy(asc(expenses.occurredAt), asc(expenses.createdAt), asc(expenses.id));
@@ -343,9 +382,13 @@ export function createExpenseService(db: DomainDb): ExpenseService {
           count: count(expenses.id),
         })
         .from(expenses)
-        .where(eq(expenses.userId, userId))
+        .where(and(eq(expenses.userId, userId), isNotNull(expenses.categoryId)))
         .groupBy(expenses.categoryId);
-      return Object.fromEntries(rows.map((row) => [row.categoryId, row.count]));
+      return Object.fromEntries(
+        rows.flatMap((row) =>
+          row.categoryId == null ? [] : [[row.categoryId, row.count] as const],
+        ),
+      );
     },
 
     async listAll(userId) {
@@ -355,7 +398,7 @@ export function createExpenseService(db: DomainDb): ExpenseService {
       const rows = await db
         .select({ expense: expenses, category: categories, event: events })
         .from(expenses)
-        .innerJoin(categories, eq(categories.id, expenses.categoryId))
+        .leftJoin(categories, eq(categories.id, expenses.categoryId))
         .leftJoin(events, eq(events.id, expenses.eventId))
         .where(eq(expenses.userId, userId))
         .orderBy(

@@ -1,4 +1,4 @@
-import { and, asc, count, eq, sum } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull, sum } from "drizzle-orm";
 import { categories, expenses } from "@/db/schema";
 import { currentJalaliMonthKey } from "@/lib/jalali";
 import { monthPosition } from "@/lib/recurring";
@@ -59,6 +59,8 @@ export function createSummaryService(db: DomainDb): SummaryService {
 
       // The month's aggregation in SQL: one row per category. SQLite's SUM
       // arrives as a string — the amounts are integers, Number() is exact.
+      // Event-only expenses (categoryId NULL) never enter month totals —
+      // they live in their event, not in any month/category breakdown.
       const recordedRows = await db
         .select({
           categoryId: expenses.categoryId,
@@ -66,12 +68,19 @@ export function createSummaryService(db: DomainDb): SummaryService {
           count: count(expenses.id),
         })
         .from(expenses)
-        .where(and(eq(expenses.userId, userId), eq(expenses.monthKey, monthKey)))
+        .where(
+          and(
+            eq(expenses.userId, userId),
+            eq(expenses.monthKey, monthKey),
+            isNotNull(expenses.categoryId),
+          ),
+        )
         .groupBy(expenses.categoryId);
 
       const totals = new Map<string, { totalToman: number; count: number }>();
       let recordedTotal = 0;
       for (const row of recordedRows) {
+        if (row.categoryId == null) continue;
         const totalToman = Number(row.totalToman ?? 0);
         totals.set(row.categoryId, { totalToman, count: row.count });
         recordedTotal += totalToman;

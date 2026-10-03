@@ -1,4 +1,4 @@
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, isNotNull } from "drizzle-orm";
 import { categories, expenses } from "@/db/schema";
 import { titleSchema } from "@/lib/schemas";
 import { loadCategorizerState } from "./categorizer-state";
@@ -69,6 +69,8 @@ export async function getFallbackCategory(
 /** Most expenses wins; ties break by the user's category order — same
  * determinism rule as the engine's learned-counter tie-break. */
 async function mostFrequentCategory(db: DomainDb, userId: string): Promise<Category> {
+  // Event-only rows (no category) cast no vote — the fallback is always a
+  // real category.
   const rows = await db
     .select({
       id: expenses.categoryId,
@@ -77,14 +79,17 @@ async function mostFrequentCategory(db: DomainDb, userId: string): Promise<Categ
     })
     .from(expenses)
     .innerJoin(categories, eq(categories.id, expenses.categoryId))
-    .where(eq(expenses.userId, userId))
+    .where(and(eq(expenses.userId, userId), isNotNull(expenses.categoryId)))
     .groupBy(expenses.categoryId);
   rows.sort((a, b) => b.total - a.total || a.order - b.order);
-  if (rows[0]) {
+  // The inner join above already drops the NULL group at runtime; the guard
+  // is for the nullable column type.
+  const topId = rows[0]?.id ?? null;
+  if (topId !== null) {
     const [category] = await db
       .select()
       .from(categories)
-      .where(eq(categories.id, rows[0].id))
+      .where(eq(categories.id, topId))
       .limit(1);
     if (category) return category;
   }
