@@ -26,7 +26,9 @@ import { ExpenseSheet } from "./expense-sheet";
 // save, ticket 06).
 
 /** The fields the sheet needs from an expense row — ExpenseWithCategory
- * satisfies it structurally, so the ledger passes its rows as-is. */
+ * satisfies it structurally, so the ledger passes its rows as-is.
+ * `categoryId: null` is an event-only expense (no category, lives in its
+ * event). */
 export interface SheetExpense {
   id: string;
   title: string;
@@ -36,7 +38,7 @@ export interface SheetExpense {
   unit: ExpenseUnit;
   occurredAt: string;
   monthKey: string;
-  categoryId: string;
+  categoryId: string | null;
   eventId: string | null;
   sourceRecurringId: string | null;
 }

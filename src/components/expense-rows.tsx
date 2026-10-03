@@ -48,16 +48,21 @@ export function ExpenseRows({
   expenses,
   forecast,
   categories,
+  showYear = false,
 }: {
   monthKey: string;
   expenses: ExpenseWithEventTitle[];
   forecast: RecurringForecastRow[];
   categories: Category[];
+  /** The event page spans months, so each row names its own month AND year
+   * («۵ مهر ۱۴۰۵»); the month ledger already implies both and stays short. */
+  showYear?: boolean;
 }) {
   const { openEdit } = useExpenseSheet();
 
   const colorOf = categoryColorMap(categories);
   const monthName = formatJalali(fromJalaliMonthKey(monthKey), "MMMM");
+  const dayFormat = showYear ? "d MMMM yyyy" : "d MMMM";
   const dated: LedgerEntry[] = expenses.map((expense) => ({
     kind: "expense" as const,
     day: jalaliDayOfMonth(fromISODate(expense.occurredAt)),
@@ -82,11 +87,17 @@ export function ExpenseRows({
                 className={ROW_BUTTON_CLASS}
               >
                 <LedgerRowBody
-                  day={formatJalali(fromISODate(entry.expense.occurredAt), "d MMMM")}
+                  day={formatJalali(fromISODate(entry.expense.occurredAt), dayFormat)}
                   title={entry.expense.title}
                   note={entry.expense.note}
-                  color={entry.expense.category.color}
-                  tag={entry.expense.sourceRecurringId !== null ? "از الگو" : null}
+                  color={entry.expense.category?.color ?? null}
+                  tag={
+                    entry.expense.sourceRecurringId !== null
+                      ? "از الگو"
+                      : entry.expense.category === null
+                        ? "بدون دسته"
+                        : null
+                  }
                   eventTitle={entry.expense.eventTitle ?? null}
                   amountToman={entry.expense.amountToman}
                   quantity={entry.expense.quantity}

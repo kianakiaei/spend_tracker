@@ -78,6 +78,9 @@ export default async function DashboardPage({
   }
 
   const label = jalaliMonthLabel(fromJalaliMonthKey(monthKey));
+  // Event-only expenses (no category) skip the month ledger entirely — they
+  // live in their event alone and never enter month/category spending. The
+  // event detail and search still reach them.
 
   return (
     <ExpenseSheetProvider
@@ -136,7 +139,7 @@ export default async function DashboardPage({
             />
             <Ledger
               monthKey={monthKey}
-              expenses={expenses}
+              expenses={expenses.filter((e) => e.categoryId !== null)}
               forecast={forecast}
               categories={categories}
             />

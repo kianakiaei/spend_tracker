@@ -107,7 +107,7 @@ export function SearchBoard({ results }: { results: SearchResultDto[] }) {
                     </span>
                     <span className="flex flex-wrap items-center gap-2 text-[11.5px] text-ink-muted">
                       <span className="inline-flex items-center rounded-full border border-rule bg-panel px-2 py-0.5 text-[11px]">
-                        {hit.categoryName}
+                        {hit.categoryName ?? "بدون دسته"}
                       </span>
                       {hit.eventTitle !== null && (
                         <span className={TAG_EVENT_CLASS}>{hit.eventTitle}</span>

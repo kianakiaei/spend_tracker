@@ -131,7 +131,7 @@ export function EventsManager({
                       {confirmingId === event.id ? (
                         <span className="flex items-center gap-2">
                           <span className="text-ink-muted">
-                            حذف شود؟ خرج‌ها می‌مانند.
+                            حذف شود؟ خرج‌های دسته‌دار می‌مانند؛ بدون‌دسته‌ها حذف می‌شوند.
                           </span>
                           <button
                             type="button"

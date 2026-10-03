@@ -118,6 +118,9 @@ export function EventDetailPanel({
             }))}
             forecast={[]}
             categories={categories}
+            // Event-only rows skip every month/category view — this page is
+            // their only home, so each row names the month it happened in.
+            showYear
           />
         </section>
       )}
@@ -160,7 +163,7 @@ export function EventDeleteButton({ eventId }: { eventId: string }) {
     <>
       <div className="flex items-center gap-2.5">
         <p className="me-auto text-[13.5px] text-ink-muted">
-          رویداد حذف شود؟ خرج‌ها می‌مانند.
+          رویداد حذف شود؟ خرج‌های دسته‌دار می‌مانند؛ خرج‌های بدون دستهٔ آن حذف می‌شوند.
         </p>
         <button
           type="button"

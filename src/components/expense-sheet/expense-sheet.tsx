@@ -150,14 +150,18 @@ export function ExpenseSheet({
   const quantity = quantityParsed ?? 1;
   const unitPrice =
     amount !== null ? Math.round(amount / quantity) : null;
-  const activeCategoryId =
-    manual && pickedId !== null
-      ? pickedId
-      : suggestion !== null
-        ? suggestion.categoryId
-        : (pickedId ?? categories[0]?.id ?? "");
+  // A hand-picked category (or an explicit «بدون دسته») is a fact — the
+  // engine stays silent. Otherwise the suggestion owns the chip.
+  const activeCategoryId: string | null = manual
+    ? pickedId
+    : (suggestion?.categoryId ?? pickedId ?? categories[0]?.id ?? null);
   const activeCategory =
-    categories.find((c) => c.id === activeCategoryId) ?? categories[0];
+    (activeCategoryId !== null
+      ? categories.find((c) => c.id === activeCategoryId)
+      : undefined) ?? null;
+  // Event-only rows (no category) need their event the way categorized
+  // rows need nothing extra: at least one home is required.
+  const effectiveEventId = lockedEvent ? lockedEvent.id : eventId;
   // The month this save will land in — the sheet's honest subtitle (a dated
   // expense always follows its own date, ticket 15).
   const targetMonthLabel = jalaliMonthKeyLabel(effectiveMonthKey(date));
@@ -174,10 +178,12 @@ export function ExpenseSheet({
   const quantityValid =
     quantityRaw.trim() === "" ||
     (quantityParsed !== null && (unit === "kg" || Number.isInteger(quantityParsed)));
+  const hasHome = activeCategoryId !== null || effectiveEventId !== null;
   const canSave =
     title.trim() !== "" &&
     amount !== null &&
     quantityValid &&
+    hasHome &&
     !pending;
 
   async function save() {
@@ -206,6 +212,7 @@ export function ExpenseSheet({
 
   function buildPayload() {
     if (title.trim() === "" || amount === null || !quantityValid) return null;
+    if (activeCategoryId === null && effectiveEventId === null) return null;
     return {
       amountToman: amount,
       quantity,
@@ -214,7 +221,7 @@ export function ExpenseSheet({
       note: note.trim() === "" ? null : note.trim(),
       categoryId: activeCategoryId,
       occurredAt: date,
-      eventId: lockedEvent ? lockedEvent.id : eventId,
+      eventId: effectiveEventId,
     };
   }
 
@@ -408,11 +415,9 @@ export function ExpenseSheet({
               <>
                 <div className="flex items-center gap-2.5">
                   <span className={`${CHIP_CLASS} border-rule bg-paper`}>
-                    {activeCategory && (
-                      <CategoryDot color={activeCategory.color} />
-                    )}
-                    <span>{activeCategory?.name ?? "—"}</span>
-                    {!manual && <Tag>پیشنهاد</Tag>}
+                    <CategoryDot color={activeCategory?.color ?? null} />
+                    <span>{activeCategory?.name ?? "بدون دسته"}</span>
+                    {!manual && activeCategory !== null && <Tag>پیشنهاد</Tag>}
                   </span>
                   <button
                     type="button"
@@ -443,7 +448,30 @@ export function ExpenseSheet({
                         {category.name}
                       </button>
                     ))}
+                    {effectiveEventId !== null && (
+                      <button
+                        type="button"
+                        aria-pressed={activeCategoryId === null}
+                        onClick={() => {
+                          setPickedId(null);
+                          setManual(true);
+                        }}
+                        className={`${OPTION_CLASS} ${
+                          activeCategoryId === null
+                            ? "border-accent bg-accent-soft"
+                            : "border-rule bg-panel"
+                        }`}
+                      >
+                        <CategoryDot color={null} />
+                        بدون دسته
+                      </button>
+                    )}
                   </div>
+                )}
+                {!hasHome && (
+                  <p className="mt-2 text-[12px] text-danger">
+                    خرج بدون دسته به یک رویداد نیاز دارد — یک دسته یا رویداد انتخاب کن.
+                  </p>
                 )}
               </>
             )}
