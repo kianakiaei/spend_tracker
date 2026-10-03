@@ -128,7 +128,8 @@ export interface ExpenseFormState {
   unit: ExpenseUnit;
   /** Mandatory Gregorian date-only string — there is no undated expense. */
   occurredAt: string;
-  categoryId: string;
+  /** Null = event-only (requires eventId): no category, lives in its event. */
+  categoryId: string | null;
   eventId: string | null;
 }
 
@@ -152,12 +153,17 @@ export function validateExpenseForm(state: ExpenseFormState): ValidatedExpenseFo
       (state.unit === "kg" || Number.isInteger(quantityParsed)));
   const dateValid =
     DATE_ONLY.test(state.occurredAt) && isRealCalendarDate(state.occurredAt);
+  // An expense needs a home: a category, an event, or both. Category-less
+  // rows are event-only — they never enter month/category spending.
+  const hasHome =
+    (state.categoryId !== null && state.categoryId.trim() !== "") ||
+    state.eventId !== null;
   const canSave =
     state.title.trim() !== "" &&
     amount !== null &&
     quantityValid &&
     dateValid &&
-    state.categoryId.trim() !== "";
+    hasHome;
   return { amount, quantity, quantityValid, dateValid, canSave };
 }
 
@@ -180,7 +186,10 @@ export function buildCreatePayload(
     quantity: checked.quantity,
     unit: state.unit,
     title: state.title.trim(),
-    categoryId: state.categoryId,
+    categoryId:
+      state.categoryId !== null && state.categoryId.trim() !== ""
+        ? state.categoryId
+        : null,
     occurredAt: state.occurredAt,
     eventId: state.eventId,
   };
@@ -232,23 +241,24 @@ export function resolveActiveCategoryId(args: {
   suggestionCategoryId: string | null;
   categories: SheetCategoryLike[];
   fallbackCategoryId?: string;
-}): string {
-  if (args.manual && args.pickedId !== null) return args.pickedId;
-  if (!args.manual && args.suggestionCategoryId !== null)
-    return args.suggestionCategoryId;
+}): string | null {
+  // A hand pick (including an explicit «بدون دسته» = null) is a fact — the
+  // engine stays silent. Otherwise the suggestion owns the chip.
+  if (args.manual) return args.pickedId;
+  if (args.suggestionCategoryId !== null) return args.suggestionCategoryId;
   return (
     args.pickedId ??
     args.fallbackCategoryId ??
     args.categories[0]?.id ??
-    ""
+    null
   );
 }
 
 /** A hand pick wins and silences the suggestion engine for the rest of the
- * form (the badge drops). */
-export function pickSheetCategory(categoryId: string): {
+ * form (the badge drops) — null is the explicit «بدون دسته» (event-only). */
+export function pickSheetCategory(categoryId: string | null): {
   manual: boolean;
-  pickedId: string;
+  pickedId: string | null;
 } {
   return { manual: true, pickedId: categoryId };
 }
@@ -260,7 +270,8 @@ export interface SheetExpenseRef {
   quantity: number;
   unit: ExpenseUnit;
   occurredAt: string;
-  categoryId: string;
+  /** Null = event-only expense (no category, lives in its event). */
+  categoryId: string | null;
   eventId: string | null;
   sourceRecurringId: string | null;
 }
@@ -303,7 +314,7 @@ export function createSheetFormState(
   }
   const lockedCategoryId = open.lockedCategoryId;
   const lockedEventId = open.lockedEventId;
-  const categoryId = lockedCategoryId ?? categories[0]?.id ?? "";
+  const categoryId = lockedCategoryId ?? categories[0]?.id ?? null;
   return {
     form: {
       title: "",

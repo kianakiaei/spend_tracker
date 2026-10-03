@@ -312,7 +312,8 @@ export async function reorderCategory(
 
 export interface DrilldownExpenseLike {
   id: string;
-  categoryId: string;
+  /** Null = event-only (never matches a category drilldown). */
+  categoryId: string | null;
 }
 
 export interface DrilldownForecastLike {

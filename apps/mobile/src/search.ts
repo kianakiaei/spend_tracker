@@ -94,7 +94,7 @@ export function buildSearchViewModel(args: {
       monthLabel: jalaliMonthKeyLabel(hit.monthKey),
       monthKey: hit.monthKey,
       occurredLabel: formatJalali(fromISODate(hit.occurredAt), "d MMMM yyyy"),
-      categoryName: hit.categoryName,
+      categoryName: hit.categoryName ?? "بدون دسته",
       eventTitle: hit.eventTitle,
       editRef: toSheetExpenseRef(hit),
     })),

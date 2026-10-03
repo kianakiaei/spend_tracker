@@ -9,9 +9,10 @@
 // event-detail.tsx):
 // - Rows list in server (creation) order; each links to its stack detail.
 // - Create takes a title plus an optional note; rename is title-only.
-// - Deleting an event only unlinks expenses (they keep category + month) —
-//   the confirm says so («خرج‌ها می‌مانند») and the core never issues an
-//   expense write for a delete.
+// - Deleting an event unlinks categorized expenses (they keep category +
+//   month) but deletes its event-only rows (no category) with it — outside
+//   their event they would have no home at all. The confirm says so and the
+//   core never issues an expense write for a delete (the server owns it).
 // - The detail panel carries the event's own rows; «افزودن به این رویداد»
 //   opens the Expense sheet with the event pre-selected.
 // - Every row in an event keeps its own category and occurrence month: the
@@ -43,7 +44,8 @@ export interface EventLike {
 export interface EventLedgerExpenseLike {
   id: string;
   eventId: string | null;
-  categoryId: string;
+  /** Null = event-only (no category, lives in its event). */
+  categoryId: string | null;
   monthKey: string;
   occurredAt: string;
   title: string;
@@ -54,7 +56,8 @@ export interface EventLedgerExpenseLike {
 export const EVENT_MESSAGES = {
   saveFailed: "انجام نشد؛ دوباره تلاش کنید.",
   emptyList: "هنوز رویدادی نیست. برای سفر یا مناسبت بعدی یکی بسازید.",
-  deleteConfirm: "رویداد حذف شود؟ خرج‌ها می‌مانند.",
+  deleteConfirm:
+    "رویداد حذف شود؟ خرج‌های دسته‌دار می‌مانند؛ خرج‌های بدون دستهٔ آن حذف می‌شوند.",
   monthScopedHint:
     "هر رویداد یک جمع اضافه است؛ شمار و جمع هر رویداد برای ماه جاری است. حذف رویداد فقط پیوند را برمی‌دارد، نه خرج‌ها را.",
 } as const;

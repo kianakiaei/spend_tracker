@@ -110,10 +110,18 @@ export function ExpenseSheetModal({
     suggestionCategoryId: suggestion?.categoryId ?? null,
     categories,
   });
-  const activeCategory = categories.find((c) => c.id === activeCategoryId) ?? null;
-  const showBadge = shouldShowSuggestionBadge(manual) && suggestion !== null;
-  const canSave =
-    checked.canSave && activeCategoryId !== "" && !pending;
+  const activeCategory =
+    activeCategoryId !== null
+      ? (categories.find((c) => c.id === activeCategoryId) ?? null)
+      : null;
+  const showBadge =
+    shouldShowSuggestionBadge(manual) &&
+    suggestion !== null &&
+    activeCategory !== null;
+  // Event-only rows (no category) need their event: at least one home.
+  const effectiveEventId = lockedEvent ? lockedEvent.id : form.eventId;
+  const hasHome = activeCategoryId !== null || effectiveEventId !== null;
+  const canSave = checked.canSave && hasHome && !pending;
   const targetMonth = checked.dateValid
     ? jalaliMonthKeyLabel(effectiveMonthKey(form.occurredAt))
     : "—";
@@ -332,7 +340,7 @@ export function ExpenseSheetModal({
             <View style={{ gap: 8, direction: "rtl" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                 <Text style={{ fontSize: 14, fontWeight: "700" }}>
-                  {activeCategory?.name ?? "—"}
+                  {activeCategory?.name ?? "بدون دسته"}
                 </Text>
                 {showBadge ? (
                   <Text
@@ -389,7 +397,36 @@ export function ExpenseSheetModal({
                       </View>
                     </Pressable>
                   ))}
+                  {effectiveEventId !== null ? (
+                    <Pressable
+                      accessibilityLabel="بدون دسته"
+                      onPress={() => {
+                        const next = pickSheetCategory(null);
+                        setManual(next.manual);
+                        setPickedId(next.pickedId);
+                        setForm((prev) => ({ ...prev, categoryId: null }));
+                        setSuggestion(null);
+                      }}
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 999,
+                        borderWidth: activeCategoryId === null ? 2 : 1,
+                        borderColor:
+                          activeCategoryId === null ? "#1a7a5c" : "#d8d3c8",
+                        backgroundColor:
+                          activeCategoryId === null ? "#e4f0e9" : "#fff",
+                      }}
+                    >
+                      <Text style={{ fontSize: 13 }}>بدون دسته</Text>
+                    </Pressable>
+                  ) : null}
                 </View>
+              ) : null}
+              {!hasHome ? (
+                <Text style={{ fontSize: 12, color: "#b3261e" }}>
+                  خرج بدون دسته به یک رویداد نیاز دارد — یک دسته یا رویداد انتخاب کن.
+                </Text>
               ) : null}
             </View>
           )}

@@ -1,6 +1,7 @@
 // Events list (expo-mobile ticket 06): named buckets (travel, …) with this
 // month's total + count overlay per event, create with an optional note,
-// rename, and unlink-only deletion behind a confirm (خرج‌ها می‌مانند).
+// rename, and deletion behind a confirm (categorized rows stay, event-only
+// rows go down with the event).
 // Each row links to its stack detail (back keeps context). Reads go through
 // the typed v1 client (the frozen API); every mutation invalidates the
 // event and dependent scopes (no restart). Web parity: events/page.tsx +

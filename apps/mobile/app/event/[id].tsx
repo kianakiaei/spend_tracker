@@ -1,8 +1,9 @@
 // Event detail (expo-mobile ticket 06): the overlay panel (this month's
 // total + count), the event's own rows with their دسته chips, the
 // locked-event add that keeps context (the sheet opens on this id), and
-// unlink-only deletion behind a confirm (خرج‌ها می‌مانند — rows keep their
-// category and month). Unbounded ?month= navigation like the category
+// deletion behind a confirm (categorized rows keep their category and
+// month; event-only rows go down with the event). Unbounded ?month=
+// navigation like the category
 // drilldown; tapping a خرج opens its edit sheet. Web parity:
 // events/[id]/page.tsx + detail panel.
 
@@ -134,8 +135,10 @@ export default function EventDetailScreen() {
         ? `edit-${sheet.expense.id}`
         : `create-${panel?.lockedEventId ?? "open"}`;
 
-  const categoryName = (categoryId: string) =>
-    data?.categories.find((c) => c.id === categoryId)?.name ?? "";
+  const categoryName = (categoryId: string | null) =>
+    categoryId === null
+      ? "بدون دسته"
+      : (data?.categories.find((c) => c.id === categoryId)?.name ?? "");
 
   return (
     <View style={{ flex: 1 }}>
@@ -261,7 +264,8 @@ export default function EventDetailScreen() {
                         {row.title}
                       </Text>
                       <Text style={{ fontSize: 11.5, color: "#6b6259" }}>
-                        {categoryName(row.categoryId)}
+                        {categoryName(row.categoryId)} ·{" "}
+                        {formatJalali(fromISODate(row.occurredAt), "d MMMM yyyy")}
                       </Text>
                     </View>
                     {row.sourceRecurringId ? (

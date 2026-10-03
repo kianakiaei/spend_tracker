@@ -50,8 +50,9 @@ export interface DashboardExpenseLike {
   quantity: number;
   unit: string;
   occurredAt: string;
-  categoryId: string;
-  category: { color: string | null };
+  /** Null = event-only (lives in its event, hidden from the month ledger). */
+  categoryId: string | null;
+  category: { color: string | null } | null;
   eventId: string | null;
   sourceRecurringId: string | null;
 }
@@ -90,7 +91,7 @@ export interface DashboardLedgerExpenseRow {
   amountToman: number;
   quantity: number;
   unit: string;
-  categoryId: string;
+  categoryId: string | null;
   categoryColor: string | null;
   eventTitle: string | null;
   fromTemplate: boolean;
@@ -157,7 +158,11 @@ export function buildDashboardViewModel(args: {
     }));
 
   const monthName = jalaliMonthNameFromKey(monthKey);
-  const expenseRows: DashboardLedgerExpenseRow[] = expenses.map((e) => {
+  // Event-only expenses (no category) skip the month ledger entirely — they
+  // live in their event alone and never enter month/category spending. The
+  // event detail and search still reach them.
+  const visibleExpenses = expenses.filter((e) => e.categoryId !== null);
+  const expenseRows: DashboardLedgerExpenseRow[] = visibleExpenses.map((e) => {
     const fromTemplate = e.sourceRecurringId !== null;
     return {
       kind: "expense" as const,
@@ -208,7 +213,7 @@ export function buildDashboardViewModel(args: {
       : {}),
     tiles,
     ledger,
-    isEmpty: expenses.length === 0 && forecast.length === 0,
+    isEmpty: visibleExpenses.length === 0 && forecast.length === 0,
   };
 }
 /** Ledger quantity in Persian digits (display only). */
