@@ -15,7 +15,7 @@ import {
 } from "@/lib/services";
 
 // The event detail: the overlay total (big, like the dashboard), the
-// event's expense rows (newest first), and «افزودن به این رویداد».
+// event's expense rows (oldest first), and «افزودن به این رویداد».
 
 const categoryService = createCategoryService(db);
 const eventService = createEventService(db);

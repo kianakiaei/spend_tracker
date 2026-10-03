@@ -246,7 +246,7 @@ describe("event summary + expenses", () => {
     expect(rows.find((r) => r.title === "بلیت")?.monthKey).toBe("1405-06");
   });
 
-  it("listExpenses is newest first", async () => {
+  it("listExpenses is oldest first", async () => {
     const userId = await fx.signUp();
     const groceries = await systemCategory(userId, "groceries");
     const event = await eventService.create(userId, { title: "سفر یزد" });
@@ -268,7 +268,7 @@ describe("event summary + expenses", () => {
     );
 
     const rows = await eventService.listExpenses(userId, event.id);
-    expect(rows.map((r) => r.id)).toEqual([recent.id, mid.id, old.id]);
+    expect(rows.map((r) => r.id)).toEqual([old.id, mid.id, recent.id]);
   });
 });
 

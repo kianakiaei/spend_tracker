@@ -194,9 +194,10 @@ export interface EventDetailPanel<E> {
   lockedEventId: string;
 }
 
-/** This event's panel: its month total plus only its own rows — each row
- * keeps its own category and occurrence month (the event never replaces
- * them). Unknown ids throw — never a stranger's panel. */
+/** This event's panel: its month total plus only its own rows, oldest
+ * first — an event reads like a story. Each row keeps its own category
+ * and occurrence month (the event never replaces them). Unknown ids
+ * throw — never a stranger's panel. */
 export function buildEventDetail<E extends EventLedgerExpenseLike>(args: {
   eventId: string;
   events: readonly EventLike[];
@@ -204,7 +205,13 @@ export function buildEventDetail<E extends EventLedgerExpenseLike>(args: {
 }): EventDetailPanel<E> {
   const event = args.events.find((e) => e.id === args.eventId);
   if (!event) throw new Error("unknown event");
-  const expenses = args.expenses.filter((e) => e.eventId === event.id);
+  const expenses = args.expenses
+    .filter((e) => e.eventId === event.id)
+    .sort((a, b) =>
+      a.occurredAt !== b.occurredAt
+        ? (a.occurredAt < b.occurredAt ? -1 : 1)
+        : (a.id < b.id ? -1 : 1),
+    );
   const { totalToman, count } = totalByEventId(args.expenses)[event.id] ?? {
     totalToman: 0,
     count: 0,

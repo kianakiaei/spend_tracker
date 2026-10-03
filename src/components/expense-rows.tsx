@@ -63,22 +63,34 @@ export function ExpenseRows({
   const colorOf = categoryColorMap(categories);
   const monthName = formatJalali(fromJalaliMonthKey(monthKey), "MMMM");
   const dayFormat = showYear ? "d MMMM yyyy" : "d MMMM";
-  const dated: LedgerEntry[] = expenses.map((expense) => ({
-    kind: "expense" as const,
-    day: jalaliDayOfMonth(fromISODate(expense.occurredAt)),
-    expense,
-  }));
+  const dated: Extract<LedgerEntry, { kind: "expense" }>[] = expenses.map(
+    (expense) => ({
+      kind: "expense" as const,
+      day: jalaliDayOfMonth(fromISODate(expense.occurredAt)),
+      expense,
+    }),
+  );
   const forecastEntries: LedgerEntry[] = forecast.map((row) => ({
     kind: "forecast" as const,
     day: row.day,
     forecast: row,
   }));
 
+  // The month ledger interleaves on the Jalali day scale (one month, so the
+  // day number orders it). The event page spans months — its rows run
+  // oldest first on the full occurrence date.
+  const ordered =
+    showYear && forecastEntries.length === 0
+      ? [...dated].sort((a, b) => {
+          if (a.expense.occurredAt !== b.expense.occurredAt)
+            return a.expense.occurredAt < b.expense.occurredAt ? -1 : 1;
+          return a.expense.id < b.expense.id ? -1 : 1;
+        })
+      : [...dated, ...forecastEntries].sort((a, b) => a.day - b.day);
+
   return (
     <ul>
-      {[...dated, ...forecastEntries]
-        .sort((a, b) => a.day - b.day)
-        .map((entry) =>
+      {ordered.map((entry) =>
           entry.kind === "expense" ? (
             <li key={entry.expense.id} className={LI_CLASS}>
               <button

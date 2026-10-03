@@ -253,6 +253,23 @@ describe("event detail (ticket 06)", () => {
     });
   });
 
+  it("orders the event's rows oldest first", () => {
+    const panel = buildEventDetail({
+      eventId: v7(1),
+      events: [event(1)] as never,
+      expenses: [
+        expense(93, { eventId: v7(1), occurredAt: "2026-09-06" }),
+        expense(91, { eventId: v7(1), occurredAt: "2026-08-23" }),
+        expense(92, { eventId: v7(1), occurredAt: "2026-08-25" }),
+      ] as never,
+    });
+    expect(panel.expenses.map((e) => e.occurredAt)).toEqual([
+      "2026-08-23",
+      "2026-08-25",
+      "2026-09-06",
+    ]);
+  });
+
   it("reports an empty event so the screen renders its empty state", () => {
     const panel = buildEventDetail({
       eventId: v7(1),

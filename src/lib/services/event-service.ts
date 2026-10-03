@@ -91,7 +91,7 @@ export interface EventService {
   remove(userId: string, id: string): Promise<void>;
   /** Event totals overlay: recorded sum + count; month math is untouched. */
   summary(userId: string, id: string): Promise<EventSummary>;
-  /** The event's expenses, newest first. */
+  /** The event's expenses, oldest first — an event reads like a story. */
   listExpenses(userId: string, id: string): Promise<ExpenseWithCategory[]>;
 }
 
@@ -273,7 +273,7 @@ export function createEventService(db: DomainDb): EventService {
     },
 
     async listExpenses(userId, id) {
-      // The event's full ledger, newest first — event-only rows (no
+      // The event's full ledger, oldest first — event-only rows (no
       // category) included, each showing the month it happened in.
       await getOwned(userId, id);
       const rows = await db
@@ -285,9 +285,9 @@ export function createEventService(db: DomainDb): EventService {
         .map((row) => ({ ...row.expense, category: row.category }))
         .sort((a, b) => {
           if (a.occurredAt !== b.occurredAt)
-            return a.occurredAt < b.occurredAt ? 1 : -1;
+            return a.occurredAt < b.occurredAt ? -1 : 1;
           return (
-            b.createdAt.getTime() - a.createdAt.getTime() ||
+            a.createdAt.getTime() - b.createdAt.getTime() ||
             (a.id < b.id ? -1 : 1)
           );
         });
