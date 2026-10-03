@@ -430,8 +430,8 @@ describe("expenseService.remove + listByMonth (ticket 22)", () => {
 
     expect(rows.map((r) => r.id)).toEqual([firstOfMonth.id, datedEarly.id, datedLate.id]);
     expect(rows[0]!.occurredAt).toBe("2026-08-23");
-    expect(rows[0]!.category.id).toBe(groceries);
-    expect(rows[1]!.category.name).toBeTruthy();
+    expect(rows[0]!.category?.id).toBe(groceries);
+    expect(rows[1]!.category?.name).toBeTruthy();
     expect(rows.map((r) => r.monthKey)).toEqual(["1405-06", "1405-06", "1405-06"]);
     expect(rows.some((r) => r.id === otherMonth.id)).toBe(false);
   });

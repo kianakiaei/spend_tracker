@@ -173,10 +173,11 @@ describe("event list view model (ticket 06)", () => {
     expect(vm.rows[0]!.drilldown).toBe(`/event/${v7(1)}`);
   });
 
-  it("speaks one Persian voice for failures and the unlink-only confirm", () => {
+  it("speaks one Persian voice for failures and the delete confirm", () => {
     expect(EVENT_MESSAGES.saveFailed).toContain("انجام نشد");
     expect(EVENT_MESSAGES.emptyList).toContain("رویداد");
-    expect(EVENT_MESSAGES.deleteConfirm).toContain("خرج‌ها می‌مانند");
+    expect(EVENT_MESSAGES.deleteConfirm).toContain("خرج‌های دسته‌دار می‌مانند");
+    expect(EVENT_MESSAGES.deleteConfirm).toContain("بدون دسته");
   });
 });
 

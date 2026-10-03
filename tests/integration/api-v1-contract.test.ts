@@ -800,7 +800,7 @@ describe("GET /search — the whole-ledger title search", () => {
           amountToman: 45_000,
           title: "نان سنگک",
           categoryId: groceries.id,
-          occurredAt: "2026-08-25",
+          occurredAt: jalaliMonthBounds(CURRENT).startISO,
         },
       }),
     );
@@ -951,7 +951,7 @@ describe("mutation response bodies match the shared schemas (ticket 30)", () => 
     const parsed = expenseResponseSchema.safeParse(await res.json());
     expect(parsed.success).toBe(true);
     if (parsed.success) {
-      expect(parsed.data.category.id).toBe(groceries.id);
+      expect(parsed.data.category?.id).toBe(groceries.id);
       expect(parsed.data.userId).toBe(sessionA.userId);
     }
   });
@@ -982,7 +982,7 @@ describe("mutation response bodies match the shared schemas (ticket 30)", () => 
     expect(parsed.success).toBe(true);
     if (parsed.success) {
       expect(parsed.data.amountToman).toBe(9000);
-      expect(parsed.data.category.id).toBe(groceries.id);
+      expect(parsed.data.category?.id).toBe(groceries.id);
     }
   });
 

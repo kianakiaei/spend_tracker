@@ -7,9 +7,10 @@ import { NotFoundError, ValidationError } from "@/lib/services/errors";
 import { setupIntegrationDb } from "../helpers/integration";
 
 // Event service on a real temp libSQL file: named buckets (رویداد, e.g.
-// travel). An expense joins an event by manual attach while keeping its
-// category AND its month — the event is a pure overlay. Deleting an event
-// only unlinks, never deletes.
+// travel). A categorized expense joins an event by manual attach while
+// keeping its category AND its month — the event is a pure overlay.
+// Deleting an event unlinks categorized rows; event-only rows (no category)
+// are deleted with it — outside their event they would have no home.
 
 const fx = await setupIntegrationDb("event-service");
 const categories = createCategoryService(fx.db);
@@ -218,6 +219,33 @@ describe("event summary + expenses", () => {
     expect(rows).toHaveLength(2);
   });
 
+  it("counts event-only rows in the total but never in a category breakdown", async () => {
+    const userId = await fx.signUp();
+    const groceries = await systemCategory(userId, "groceries");
+    const event = await eventService.create(userId, { title: "سفر کیش" });
+
+    await expensesService.create(
+      userId,
+      { amountToman: 50_000, title: "غذا", categoryId: groceries, occurredAt: "2026-08-23", eventId: event.id },
+      "1405-06",
+    );
+    await expensesService.create(
+      userId,
+      { amountToman: 70_000, title: "بلیت", categoryId: null, occurredAt: "2026-09-06", eventId: event.id },
+      "1405-06",
+    );
+
+    const summary = await eventService.summary(userId, event.id);
+    expect(summary.totalToman).toBe(120_000);
+    expect(summary.count).toBe(2);
+    expect(summary.byCategory).toHaveLength(1);
+
+    const rows = await eventService.listExpenses(userId, event.id);
+    expect(rows).toHaveLength(2);
+    // Each row keeps its own occurrence month — the event page names it.
+    expect(rows.find((r) => r.title === "بلیت")?.monthKey).toBe("1405-06");
+  });
+
   it("listExpenses is newest first", async () => {
     const userId = await fx.signUp();
     const groceries = await systemCategory(userId, "groceries");
@@ -241,5 +269,139 @@ describe("event summary + expenses", () => {
 
     const rows = await eventService.listExpenses(userId, event.id);
     expect(rows.map((r) => r.id)).toEqual([recent.id, mid.id, old.id]);
+  });
+});
+
+describe("event-only expenses (خرجِ فقط-رویدادی)", () => {
+  it("creates without a category when an event is set, and reads back null", async () => {
+    const userId = await fx.signUp();
+    const event = await eventService.create(userId, { title: "سفر کوتاه" });
+
+    const expense = await expensesService.create(
+      userId,
+      { amountToman: 70_000, title: "بلیت", categoryId: null, occurredAt: "2026-09-06", eventId: event.id },
+      "1405-06",
+    );
+    expect(expense.categoryId).toBeNull();
+    expect(expense.eventId).toBe(event.id);
+    expect(expense.monthKey).toBe("1405-06");
+
+    const got = await expensesService.get(userId, expense.id);
+    expect(got.category).toBeNull();
+
+    // The month ledger still carries the row (with a null category) — the
+    // month VIEWS hide it; the event detail and search reach it.
+    const rows = await expensesService.listByMonth(userId, "1405-06");
+    expect(rows.find((r) => r.id === expense.id)?.category).toBeNull();
+  });
+
+  it("rejects a homeless expense — neither category nor event", async () => {
+    const userId = await fx.signUp();
+    await expect(
+      expensesService.create(
+        userId,
+        { amountToman: 1_000, title: "بی‌خانمان", categoryId: null, occurredAt: "2026-08-23" },
+        "1405-06",
+      ),
+    ).rejects.toThrow(ValidationError);
+    await expect(
+      expensesService.create(
+        userId,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        { amountToman: 1_000, title: "بی‌خانمان", occurredAt: "2026-08-23" } as any,
+        "1405-06",
+      ),
+    ).rejects.toThrow(ValidationError);
+  });
+
+  it("guards the last home on update — detach only with the other one kept", async () => {
+    const userId = await fx.signUp();
+    const groceries = await systemCategory(userId, "groceries");
+    const event = await eventService.create(userId, { title: "مهمانی" });
+
+    const plain = await expensesService.create(
+      userId,
+      { amountToman: 5_000, title: "نان", categoryId: groceries, occurredAt: "2026-08-23" },
+      "1405-06",
+    );
+    // A categorized row with no event cannot drop its category…
+    await expect(
+      expensesService.update(userId, plain.id, { categoryId: null }),
+    ).rejects.toThrow(ValidationError);
+    // …but moving it into an event first frees the category.
+    const moved = await expensesService.update(userId, plain.id, { eventId: event.id });
+    expect(moved.eventId).toBe(event.id);
+    const freed = await expensesService.update(userId, plain.id, { categoryId: null });
+    expect(freed.categoryId).toBeNull();
+
+    // And the event-only row cannot drop its event while categoriless…
+    await expect(
+      expensesService.update(userId, plain.id, { eventId: null }),
+    ).rejects.toThrow(ValidationError);
+    // …until it has a category again.
+    const recategorized = await expensesService.update(userId, plain.id, {
+      categoryId: groceries,
+      eventId: null,
+    });
+    expect(recategorized.categoryId).toBe(groceries);
+    expect(recategorized.eventId).toBeNull();
+  });
+
+  it("teaches nothing — event-only saves skip the learning pipeline", async () => {
+    const { listLearnedKeys } = await import("@/lib/services");
+    const userId = await fx.signUp();
+    const event = await eventService.create(userId, { title: "سفر آموزشی" });
+
+    await expensesService.create(
+      userId,
+      { amountToman: 3_000, title: "واژه یکتای فقط-رویدادی", categoryId: null, occurredAt: "2026-08-23", eventId: event.id },
+      "1405-06",
+    );
+
+    const keys = await listLearnedKeys(fx.db, userId);
+    expect(keys).toHaveLength(0);
+  });
+
+  it("countByCategory skips event-only rows", async () => {
+    const userId = await fx.signUp();
+    const groceries = await systemCategory(userId, "groceries");
+    const event = await eventService.create(userId, { title: "سفر شمارش" });
+    await expensesService.create(
+      userId,
+      { amountToman: 5_000, title: "نان", categoryId: groceries, occurredAt: "2026-08-23" },
+      "1405-06",
+    );
+    await expensesService.create(
+      userId,
+      { amountToman: 9_000, title: "بلیت", categoryId: null, occurredAt: "2026-08-23", eventId: event.id },
+      "1405-06",
+    );
+
+    const counts = await expensesService.countByCategory(userId);
+    expect(counts).toEqual({ [groceries]: 1 });
+  });
+
+  it("deleting an event deletes its event-only rows but unlinks the rest", async () => {
+    const userId = await fx.signUp();
+    const groceries = await systemCategory(userId, "groceries");
+    const event = await eventService.create(userId, { title: "سفر آخر" });
+
+    const categorized = await expensesService.create(
+      userId,
+      { amountToman: 10_000, title: "نان", categoryId: groceries, occurredAt: "2026-08-23", eventId: event.id },
+      "1405-06",
+    );
+    const only = await expensesService.create(
+      userId,
+      { amountToman: 20_000, title: "بلیت", categoryId: null, occurredAt: "2026-08-23", eventId: event.id },
+      "1405-06",
+    );
+
+    await eventService.remove(userId, event.id);
+
+    const rows = await expensesService.listByMonth(userId, "1405-06");
+    expect(rows.find((r) => r.id === categorized.id)?.eventId).toBeNull();
+    expect(rows.some((r) => r.id === only.id)).toBe(false);
+    await expect(expensesService.get(userId, only.id)).rejects.toThrow();
   });
 });

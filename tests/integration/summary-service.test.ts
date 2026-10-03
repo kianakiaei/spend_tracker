@@ -138,6 +138,25 @@ describe("summaryService.getSummary — current month: ensure before read (decis
   });
 });
 
+describe("summaryService.getSummary — event-only rows never enter month spending", () => {
+  it("ignores category-less expenses in the total and the breakdown", async () => {
+    const { createEventService } = await import("@/lib/services/event-service");
+    const userId = await fx.signUp();
+    const event = await createEventService(fx.db).create(userId, { title: "سفر" });
+    await createExpense(userId, {}, PREV);
+    await createExpense(
+      userId,
+      { title: "بلیت", amountToman: 100_000, categoryId: null, eventId: event.id },
+      PREV,
+    );
+
+    const summary = await summaries.getSummary(userId, PREV);
+    expect(summary.totalToman).toBe(250_000);
+    expect(summary.byCategory).toHaveLength(1);
+    expect(summary.byCategory[0]?.totalToman).toBe(250_000);
+  });
+});
+
 describe("summaryService.getSummary — past month: recorded only", () => {
   it("never ensures, never forecasts — a missed month stays empty", async () => {
     const userId = await fx.signUp();
