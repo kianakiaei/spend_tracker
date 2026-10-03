@@ -108,8 +108,10 @@ export const expenses = sqliteTable(
     unit: text("unit").$type<ExpenseUnit>().notNull().default("piece"),
     title: text("title").notNull(),
     note: text("note"),
-    // NOT NULL: there is no "uncategorized" group (ticket 05).
-    categoryId: text("categoryId").notNull(),
+    // Nullable: an event-only expense (رویداد-only) has no category — it
+    // belongs to an event instead. At least one of categoryId / eventId is
+    // required (enforced in the service layer, not here).
+    categoryId: text("categoryId"),
     // Gregorian date-only 'YYYY-MM-DD'. Always set — monthKey is derived
     // from this date on write.
     occurredAt: text("occurredAt").notNull(),

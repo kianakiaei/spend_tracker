@@ -24,7 +24,22 @@ import {
 
 // --- Requests ---
 
-/** POST /api/v1/expenses — monthKey is derived from occurredAt. */
+/** POST /api/v1/expenses — monthKey is derived from occurredAt. A spend may
+ * skip its category only when it belongs to an event (event-only expense):
+ * at least one of categoryId / eventId is required. */
+export function refineCategoryOrEvent(
+  data: { categoryId?: string | null; eventId?: string | null },
+  ctx: z.RefinementCtx,
+): void {
+  if (data.categoryId == null && data.eventId == null) {
+    ctx.addIssue({
+      code: "custom",
+      path: ["categoryId"],
+      message: "an expense needs a category or an event",
+    });
+  }
+}
+
 export const createExpenseRequestSchema = z
   .object({
     amountToman: amountTomanSchema,
@@ -32,11 +47,12 @@ export const createExpenseRequestSchema = z
     unit: unitSchema.optional(),
     title: titleSchema,
     note: expenseNoteSchema.nullish(),
-    categoryId: uuidv7Schema,
+    categoryId: uuidv7Schema.nullish(),
     occurredAt: dateOnlySchema,
     eventId: uuidv7Schema.nullish(),
   })
-  .superRefine(refineUnitQuantity);
+  .superRefine(refineUnitQuantity)
+  .superRefine(refineCategoryOrEvent);
 
 export const updateExpenseRequestSchema = z
   .object({
@@ -45,7 +61,7 @@ export const updateExpenseRequestSchema = z
     unit: unitSchema.optional(),
     title: titleSchema.optional(),
     note: expenseNoteSchema.nullish(),
-    categoryId: uuidv7Schema.optional(),
+    categoryId: uuidv7Schema.nullish(),
     occurredAt: dateOnlySchema.optional(),
     eventId: uuidv7Schema.nullish(),
   })
@@ -137,7 +153,8 @@ export const expenseResponseSchema = z.object({
   unit: unitSchema,
   title: z.string(),
   note: z.string().nullable(),
-  categoryId: uuidv7Schema,
+  /** Null on event-only expenses — they live in an event, not a category. */
+  categoryId: uuidv7Schema.nullable(),
   occurredAt: dateOnlySchema,
   monthKey: jalaliMonthKeySchema,
   sourceRecurringId: uuidv7Schema.nullable(),
@@ -145,7 +162,7 @@ export const expenseResponseSchema = z.object({
   userId: authUserIdSchema,
   createdAt: isoTimestampSchema,
   updatedAt: isoTimestampSchema,
-  category: categoryResponseSchema,
+  category: categoryResponseSchema.nullable(),
 });
 
 export const recurringTemplateResponseSchema = z.object({
@@ -197,8 +214,8 @@ export const searchResultResponseSchema = z.object({
   unit: unitSchema,
   monthKey: jalaliMonthKeySchema,
   occurredAt: dateOnlySchema,
-  categoryName: z.string(),
-  categoryId: uuidv7Schema,
+  categoryName: z.string().nullable(),
+  categoryId: uuidv7Schema.nullable(),
   /** The رویداد the expense belongs to — null when unattached. */
   eventTitle: z.string().nullable(),
   eventId: uuidv7Schema.nullable(),

@@ -50,6 +50,13 @@
       "when": 1789078982420,
       "tag": "0006_sharp_old_lace",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1791061177707,
+      "tag": "0007_event-only-expenses",
+      "breakpoints": true
     }
   ]
 }
