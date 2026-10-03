@@ -427,6 +427,10 @@ export function ExpenseSheetModal({
                 <Text style={{ fontSize: 12, color: "#b3261e" }}>
                   خرج بدون دسته به یک رویداد نیاز دارد — یک دسته یا رویداد انتخاب کن.
                 </Text>
+              ) : effectiveEventId === null ? (
+                <Text style={{ fontSize: 12, color: "#6b6259" }}>
+                  برای «بدون دسته»، اول یک رویداد انتخاب کن.
+                </Text>
               ) : null}
             </View>
           )}

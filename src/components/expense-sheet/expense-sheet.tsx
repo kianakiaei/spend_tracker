@@ -468,10 +468,16 @@ export function ExpenseSheet({
                     )}
                   </div>
                 )}
-                {!hasHome && (
+                {!hasHome ? (
                   <p className="mt-2 text-[12px] text-danger">
                     خرج بدون دسته به یک رویداد نیاز دارد — یک دسته یا رویداد انتخاب کن.
                   </p>
+                ) : (
+                  effectiveEventId === null && (
+                    <p className="mt-2 text-[12px] text-ink-muted">
+                      برای «بدون دسته»، اول یک رویداد انتخاب کن.
+                    </p>
+                  )
                 )}
               </>
             )}
